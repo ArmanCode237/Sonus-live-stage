@@ -18,120 +18,148 @@
     --led-green: #00fa1d;
     --led-amber: #ffae00;
     --silkscreen: #eef2f6;
+    --ui-bg: #08090b;
+    --ui-panel: #111317;
+    --ui-panel-2: #171a1f;
+    --ui-panel-3: #20242b;
+    --ui-line: rgba(255,255,255,.10);
+    --ui-line-strong: rgba(255,255,255,.18);
+    --ui-text: #f4f5f7;
+    --ui-muted: #9ba3af;
+    --ui-soft: #c8ced6;
+    --ui-red: #d21b25;
+    --ui-red-hot: #f0444d;
+    --ui-green: #48e889;
+    --ui-amber: #f2b84b;
+    --ui-blue: #71b7ff;
+    --ui-radius: 12px;
+    --ui-shadow: 0 16px 38px rgba(0,0,0,.34);
   }
   * { box-sizing: border-box; user-select: none; -webkit-user-select: none; }
+  html { background: #070809; }
   body {
-    margin: 0; padding: 10px; min-height: 100vh;
+    margin: 0; padding: 20px; min-height: 100vh;
     background:
-      repeating-linear-gradient(90deg, rgba(35,0,0,0.07) 0px, rgba(35,0,0,0.07) 2px, transparent 2px, transparent 10px),
-      radial-gradient(ellipse at 50% 54%, #262930 0%, #090a0d 100%);
-    color: var(--silkscreen);
+      radial-gradient(circle at 50% 0%, rgba(210,27,37,.10), transparent 38%),
+      linear-gradient(180deg,#0d0f12 0%,#070809 72%);
+    color: var(--ui-text);
     font-family: 'Segoe UI', system-ui, sans-serif;
     font-variant-numeric: tabular-nums;
     display: flex; flex-direction: column; align-items: center;
+    letter-spacing: .01em;
   }
   .nord-unit {
-    width: 1600px; max-width: 100%;
-    background: linear-gradient(180deg, #bc141d 0%, #980c13 52%, #6b060b 100%);
-    border: 3px solid #380306; border-radius: 10px;
-    box-shadow: 0 26px 65px rgba(0,0,0,0.88), inset 0 2px 2px rgba(255,255,255,0.25);
+    position: relative; z-index: 1;
+    width: min(1720px, 100%);
+    background: linear-gradient(180deg,#a70f17 0%,#870b12 54%,#65070c 100%);
+    border: 1px solid #3a090c;
+    border-radius: 14px;
+    box-shadow: 0 30px 80px rgba(0,0,0,.72), 0 0 0 1px rgba(255,255,255,.04), inset 0 1px 0 rgba(255,255,255,.16);
     overflow: hidden;
   }
 
-  /* 1. BARRA SUPERIOR (CON TUNE, PAN Y MASTER) */
+  /* 1. BARRA SUPERIOR */
   .top-strip {
-    background: linear-gradient(180deg, #3a3d42 0%, #232529 100%);
-    border-bottom: 2px solid #121316; padding: 6px 12px;
-    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    min-height: 72px; padding: 10px 14px; gap: 12px;
+    background: linear-gradient(180deg,#24272c 0%,#17191d 100%);
+    border-bottom: 1px solid #08090b;
+    box-shadow: inset 0 -1px 0 rgba(255,255,255,.04);
+    display: flex; align-items: center; justify-content: space-between;
   }
   .wrench-btn {
-    background: linear-gradient(180deg, #e2e8f0 0%, #94a3b8 100%);
-    color: #111; border: 1px solid #090a0c; border-radius: 4px;
-    padding: 6px 10px; font-weight: 800; font-size: 11px; cursor: pointer;
+    min-height: 34px; padding: 0 11px; border-radius: 7px;
+    background: #2a2e34; color: #eef1f5; border: 1px solid #444a53;
+    font-weight: 800; font-size: 11px; cursor: pointer;
     display: flex; align-items: center; gap: 5px; white-space: nowrap;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+    box-shadow: 0 3px 8px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.07);
+    transition: transform .16s ease, background .16s ease, border-color .16s ease;
   }
-  .wrench-btn:hover { filter: brightness(1.08); }
+  .wrench-btn:hover { transform: translateY(-1px); background:#343941; border-color:#69717d; }
   .wrench-btn.active-toggle {
-    background: linear-gradient(180deg, #ef4444 0%, #991b1b 100%);
-    color: #fff; border-color: #fca5a5;
+    background: linear-gradient(180deg,#d9232d,#9e1118);
+    color: #fff; border-color: #f05b62;
   }
   .wrench-btn.warn-alert {
     background: linear-gradient(180deg, #f59e0b 0%, #b45309 100%);
     color: #111; border-color: #fde68a; animation: storeBlink 0.7s infinite alternate;
   }
+
   .info-bar-box {
-    flex: 1; background: linear-gradient(180deg, #52575f 0%, #3d4148 100%);
-    border: 1px solid #181a1d; border-radius: 5px; padding: 5px 12px;
-    display: grid; grid-template-columns: 1.3fr 1.1fr 1fr; gap: 8px;
-    align-items: center; font-size: 11px; box-shadow: inset 0 1px 4px rgba(0,0,0,0.65);
+    flex: 1; min-width: 340px; padding: 8px 12px; border-radius: 8px;
+    background: #101216; border: 1px solid #30343b;
+    box-shadow: inset 0 1px 8px rgba(0,0,0,.55);
+    display: grid; grid-template-columns: 1.2fr .9fr 1fr; gap: 8px;
+    align-items: center; font-size: 11px;
   }
-  .k-info-row { display: flex; align-items: center; gap: 7px; color: #e2e8f0; white-space: nowrap; overflow: hidden; }
-  .k-info-row strong { color: #fff; }
+  .k-info-row { display: flex; align-items: center; gap: 7px; color: #b8c0ca; white-space: nowrap; overflow: hidden; }
+  .k-info-row strong { color: #fff; font-weight: 800; }
   .hw-badge {
-    padding: 2px 6px; border-radius: 4px; font-weight: 800; font-size: 10px;
+    padding: 3px 8px; border-radius: 999px; font-weight: 800; font-size: 10px;
     background: #144622; color: #66ff99;
   }
   .hw-badge.warn { background: #7c2d12; color: #fde047; }
   .hw-badge.off { background: #1e293b; color: #94a3b8; }
 
   .top-master-area {
-    display: flex; align-items: center; gap: 8px; background: #181a1e;
-    padding: 4px 10px; border-radius: 5px; border: 1px solid #333;
+    display: flex; align-items: center; gap: 8px;
+    background: #0e1013; padding: 4px 8px;
+    border-radius: 9px; border: 1px solid #34383f;
   }
-  .vu-stack { width: 95px; display: flex; flex-direction: column; gap: 4px; }
-  .vu-bar-bg { height: 6px; background: #090a0c; border-radius: 3px; overflow: hidden; }
+  .vu-stack { width: 110px; display: flex; flex-direction: column; gap: 4px; }
+  .vu-bar-bg { height: 5px; background: #070809; border: 1px solid #272b31; border-radius: 3px; overflow: hidden; }
   .vu-bar-fg { height: 100%; width: 0%; background: linear-gradient(90deg, #00fa1d 0%, #fbbf24 75%, #ff2222 100%); }
-  .clip-dot { width: 9px; height: 9px; border-radius: 50%; background: #331111; border: 1px solid #000; }
+  .clip-dot { width: 10px; height: 10px; border-radius: 50%; background: #331111; border: 1px solid #000; }
   .clip-dot.on { background: #ff2222; box-shadow: 0 0 8px #ff2222; }
 
-  /* 2. BANNER NORD */
+  /* 2. BANNER */
   .nord-banner {
-    text-align: center; padding: 5px 0 7px;
-    background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(0,0,0,0.2) 100%);
-    border-bottom: 1px solid rgba(0,0,0,0.35);
+    padding: 10px 18px;
+    background: linear-gradient(90deg,rgba(0,0,0,.25),rgba(255,255,255,.05),rgba(0,0,0,.25));
+    border-bottom: 1px solid rgba(0,0,0,.45);
+    display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;
   }
   .nord-banner h1 {
-    margin: 0; font-size: 22px; font-weight: 300; letter-spacing: 3.5px;
-    color: #fff; text-transform: uppercase; text-shadow: 0 2px 8px rgba(0,0,0,0.55);
+    margin: 0; font-size: 19px; font-weight: 300; letter-spacing: 3px;
+    color: #fff; text-transform: uppercase;
   }
   .nord-banner h1 span { font-weight: 900; }
 
   /* 3. REJILLA PRINCIPAL DE 5 COLUMNAS */
   .stage-main-grid {
-    display: grid; grid-template-columns: 215px 195px 1fr 195px 215px;
-    gap: 10px; padding: 12px; align-items: stretch;
+    display: grid;
+    grid-template-columns: 226px 202px minmax(420px,1fr) 210px 236px;
+    gap: 11px; padding: 14px; align-items: stretch;
   }
-  .col-stack { display: flex; flex-direction: column; gap: 10px; }
+  .col-stack { display: flex; flex-direction: column; gap: 11px; min-width: 0; }
+  .fx-module-black, .slate-module, .center-console {
+    border-radius: 12px; border: 1px solid rgba(0,0,0,.86);
+    box-shadow: var(--ui-shadow), inset 0 1px 0 rgba(255,255,255,.065);
+  }
   .fx-module-black {
-    flex: 1; background: linear-gradient(180deg, #1b1d21 0%, #111316 100%);
-    border: 2px solid #08090b; border-radius: 10px; padding: 8px 10px;
-    display: flex; flex-direction: column; justify-content: space-between; align-items: center;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), 0 6px 14px rgba(0,0,0,0.5);
+    flex: 1; background: linear-gradient(180deg,#181b20 0%,#0e1013 100%);
+    padding: 10px 11px; display: flex; flex-direction: column; justify-content: space-between; align-items: center;
   }
   .slate-module {
-    flex: 1; background: linear-gradient(180deg, #596a7c 0%, #485767 100%);
-    border: 2px solid #15171a; border-radius: 10px; padding: 8px 10px;
-    display: flex; flex-direction: column; justify-content: space-between; align-items: center;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.22), 0 6px 14px rgba(0,0,0,0.5);
+    flex: 1; background: linear-gradient(180deg,#566473 0%,#414d59 100%);
+    padding: 10px 11px; display: flex; flex-direction: column; justify-content: space-between; align-items: center;
   }
   .mod-pill-header {
-    width: 100%; background: linear-gradient(180deg, #737b87 0%, #535a64 100%);
-    border: 1px solid #111; border-radius: 6px; padding: 3px 7px;
+    width: 100%; min-height: 30px; padding: 5px 8px; border-radius: 7px;
+    background: #262a30; border: 1px solid #3a3f47;
     display: flex; align-items: center; justify-content: space-between;
-    font-size: 10px; font-weight: 800; letter-spacing: 0.8px; color: #fff; text-transform: uppercase;
+    font-size: 10px; font-weight: 800; letter-spacing: 1px; color: #fff; text-transform: uppercase;
   }
-  .mod-pill-header.red-pill { background: linear-gradient(180deg, #d41922 0%, #990d14 100%); }
+  .mod-pill-header.red-pill { background: linear-gradient(180deg,#c91b24,#8f0e15); border-color: #df3b42; }
   .mod-led-btn {
-    width: 11px; height: 11px; border-radius: 50%; background: #3a1212;
+    width: 12px; height: 12px; border-radius: 50%; background: #3a1212;
     border: 1.5px solid #090a0c; cursor: pointer; padding: 0; flex-shrink: 0;
   }
   .mod-led-btn.on { background: var(--led-red); box-shadow: 0 0 8px var(--led-red); }
   .expand-btn {
-    background: rgba(0,0,0,0.55); color: #fff; border: 1px solid rgba(255,255,255,0.35);
-    border-radius: 4px; font-size: 9.5px; padding: 2px 6px; cursor: pointer; font-weight: 800;
+    background: #101216; color: #fff; border: 1px solid #4b515a;
+    border-radius: 6px; font-size: 9.5px; padding: 4px 7px; cursor: pointer; font-weight: 800;
   }
-  .expand-btn:hover { background: var(--nord-bright); border-color: #fff; }
+  .expand-btn:hover { background: #c91b24; border-color: #fff; }
 
   .seven-seg-box {
     width: 96px; height: 48px; background: #190406; border: 2px solid #090a0c;
@@ -146,75 +174,64 @@
     font-size: 8.5px; font-weight: 800; background: #e2e8f0; color: #111;
     width: 100%; text-align: center; border-radius: 2px;
   }
-  .quick-cat-select {
+  .quick-cat-select, .voices-select {
     width: 100%; background: #14181f; color: #f8fafc; border: 1px solid #2b3543;
-    border-radius: 4px; padding: 4px 6px; font-size: 10.5px; font-weight: 700; cursor: pointer;
+    border-radius: 6px; padding: 4px 6px; font-size: 10.5px; font-weight: 700; cursor: pointer;
   }
 
-  /* CONSOLA CENTRAL Y PANTALLA PIXELADA AZUL-NEGRA */
+  /* CONSOLA CENTRAL */
   .center-console {
-    background: linear-gradient(180deg, #1b1d21 0%, #111316 100%);
-    border: 2px solid #08090b; border-radius: 10px; padding: 12px 16px;
+    padding: 14px 16px; background: linear-gradient(180deg,#171a1e 0%,#0d0f12 100%);
     display: flex; flex-direction: column; justify-content: space-between; align-items: center;
-    box-shadow: inset 0 0 25px rgba(0,0,0,0.85);
   }
   .nord-center-lcd {
-    width: 100%; height: 112px;
+    width: 100%; height: 126px;
     background:
       repeating-linear-gradient(0deg, rgba(0,0,0,0.28) 0px, rgba(0,0,0,0.28) 1px, transparent 1px, transparent 3px),
       repeating-linear-gradient(90deg, rgba(0,0,0,0.22) 0px, rgba(0,0,0,0.22) 1px, transparent 1px, transparent 3px),
       radial-gradient(circle at 50% 40%, #0c1c33 0%, #050b16 75%, #02050a 100%);
-    border: 3px solid var(--lcd-border); border-radius: 6px; padding: 12px 16px;
+    border: 2px solid #a9141c; border-radius: 9px; padding: 12px 16px;
     display: flex; align-items: center; justify-content: center; text-align: center;
-    box-shadow: inset 0 0 26px rgba(120,195,255,0.16), 0 4px 12px rgba(0,0,0,0.8);
+    box-shadow: inset 0 0 30px rgba(55,130,220,.14), 0 8px 20px rgba(0,0,0,.42);
   }
   .lcd-sample-name {
     font-family: 'Silkscreen', 'VT323', 'Courier New', monospace;
-    font-size: 21px; font-weight: 700;
-    color: var(--lcd-white); letter-spacing: 1px;
+    font-size: 22px; font-weight: 700; color: var(--lcd-white); letter-spacing: 1px;
     text-shadow: 0 0 8px rgba(210,235,255,0.65), 2px 2px 0px #02060d;
     max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    image-rendering: pixelated;
-    -webkit-font-smoothing: none;
   }
-
   .center-mid-controls {
     width: 100%; display: grid; grid-template-columns: 1fr auto 1fr;
-    align-items: center; gap: 12px; margin: 8px 0;
+    align-items: center; gap: 12px; margin: 12px 0;
   }
   .step-box { display: flex; flex-direction: column; align-items: center; gap: 5px; }
   .step-counter {
     display: flex; align-items: center; gap: 6px; background: #090a0c;
-    border: 1px solid #333; border-radius: 4px; padding: 2px 6px;
-    font-family: Consolas, monospace; font-size: 12px;
+    border: 1px solid #333; border-radius: 6px; padding: 2px 6px;
+    font-family: Consolas, monospace; font-size: 12px; min-height: 28px;
   }
   .step-arrow {
     background: #282c34; color: #fff; border: 1px solid #444;
-    border-radius: 3px; width: 22px; height: 20px; font-size: 10px; cursor: pointer;
+    border-radius: 5px; width: 22px; height: 20px; font-size: 10px; cursor: pointer;
   }
   .red-rect-btn {
-    background: linear-gradient(180deg, #e0242d 0%, #9e0e15 100%);
-    color: #fff; border: 2px solid #090a0c; border-radius: 5px; padding: 6px 14px;
+    min-height: 32px; background: linear-gradient(180deg, #e0242d 0%, #9e0e15 100%);
+    color: #fff; border: 2px solid #090a0c; border-radius: 7px; padding: 6px 14px;
     font-size: 10px; font-weight: 800; letter-spacing: 0.8px; cursor: pointer;
     box-shadow: 0 3px 6px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.3);
   }
-  .red-rect-btn.blink { animation: storeBlink 0.55s infinite alternate; }
-  @keyframes storeBlink {
-    from { filter: brightness(1.0); }
-    to { filter: brightness(1.55); box-shadow: 0 0 12px #ff3333; }
-  }
 
-  /* 8 BOTONES DE PROGRAMA NORD */
+  /* 8 BOTONES DE PROGRAMA */
   .programs-bank-wrap {
     width: 100%; display: flex; flex-direction: column; align-items: center;
-    gap: 6px; border-top: 1px solid #282c33; padding-top: 8px;
+    gap: 6px; border-top: 1px solid #343940; padding-top: 11px;
   }
-  .programs-row-layout { display: flex; align-items: center; gap: 10px; width: 100%; justify-content: center; }
-  .programs-grid-8 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px 10px; }
+  .programs-row-layout { display: flex; align-items: center; gap: 14px; width: 100%; justify-content: center; }
+  .programs-grid-8 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px 12px; }
   .prog-slot-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; }
   .prog-slot-num { font-size: 9.5px; font-weight: 800; color: #cbd5e1; }
   .pad-body.toggle-pad {
-    position: relative; width: 64px; height: 30px; border-radius: 4px;
+    position: relative; width: 68px; height: 32px; border-radius: 6px;
     border: 2px solid #060709; background: linear-gradient(180deg, #24282e 0%, #121418 100%);
     box-shadow: 0 4px 8px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.14);
     display: flex; align-items: center; justify-content: center;
@@ -235,67 +252,126 @@
     background: var(--led-red); box-shadow: 0 0 8px var(--led-red);
   }
 
-  /* PERILLAS Y FADERS NORD */
-  .knob-cell { display: flex; flex-direction: column; align-items: center; gap: 1px; }
-  .knob-svg { width: 56px; height: 56px; cursor: ns-resize; overflow: visible; }
+  /* PERILLAS Y FADERS */
+  .knob-cell { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .knob-svg { width: 56px; height: 56px; cursor: ns-resize; overflow: visible; filter: drop-shadow(0 4px 5px rgba(0,0,0,.36)); }
   .knob-svg.large { width: 70px; height: 70px; }
   .knob-svg.small { width: 44px; height: 44px; }
   .nord-tick-major { stroke: rgba(248,250,252,0.92); stroke-width: 1.9; stroke-linecap: round; }
   .nord-tick-minor { stroke: rgba(226,232,240,0.55); stroke-width: 1.25; stroke-linecap: round; }
   .knob-cap { fill: #14171c; stroke: #090b0e; stroke-width: 3.2; }
   .knob-pointer { stroke: #ffffff; stroke-width: 3; stroke-linecap: round; }
-  .knob-title { font-size: 8.5px; font-weight: 800; color: #d1d5db; letter-spacing: 0.5px; text-transform: uppercase; }
-  .knob-readout { font-family: Consolas, monospace; font-size: 9px; color: #7ec8ff; }
+  .knob-title { font-size: 8.5px; font-weight: 800; color: #aeb7c2; letter-spacing: .8px; text-transform: uppercase; text-align: center; }
+  .knob-readout {
+    font-family: Consolas, monospace; font-size: 9px; color: #e9edf2;
+    min-width: 56px; padding: 2px 5px; border: 1px solid #2e333a;
+    border-radius: 4px; background: #090b0d; text-align: center;
+  }
 
   .mode-pills-row { display: flex; gap: 4px; width: 100%; justify-content: center; flex-wrap: wrap; }
   .mini-mode-pill {
     background: #22262c; color: #9ca3af; border: 1px solid #374151;
-    border-radius: 3px; padding: 2px 6px; font-size: 8.5px; font-weight: 800;
+    border-radius: 4px; padding: 3px 7px; font-size: 8.5px; font-weight: 800;
     cursor: pointer; text-transform: uppercase;
   }
   .mini-mode-pill.active { background: #b5121b; color: #fff; border-color: #f87171; }
 
-  .fader-body {
-    width: 100%; height: 118px; display: flex; align-items: center; justify-content: center;
-    gap: 10px; position: relative; margin: 4px 0; cursor: ns-resize;
+  /* ============ NORD C2D AUTHENTIC DRAWBAR FADERS (LED VERDE VERTICAL) ============ */
+  .drawbar-deck {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 20px;
+    background: linear-gradient(180deg, #121418 0%, #07080a 100%);
+    border: 2px solid #282c34;
+    border-radius: 10px;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.9);
   }
-  .fader-ticks {
-    position: absolute; inset: 8px 14%; pointer-events: none;
-    background: repeating-linear-gradient(to bottom, rgba(241,245,249,0.5) 0px, rgba(241,245,249,0.5) 1.5px, transparent 1.5px, transparent 10%);
+  .drawbar-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    background: #090b0e;
+    border: 1px solid #222730;
+    border-radius: 6px;
+    padding: 10px 6px;
   }
-  .fader-track {
-    width: 7px; height: 100%; background: #07090c; border: 1px solid #222933;
-    border-radius: 3px; position: relative; z-index: 3;
+  .drawbar-label {
+    font-size: 9.5px;
+    font-weight: 800;
+    color: #f8fafc;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
   }
-  .fader-thumb {
-    position: absolute; left: 50%; transform: translate(-50%, 50%);
-    width: 26px; height: 24px; border-radius: 3px;
-    background: linear-gradient(180deg, #2e333b 0%, #15181d 45%, #07080a 55%, #1f232a 100%);
-    border: 1.5px solid #050608; box-shadow: 0 4px 8px rgba(0,0,0,0.78);
+  .drawbar-track-wrap {
+    position: relative;
+    width: 22px;
+    height: 160px;
+    background: #030406;
+    border: 1px solid #1a1e25;
+    border-radius: 4px;
+    display: flex;
+    justify-content: center;
+    padding: 4px 0;
   }
-  .fader-thumb::after {
-    content: ''; position: absolute; left: 4px; right: 4px; top: 50%; height: 2px;
-    transform: translateY(-50%); background: rgba(255,255,255,0.85);
+  .drawbar-led-strip {
+    display: flex;
+    flex-direction: column-reverse;
+    justify-content: space-between;
+    height: 100%;
+    width: 6px;
+    gap: 1.5px;
+    z-index: 1;
   }
-  .fader-led-strip {
-    display: flex; flex-direction: column-reverse; justify-content: space-between;
-    gap: 2px; height: 100%; padding: 3px; background: rgba(6,8,11,0.65);
-    border: 1px solid #000; border-radius: 4px; z-index: 3;
+  .drawbar-led {
+    flex: 1;
+    background: #111e14;
+    border-radius: 1px;
   }
-  .fader-led-seg { flex: 1; width: 6px; background: rgba(24,29,36,0.9); border-radius: 1px; }
-  .fader-led-seg.lit { background: #ff3322; box-shadow: 0 0 5px #ff3322; }
+  .drawbar-led.lit {
+    background: #00ff55;
+    box-shadow: 0 0 5px #00ff55, 0 0 10px #00ff5555;
+  }
+  .drawbar-input-range {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: ns-resize;
+    z-index: 3;
+    writing-mode: vertical-lr;
+    direction: rtl;
+  }
+  .drawbar-val-badge {
+    font-family: Consolas, monospace;
+    font-size: 10px;
+    font-weight: 700;
+    color: #7ec8ff;
+    background: #040810;
+    padding: 2px 4px;
+    border-radius: 3px;
+    border: 1px solid #1e2630;
+  }
 
-  /* 4. TECLADO DE 88 TECLAS (A0 a C8) OCULTABLE Y CON RETENCIÓN DE SUSTAIN */
-  .keyboard-bar { background: #0c0e11; border-top: 2px solid #262930; padding: 8px 10px 10px; }
+  /* 4. TECLADO DE 88 TECLAS */
+  .keyboard-bar {
+    margin: 0 14px 14px; padding: 10px 12px 12px;
+    border: 1px solid rgba(0,0,0,.75); border-radius: 12px;
+    background: linear-gradient(180deg,#171a1e,#0d0f12);
+    box-shadow: var(--ui-shadow), inset 0 1px 0 rgba(255,255,255,.05);
+  }
   .keyboard-bar.hidden-kb { display: none !important; }
   .kb-top-legend {
     display: flex; justify-content: space-between; align-items: center;
-    font-size: 10px; color: #94a3b8; margin-bottom: 5px; padding: 0 8px;
+    font-size: 10px; color: #aeb6c0; margin-bottom: 6px; padding: 0 4px;
   }
   .legend-dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
   .piano-roll-88 {
     position: relative; width: 1248px; max-width: 100%; height: 88px;
-    margin: 0 auto; display: flex;
+    margin: 0 auto; display: flex; border-radius: 8px; overflow: hidden;
   }
   .white-key {
     width: 24px; height: 86px;
@@ -330,393 +406,80 @@
 
   /* MODALES EXPANDIBLES */
   .modal-backdrop {
-    position: fixed; inset: 0; background: rgba(0,0,0,0.78); backdrop-filter: blur(5px);
-    display: none; align-items: center; justify-content: center; z-index: 200; padding: 14px;
+    position: fixed; inset: 0; background: rgba(3,4,6,.78); backdrop-filter: blur(8px);
+    display: none; align-items: center; justify-content: center; z-index: 200; padding: 20px;
   }
   .modal-backdrop.open { display: flex; }
   .modal-window {
-    background: linear-gradient(180deg, #242830 0%, #14171c 100%);
-    border: 2px solid #c9151e; border-radius: 12px; width: 980px; max-width: 96vw;
+    background: linear-gradient(180deg,#181b20 0%,#0e1013 100%);
+    border: 1px solid #3c424b; border-radius: 14px; width: 1020px; max-width: 96vw;
     max-height: 92vh; overflow-y: auto; padding: 16px 20px;
-    box-shadow: 0 25px 70px rgba(0,0,0,0.92); display: flex; flex-direction: column; gap: 12px;
+    box-shadow: 0 30px 90px rgba(0,0,0,.75); display: flex; flex-direction: column; gap: 12px;
   }
   .modal-top {
     display: flex; justify-content: space-between; align-items: center;
-    border-bottom: 1px solid #374151; padding-bottom: 8px;
+    border-bottom: 1px solid #30353c; padding-bottom: 10px;
   }
-  .modal-top h3 { margin: 0; font-size: 15px; letter-spacing: 1px; text-transform: uppercase; }
+  .modal-top h3 { margin: 0; font-size: 13px; letter-spacing: .8px; text-transform: uppercase; color: #f3f5f7; }
   .close-modal-btn {
     background: #b5121b; color: #fff; border: 1px solid #f87171;
-    border-radius: 5px; padding: 4px 12px; font-weight: 800; cursor: pointer;
+    border-radius: 7px; padding: 5px 12px; font-weight: 800; cursor: pointer;
   }
   .param-eq-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
   .eq-band-card {
-    background: linear-gradient(180deg, #596a7c 0%, #485767 100%);
-    border: 1.5px solid #2b3540; border-radius: 8px; padding: 8px;
-    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    background: linear-gradient(180deg,#1b1f24,#111419);
+    border: 1px solid #343a43; border-radius: 10px; padding: 10px;
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
   }
   .eq-band-title {
-    font-size: 10.5px; font-weight: 900; background: #111827; color: #fff;
-    width: 100%; text-align: center; padding: 3px; border-radius: 4px;
+    font-size: 10.5px; font-weight: 900; background: #111827; color: #cfd5dc;
+    width: 100%; text-align: center; padding: 4px; border-radius: 4px; letter-spacing: .8px;
   }
   .graph-canvas {
     width: 100%; height: 135px; background: #050a12;
-    border: 1.5px solid #334155; border-radius: 6px; display: block;
+    border: 1.5px solid #334155; border-radius: 8px; display: block;
   }
 
-  /* NAVEGADOR Y CLASIFICADOR DE SAMPLES */
-  .browser-workspace { display: grid; grid-template-columns: 225px 1fr; gap: 12px; height: 430px; }
+  /* NAVEGADOR DE SAMPLES */
+  #modalBrowser .modal-window { overflow: hidden; }
+  .browser-workspace {
+    display: grid; grid-template-columns: 225px 1fr; gap: 12px; height: min(450px, 62vh); min-height: 0; overflow: hidden;
+  }
   .browser-sidebar {
     background: #0d1015; border: 1px solid #334155; border-radius: 8px;
-    padding: 8px; display: flex; flex-direction: column; gap: 4px; overflow-y: auto;
+    padding: 8px; display: flex; flex-direction: column; gap: 4px; height: 100%; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
   }
   .cat-nav-btn {
     background: transparent; color: #cbd5e1; border: 1px solid transparent;
     border-radius: 6px; padding: 8px 10px; font-size: 12px; font-weight: 700;
-    text-align: left; display: flex; justify-content: space-between; align-items: center; cursor: pointer;
+    text-align: left; display: flex; justify-content: space-between; align-items: center; cursor: pointer; flex-shrink: 0;
   }
   .cat-nav-btn:hover { background: #1e293b; }
   .cat-nav-btn.active { background: #b5121b; color: #fff; border-color: #f87171; }
   .cat-count-pill { background: rgba(0,0,0,0.45); padding: 2px 6px; border-radius: 99px; font-size: 10px; font-family: Consolas, monospace; }
 
-  .browser-main-pane { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-  .browser-toolbar { display: grid; grid-template-columns: 1fr 165px 150px; gap: 8px; }
+  .browser-main-pane { display: flex; flex-direction: column; gap: 8px; min-width: 0; height: 100%; min-height: 0; overflow: hidden; }
+  .browser-toolbar { display: grid; grid-template-columns: 1fr 165px 150px; gap: 8px; flex-shrink: 0; }
   .browser-toolbar input, .browser-toolbar select {
-    background: #0d1015; color: #fff; border: 1px solid #475569;
-    border-radius: 6px; padding: 7px 10px; font-size: 12.5px;
+    background: #0d1015; color: #fff; border: 1px solid #475569; border-radius: 6px; padding: 7px 10px; font-size: 12.5px;
   }
   .browser-list {
-    flex: 1; overflow-y: auto; background: #0d1015;
-    border: 1px solid #334155; border-radius: 8px; padding: 6px;
+    flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; background: #0d1015; border: 1px solid #334155; border-radius: 8px; padding: 6px;
   }
   .lib-item-row {
-    display: grid; grid-template-columns: 30px 1fr 170px 80px; gap: 10px;
-    align-items: center; padding: 7px 10px; border-bottom: 1px solid #1e2430;
-    border-radius: 5px; cursor: pointer; font-size: 12.5px;
+    display: grid; grid-template-columns: 30px 1fr 170px 80px; gap: 10px; align-items: center; padding: 7px 10px; border-bottom: 1px solid #1e2430; border-radius: 5px; cursor: pointer; font-size: 12.5px;
   }
   .lib-item-row:hover { background: #1e2636; }
-  .lib-item-row.active {
-    background: linear-gradient(90deg, #9e0d14 0%, #58090e 100%);
-    color: #fff; font-weight: 700;
-  }
+  .lib-item-row.active { background: linear-gradient(90deg, #9e0d14 0%, #58090e 100%); color: #fff; font-weight: 700; }
   .fav-star-btn { background: transparent; border: none; font-size: 16px; cursor: pointer; color: #475569; padding: 0; }
   .fav-star-btn.fav { color: #fbbf24; text-shadow: 0 0 6px rgba(251,191,36,0.6); }
-  .row-group-select {
-    background: #161b24; color: #93c5fd; border: 1px solid #334155;
-    border-radius: 4px; padding: 3px 6px; font-size: 11px; cursor: pointer;
-  }
-
-/* ========================================================================
-   NORD VIRTUAL STAGE — UI REFINEMENT v2
-   Visual/structural layer only. No IDs, handlers, API calls or JS altered.
-   ======================================================================== */
-:root {
-  --ui-bg: #08090b;
-  --ui-panel: #111317;
-  --ui-panel-2: #171a1f;
-  --ui-panel-3: #20242b;
-  --ui-line: rgba(255,255,255,.10);
-  --ui-line-strong: rgba(255,255,255,.18);
-  --ui-text: #f4f5f7;
-  --ui-muted: #9ba3af;
-  --ui-soft: #c8ced6;
-  --ui-red: #d21b25;
-  --ui-red-hot: #f0444d;
-  --ui-green: #48e889;
-  --ui-amber: #f2b84b;
-  --ui-blue: #71b7ff;
-  --ui-radius: 12px;
-  --ui-shadow: 0 16px 38px rgba(0,0,0,.34);
-}
-
-html { background: #070809; }
-body {
-  padding: 24px;
-  background:
-    radial-gradient(circle at 50% 0%, rgba(210,27,37,.10), transparent 38%),
-    linear-gradient(180deg,#0d0f12 0%,#070809 72%);
-  color: var(--ui-text);
-  letter-spacing: .01em;
-}
-body::before {
-  content: "";
-  position: fixed; inset: 0; pointer-events: none; z-index: 0;
-  background: linear-gradient(90deg, transparent 0 49.8%, rgba(255,255,255,.018) 50%, transparent 50.2%);
-}
-.nord-unit {
-  position: relative; z-index: 1;
-  width: min(1720px, 100%);
-  background: linear-gradient(180deg,#a70f17 0%,#870b12 54%,#65070c 100%);
-  border: 1px solid #3a090c;
-  border-radius: 14px;
-  box-shadow: 0 30px 80px rgba(0,0,0,.72), 0 0 0 1px rgba(255,255,255,.04), inset 0 1px 0 rgba(255,255,255,.16);
-}
-
-/* Command header: three clear functional zones. */
-.top-strip {
-  min-height: 72px;
-  padding: 10px 14px;
-  gap: 12px;
-  background: linear-gradient(180deg,#24272c 0%,#17191d 100%);
-  border-bottom: 1px solid #08090b;
-  box-shadow: inset 0 -1px 0 rgba(255,255,255,.04);
-}
-.top-strip > div:first-child {
-  display: flex !important;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 7px !important;
-  flex: 0 0 auto;
-}
-.wrench-btn {
-  min-height: 34px;
-  padding: 0 11px;
-  border-radius: 7px;
-  background: #2a2e34;
-  color: #eef1f5;
-  border: 1px solid #444a53;
-  box-shadow: 0 3px 8px rgba(0,0,0,.32), inset 0 1px 0 rgba(255,255,255,.07);
-  transition: transform .16s ease, background .16s ease, border-color .16s ease, box-shadow .16s ease;
-}
-.wrench-btn:hover { transform: translateY(-1px); background:#343941; border-color:#69717d; box-shadow:0 6px 14px rgba(0,0,0,.35); }
-.wrench-btn:active { transform: translateY(0); }
-.wrench-btn.active-toggle { background: linear-gradient(180deg,#d9232d,#9e1118); border-color:#f05b62; }
-.info-bar-box {
-  min-width: 360px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  background: #101216;
-  border: 1px solid #30343b;
-  box-shadow: inset 0 1px 8px rgba(0,0,0,.55);
-  grid-template-columns: 1.2fr .9fr 1fr;
-}
-.k-info-row { font-size:10.5px; color:#b8c0ca; }
-.k-info-row strong { color:#fff; font-weight:800; }
-.hw-badge { border-radius:999px; padding:3px 8px; }
-.top-master-area {
-  margin-left: auto;
-  padding: 4px 8px;
-  gap: 8px;
-  background:#0e1013;
-  border:1px solid #34383f;
-  border-radius:9px;
-}
-.top-master-area .knob-cell { min-width:48px; }
-.vu-stack { width:110px; }
-.vu-bar-bg { height:5px; background:#070809; border:1px solid #272b31; }
-.clip-dot { width:10px; height:10px; }
-
-/* Brand rail: less banner, more instrument identity. */
-.nord-banner {
-  padding: 13px 20px 12px;
-  text-align:left;
-  background: linear-gradient(90deg,rgba(0,0,0,.20),rgba(255,255,255,.045),rgba(0,0,0,.20));
-  border-bottom: 1px solid rgba(0,0,0,.45);
-}
-.nord-banner h1 {
-  display:flex; align-items:baseline; gap:10px;
-  font-size:19px; letter-spacing:3px;
-  text-shadow:none;
-}
-.nord-banner h1 span { color:#fff; }
-.nord-banner h1 small { margin-left:auto; font-size:9px !important; letter-spacing:2px !important; opacity:.72; }
-
-/* Main workspace: stronger center / quieter peripheral modules. */
-.stage-main-grid {
-  grid-template-columns: 226px 202px minmax(420px,1fr) 202px 226px;
-  gap: 11px;
-  padding: 14px;
-  align-items: stretch;
-}
-.col-stack { gap:11px; min-width:0; }
-.fx-module-black,
-.slate-module,
-.center-console {
-  border-radius: 12px;
-  border: 1px solid rgba(0,0,0,.86);
-  box-shadow: var(--ui-shadow), inset 0 1px 0 rgba(255,255,255,.065);
-}
-.fx-module-black {
-  background: linear-gradient(180deg,#181b20 0%,#0e1013 100%);
-  padding: 10px 11px;
-}
-.slate-module {
-  background: linear-gradient(180deg,#566473 0%,#414d59 100%);
-  padding: 10px 11px;
-}
-.mod-pill-header {
-  min-height:30px;
-  padding: 5px 8px;
-  border-radius:7px;
-  background: #262a30;
-  border:1px solid #3a3f47;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.06);
-  letter-spacing:1px;
-}
-.mod-pill-header.red-pill { background:linear-gradient(180deg,#c91b24,#8f0e15); border-color:#df3b42; }
-.mod-led-btn { width:12px; height:12px; }
-.expand-btn {
-  border-radius:6px;
-  padding:4px 7px;
-  background:#101216;
-  border-color:#4b515a;
-  transition:all .16s ease;
-}
-.expand-btn:hover { background:#c91b24; transform:translateY(-1px); }
-
-/* Knobs read as controls, not decorative circles. */
-.knob-cell { gap:3px; }
-.knob-svg { filter: drop-shadow(0 4px 5px rgba(0,0,0,.36)); transition:filter .16s ease, transform .16s ease; }
-.knob-cell:hover .knob-svg { filter:drop-shadow(0 6px 8px rgba(0,0,0,.5)); transform:translateY(-1px); }
-.knob-title { color:#aeb7c2; letter-spacing:.8px; }
-.knob-readout {
-  min-width:58px;
-  padding:2px 5px;
-  border:1px solid #2e333a;
-  border-radius:4px;
-  background:#090b0d;
-  color:#e9edf2;
-  box-shadow:inset 0 1px 4px rgba(0,0,0,.65);
-}
-
-/* Central performance area gets the visual priority. */
-.center-console {
-  padding: 14px 16px;
-  background: linear-gradient(180deg,#171a1e 0%,#0d0f12 100%);
-  box-shadow: 0 18px 42px rgba(0,0,0,.42), inset 0 0 35px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.06);
-}
-.nord-center-lcd {
-  height: 126px;
-  border-radius:9px;
-  border:2px solid #a9141c;
-  box-shadow:inset 0 0 30px rgba(55,130,220,.14), 0 8px 20px rgba(0,0,0,.42);
-}
-.lcd-sample-name { font-size:22px; }
-.center-mid-controls { margin:12px 0; }
-.step-counter { min-height:28px; border-radius:6px; }
-.step-arrow { border-radius:5px; transition:all .15s ease; }
-.step-arrow:hover { background:#343a43; border-color:#737b86; }
-.red-rect-btn { min-height:32px; border-radius:7px; transition:transform .15s ease,filter .15s ease; }
-.red-rect-btn:hover { transform:translateY(-1px); filter:brightness(1.08); }
-
-.programs-bank-wrap { padding-top:11px; border-top:1px solid #343940; }
-.programs-row-layout { gap:14px; }
-.programs-grid-8 { gap:8px 12px; }
-.pad-body.toggle-pad { width:68px; height:32px; border-radius:6px; transition:transform .15s ease, border-color .15s ease; }
-.prog-slot-wrap:hover .pad-body.toggle-pad { transform:translateY(-2px); border-color:#656d77; }
-.pad-body.toggle-pad.active { border-color:#ef4444; box-shadow:0 0 0 1px rgba(239,68,68,.15),0 5px 12px rgba(0,0,0,.5); }
-
-/* Section-like lower keyboard zone. */
-.keyboard-bar {
-  margin: 0 14px 14px;
-  padding: 10px 12px 12px;
-  border:1px solid rgba(0,0,0,.75);
-  border-radius:12px;
-  background:linear-gradient(180deg,#171a1e,#0d0f12);
-  box-shadow:var(--ui-shadow), inset 0 1px 0 rgba(255,255,255,.05);
-}
-.kb-top-legend {
-  min-height:34px;
-  padding:0 2px 8px;
-  color:#aeb6c0;
-  font-size:10px;
-  letter-spacing:.8px;
-}
-.kb-top-legend strong { color:#f0f2f4; letter-spacing:1.2px; }
-.piano-roll-88 { border-radius:8px; overflow:hidden; box-shadow:0 10px 20px rgba(0,0,0,.45); }
-
-/* Modal system: same functionality, clearer hierarchy. */
-.modal-backdrop {
-  background:rgba(3,4,6,.78);
-  backdrop-filter:blur(8px);
-  -webkit-backdrop-filter:blur(8px);
-  padding:24px;
-}
-.modal-window {
-  max-width:calc(100vw - 48px);
-  max-height:calc(100vh - 48px);
-  overflow:auto;
-  border:1px solid #3c424b;
-  border-radius:14px;
-  background:linear-gradient(180deg,#181b20 0%,#0e1013 100%);
-  box-shadow:0 30px 90px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.025);
-}
-.modal-top {
-  position:sticky; top:0; z-index:2;
-  padding:13px 16px;
-  background:rgba(20,23,27,.96);
-  border-bottom:1px solid #30353c;
-  backdrop-filter:blur(10px);
-}
-.modal-top h3 { margin:0; font-size:12px; letter-spacing:.7px; color:#f3f5f7; }
-.close-modal-btn { border-radius:7px; transition:all .15s ease; }
-.close-modal-btn:hover { background:#343941; transform:translateY(-1px); }
-.eq-band-card {
-  border-radius:10px !important;
-  border-color:#343a43 !important;
-  background:linear-gradient(180deg,#1b1f24,#111419) !important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.04);
-}
-.eq-band-title { letter-spacing:.8px; color:#cfd5dc !important; }
-.graph-canvas { border-radius:8px; }
-
-/* Inputs / scroll / focus */
-button, select { outline:none; }
-button:focus-visible, select:focus-visible {
-  outline:2px solid rgba(113,183,255,.72);
-  outline-offset:2px;
-}
-select {
-  border-radius:7px !important;
-  min-height:30px;
-}
-::-webkit-scrollbar { width:9px; height:9px; }
-::-webkit-scrollbar-track { background:#0b0d0f; }
-::-webkit-scrollbar-thumb { background:#353b43; border-radius:999px; border:2px solid #0b0d0f; }
-::-webkit-scrollbar-thumb:hover { background:#515963; }
-
-/* Responsive: preserve the workstation metaphor instead of collapsing into generic cards. */
-@media (max-width: 1350px) {
-  body { padding:14px; }
-  .stage-main-grid { grid-template-columns:190px 175px minmax(360px,1fr) 175px 190px; gap:8px; padding:10px; }
-  .info-bar-box { min-width:300px; }
-  .wrench-btn { font-size:10px; }
-}
-@media (max-width: 1100px) {
-  .top-strip { flex-wrap:wrap; }
-  .info-bar-box { order:3; flex-basis:100%; min-width:0; }
-  .top-master-area { margin-left:0; }
-  .stage-main-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
-  .center-console { grid-column:1 / -1; grid-row:1; min-height:520px; }
-}
-@media (max-width: 720px) {
-  body { padding:0; }
-  .nord-unit { border-radius:0; border-left:0; border-right:0; }
-  .top-strip > div:first-child { width:100%; }
-  .wrench-btn { flex:1; min-width:0; }
-  .top-master-area { width:100%; justify-content:center; }
-  .stage-main-grid { grid-template-columns:1fr; }
-  .center-console { grid-column:auto; grid-row:auto; min-height:460px; }
-  .programs-grid-8 { grid-template-columns:repeat(4,1fr); }
-  .info-bar-box { grid-template-columns:1fr; gap:5px; }
-  .k-info-row { justify-content:flex-start !important; }
-}
-@media (max-width: 460px) {
-  .nord-banner h1 { font-size:15px; letter-spacing:2px; }
-  .nord-banner h1 small { display:none; }
-  .stage-main-grid { padding:8px; }
-  .keyboard-bar { margin:0 8px 8px; }
-  .center-console { padding:10px; }
-  .programs-grid-8 { grid-template-columns:repeat(2,1fr); }
-  .center-mid-controls { grid-template-columns:1fr; }
-}
-
+  .row-group-select { background: #161b24; color: #93c5fd; border: 1px solid #334155; border-radius: 4px; padding: 3px 6px; font-size: 11px; cursor: pointer; }
 </style>
 </head>
 <body>
 
 <div class="nord-unit">
-  <!-- 1. BARRA SUPERIOR (CON TUNE, PAN Y MASTER REUBICADOS ARRIBA) -->
+  <!-- 1. BARRA SUPERIOR -->
   <div class="top-strip">
     <div style="display:flex; gap:6px;">
       <button class="wrench-btn" id="btnAudioMidiTop" onclick="openSettingsWindow()">🔧 Audio & MIDI</button>
@@ -740,7 +503,6 @@ select {
       </div>
     </div>
 
-    <!-- ÁREA SUPERIOR MAESTRA: TUNE + PAN + MASTER + VU -->
     <div class="top-master-area">
       <div class="knob-cell" data-id="tune" data-min="-50" data-max="50" data-val="0" data-log="0" data-unit="ct" data-label="TUNE" data-small="1"></div>
       <div class="knob-cell" data-id="pan" data-min="-1.0" data-max="1.0" data-val="0.0" data-log="0" data-unit="Pan" data-label="PAN" data-small="1"></div>
@@ -753,8 +515,8 @@ select {
     </div>
   </div>
 
-<!-- 2. BANNER CON SELECTOR DE PÁGINA (MAIN STAGE | SYNTH 3-LAYERS | ORGAN B3) -->
-  <div class="nord-banner" style="display:flex; justify-content:space-between; align-items:center;">
+  <!-- 2. BANNER CON SELECTOR DE PÁGINA -->
+  <div class="nord-banner">
     <h1>nord <span>virtual stage</span></h1>
     <div style="display:flex; gap:8px;">
       <button class="wrench-btn active-toggle" id="pageBtn_main" onclick="switchWorkstationPage('main')">🎹 PÁGINA MAIN (STAGE)</button>
@@ -764,7 +526,7 @@ select {
   </div>
 
   <!-- =======================================================================
-       PÁGINA 1: MAIN STAGE (Con Mini-Cards de Synth/Órgano + Rack FX Unificado)
+       PÁGINA 1: MAIN STAGE
        ======================================================================= -->
   <div class="stage-main-grid" id="pageView_main">
 
@@ -794,7 +556,7 @@ select {
       </div>
     </div>
 
-    <!-- COLUMNA 2: SOUND BANK (.NPNO / .NSMP4) -->
+    <!-- COLUMNA 2: SOUND BANK -->
     <div class="col-stack">
       <div class="slate-module">
         <div class="mod-pill-header red-pill">
@@ -835,7 +597,7 @@ select {
       </div>
     </div>
 
-    <!-- COLUMNA 3: CONSOLA CENTRAL Y 8 PROGRAMAS -->
+    <!-- COLUMNA 3: CONSOLA CENTRAL -->
     <div class="center-console">
       <div class="nord-center-lcd">
         <div class="lcd-sample-name" id="lcdSampleName">No Sound Loaded</div>
@@ -877,9 +639,8 @@ select {
       </div>
     </div>
 
-    <!-- COLUMNA 4 (REEMPLAZA A FILTER FX): MINI-RECUADROS DE SYNTH (3 CAPAS) Y ÓRGANO -->
+    <!-- COLUMNA 4: MINI-CARDS SYNTH Y ÓRGANO -->
     <div class="col-stack">
-      <!-- Mini-Recuadro 1: SINTETIZADOR DE 3 CAPAS -->
       <div class="slate-module">
         <div class="mod-pill-header red-pill">
           <button class="mod-led-btn" id="led_synthEnabled" onclick="toggleEffect('synthEnabled')"></button>
@@ -907,7 +668,6 @@ select {
         <button class="red-rect-btn" style="width:100%; font-size:9px;" onclick="switchWorkstationPage('synth')">🎛 EDITAR 3 CAPAS</button>
       </div>
 
-      <!-- Mini-Recuadro 2: MÓDULO DE ÓRGANO -->
       <div class="fx-module-black">
         <div class="mod-pill-header">
           <button class="mod-led-btn" id="led_organEnabled" onclick="toggleEffect('organEnabled')"></button>
@@ -925,7 +685,7 @@ select {
       </div>
     </div>
 
-    <!-- COLUMNA 5: RACK UNIFICADO DE EFECTOS (MIX RÁPIDO + BOTÓN EXPAND RACK) -->
+    <!-- COLUMNA 5: RACK UNIFICADO DE EFECTOS -->
     <div class="col-stack">
       <div class="fx-module-black" style="justify-content:space-between; gap:6px;">
         <div class="mod-pill-header red-pill">
@@ -933,11 +693,10 @@ select {
           <button class="expand-btn" onclick="openModal('modalFxRack')">⤢ EXPAND RACK</button>
         </div>
 
-        <!-- Fila 1 del Rack: Filter FX & Modulation Mix -->
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; width:100%; background:#14171c; padding:6px; border-radius:8px; border:1px solid #262b33;">
           <div style="display:flex; flex-direction:column; align-items:center;">
             <div style="display:flex; align-items:center; gap:4px; margin-bottom:2px;">
-              <button class="mod-led-btn on" id="led_filterFx" onclick="resetFilterCutoff()"></button>
+              <button class="mod-led-btn on" id="led_filterFx" onclick="resetFilterCutoff()" title="Reset Cutoff a 20 kHz"></button>
               <span style="font-size:9px; font-weight:800;">FILTER SVF</span>
             </div>
             <div class="knob-cell" data-id="cutoff" data-min="20" data-max="20000" data-val="20000" data-log="1" data-unit="Hz" data-label="CUTOFF" data-small="1"></div>
@@ -954,14 +713,12 @@ select {
           </div>
         </div>
 
-        <!-- Selector rápido de tipo de Modulación -->
         <div class="mode-pills-row">
           <span class="mini-mode-pill active" id="modTab_chorus" onclick="selectModTab('chorus')">CHORUS</span>
           <span class="mini-mode-pill" id="modTab_phaser" onclick="selectModTab('phaser')">PHASER</span>
           <span class="mini-mode-pill" id="modTab_tremolo" onclick="selectModTab('tremolo')">TREMOLO</span>
         </div>
 
-        <!-- Fila 2 del Rack: Delay Mix & Reverb/Shimmer Mix -->
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; width:100%; background:#14171c; padding:6px; border-radius:8px; border:1px solid #262b33;">
           <div style="display:flex; flex-direction:column; align-items:center;">
             <div style="display:flex; align-items:center; gap:4px; margin-bottom:2px;">
@@ -974,18 +731,17 @@ select {
           <div style="display:flex; flex-direction:column; align-items:center;">
             <div style="display:flex; align-items:center; gap:4px; margin-bottom:2px;">
               <button class="mod-led-btn on" id="led_reverbEnabled" onclick="toggleEffect('reverbEnabled')"></button>
-              <span style="font-size:9px; font-weight:800;">REVERB</span>
+              <span style="font-size:9px; font-weight:800;" id="reverbMainHeaderTitle">REVERB</span>
             </div>
             <div class="knob-cell" data-id="reverbMix" data-min="0" data-max="1" data-val="0.25" data-log="0" data-unit="%" data-label="REV MIX" data-small="1"></div>
           </div>
         </div>
 
-        <!-- Selector rápido de modo de Reverb -->
         <div class="mode-pills-row">
           <span class="mini-mode-pill" id="revType_0" onclick="selectReverbType(0)">ROOM</span>
           <span class="mini-mode-pill" id="revType_1" onclick="selectReverbType(1)">PLATE</span>
           <span class="mini-mode-pill active" id="revType_2" onclick="selectReverbType(2)">HALL</span>
-          <span class="mini-mode-pill" id="revType_3" onclick="selectReverbType(3)">AMB</span>
+          <span class="mini-mode-pill" id="revType_3" onclick="selectReverbType(3)">SHIMMER</span>
         </div>
 
         <button class="red-rect-btn" style="width:100%; font-size:9.5px;" onclick="openModal('modalFxRack')">🎚 ABRIR RACK DE EFECTOS</button>
@@ -995,21 +751,21 @@ select {
   </div>
 
   <!-- =======================================================================
-       PÁGINA 2: SINTETIZADOR DE 3 CAPAS INDEPENDIENTES (SYNTH 3-LAYERS PAGE)
+       PÁGINA 2: SINTETIZADOR DE 3 CAPAS
        ======================================================================= -->
   <div id="pageView_synth" style="display:none; padding:14px; flex-direction:column; gap:12px;">
-    <div style="display:flex; justify-content:space-between; align-items:center; background:#14171c; padding:10px 16px; border-radius:10px; border:1px solid #343942;">
+    <div style="display:flex; justify-content:space-between; align-items:center; background:#14171c; padding:10px 16px; border-radius:10px; border:1px solid #343942; flex-wrap:wrap; gap:10px;">
       <div style="display:flex; align-items:center; gap:12px;">
         <button class="mod-led-btn" id="ledPage_synthEnabled" onclick="toggleEffect('synthEnabled')"></button>
         <strong style="font-size:14px; letter-spacing:1px;">NORD 3-LAYER POLYPHONIC SYNTHESIZER WORKSTATION</strong>
       </div>
-      <div style="display:flex; gap:8px; align-items:center;">
-        <span style="font-size:11px; color:#9ba3af;">PRESETS RÁPIDOS:</span>
-        <button class="mini-mode-pill active" onclick="selectSynthPreset(1)">1. Warm Pad</button>
-        <button class="mini-mode-pill" onclick="selectSynthPreset(2)">2. 80s Brass</button>
-        <button class="mini-mode-pill" onclick="selectSynthPreset(3)">3. SuperSaw Lead</button>
-        <button class="mini-mode-pill" onclick="selectSynthPreset(4)">4. Crystal Pluck</button>
-        <button class="mini-mode-pill" onclick="selectSynthPreset(5)">5. Analog Strings</button>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <span style="font-size:11px; color:#9ba3af;">PRESETS:</span>
+        <button class="mini-mode-pill active" id="synthPreBtn_1" onclick="selectSynthPreset(1)">1. Warm Pad</button>
+        <button class="mini-mode-pill" id="synthPreBtn_2" onclick="selectSynthPreset(2)">2. 80s Brass</button>
+        <button class="mini-mode-pill" id="synthPreBtn_3" onclick="selectSynthPreset(3)">3. SuperSaw</button>
+        <button class="mini-mode-pill" id="synthPreBtn_4" onclick="selectSynthPreset(4)">4. Crystal</button>
+        <button class="mini-mode-pill" id="synthPreBtn_5" onclick="selectSynthPreset(5)">5. Strings</button>
         <button class="wrench-btn" onclick="switchWorkstationPage('main')">⬅ Volver a Main</button>
       </div>
     </div>
@@ -1018,13 +774,13 @@ select {
   </div>
 
   <!-- =======================================================================
-       PÁGINA 3: MÓDULO DE ÓRGANO (9 DRAWBARS + ROTARY SPEAKER)
+       PÁGINA 3: MÓDULO DE ÓRGANO (NORD C2D DRAWBAR DECK)
        ======================================================================= -->
   <div id="pageView_organ" style="display:none; padding:14px; flex-direction:column; gap:12px;">
-    <div style="display:flex; justify-content:space-between; align-items:center; background:#14171c; padding:10px 16px; border-radius:10px; border:1px solid #343942;">
+    <div style="display:flex; justify-content:space-between; align-items:center; background:#14171c; padding:10px 16px; border-radius:10px; border:1px solid #343942; flex-wrap:wrap; gap:10px;">
       <div style="display:flex; align-items:center; gap:12px;">
         <button class="mod-led-btn" id="ledPage_organEnabled" onclick="toggleEffect('organEnabled')"></button>
-        <strong style="font-size:14px; letter-spacing:1px;">NORD C2D TONEWHEEL ORGAN & ROTARY HORN</strong>
+        <strong style="font-size:14px; letter-spacing:1px;">NORD C2D TONEWHEEL ORGAN (AUTHENTIC DRAWBAR DECK & ROTARY SPEAKER)</strong>
       </div>
       <div style="display:flex; gap:10px; align-items:center;">
         <button class="red-rect-btn" id="btnRotaryPage" onclick="toggleOrganRotary()">ROTARY SPEAKER: SLOW (CHORALE)</button>
@@ -1033,11 +789,13 @@ select {
     </div>
 
     <div class="fx-module-black" style="padding:18px;">
-      <div style="display:grid; grid-template-columns:repeat(9, 1fr) 140px 140px; gap:12px; width:100%; align-items:center;" id="organDrawbarsContainer"></div>
+      <div class="drawbar-deck" id="organDrawbarsDeck">
+        <!-- Generado dinámicamente con faders verticales LED estilo Nord C2D -->
+      </div>
     </div>
   </div>
 
-  <!-- 4. TECLADO DE 88 TECLAS (A0 = 21 a C8 = 108) -->
+  <!-- 4. TECLADO DE 88 TECLAS -->
   <div class="keyboard-bar" id="keyboardSection">
     <div class="kb-top-legend">
       <span><strong>88-KEY GRAND PIANO VISUALIZER</strong> (A0 – C8)</span>
@@ -1051,15 +809,170 @@ select {
 </div>
 
 <!-- =========================================================================
-     MODAL ESPECIAL DE CONFIGURACIÓN: SAMPLE, SUSTAIN LOOP, ADSR & SYNTH/FILTER
+     MODAL RACK MAESTRO DE EFECTOS (CON VALHALLA SHIMMER)
      ========================================================================= -->
+<div class="modal-backdrop" id="modalFxRack">
+  <div class="modal-window" style="width:1080px;">
+    <div class="modal-top">
+      <h3>🎚 Master Effects 19" Studio Rack (Filter SVF · Modulation · Stereo Delay · Acoustic & Valhalla Shimmer Reverb)</h3>
+      <div style="display:flex; gap:8px;">
+        <button class="expand-btn" onclick="closeModal('modalFxRack'); openModal('modalEq');">🎛 Abrir EQ Paramétrico 5-Bandas</button>
+        <button class="close-modal-btn" onclick="closeModal('modalFxRack')">Cerrar ✕</button>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:10px;">
+      <div class="eq-band-card">
+        <div class="mod-pill-header red-pill">
+          <button class="mod-led-btn on" onclick="resetFilterCutoff()"></button>
+          <span>1. FILTER SVF</span>
+        </div>
+        <div style="display:flex; gap:8px; padding:4px 0;">
+          <div class="knob-cell" data-id="cutoff" data-min="20" data-max="20000" data-val="20000" data-log="1" data-unit="Hz" data-label="CUTOFF" data-small="1"></div>
+          <div class="knob-cell" data-id="resonance" data-min="0.5" data-max="12.0" data-val="0.71" data-log="0" data-unit="Q" data-label="RESON" data-small="1"></div>
+        </div>
+      </div>
+
+      <div class="eq-band-card">
+        <div class="mod-pill-header">
+          <button class="mod-led-btn" id="ledModal_chorusEnabled" onclick="toggleEffect('chorusEnabled')"></button>
+          <span>2A. CHORUS</span>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <div class="knob-cell" data-id="chorusRate" data-min="0.1" data-max="6.0" data-val="0.8" data-log="0" data-unit="Hz" data-label="RATE" data-small="1"></div>
+          <div class="knob-cell" data-id="chorusDepth" data-min="0.0" data-max="1.0" data-val="0.45" data-log="0" data-unit="%" data-label="DEPTH" data-small="1"></div>
+          <div class="knob-cell" data-id="chorusMix" data-min="0.0" data-max="1.0" data-val="0.35" data-log="0" data-unit="%" data-label="MIX" data-small="1"></div>
+        </div>
+      </div>
+
+      <div class="eq-band-card">
+        <div class="mod-pill-header">
+          <button class="mod-led-btn" id="ledModal_phaserEnabled" onclick="toggleEffect('phaserEnabled')"></button>
+          <span>2B. PHASER</span>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <div class="knob-cell" data-id="phaserRate" data-min="0.1" data-max="6.0" data-val="0.6" data-log="0" data-unit="Hz" data-label="RATE" data-small="1"></div>
+          <div class="knob-cell" data-id="phaserFeedback" data-min="0.0" data-max="0.85" data-val="0.40" data-log="0" data-unit="%" data-label="FEEDBK" data-small="1"></div>
+          <div class="knob-cell" data-id="phaserMix" data-min="0.0" data-max="1.0" data-val="0.35" data-log="0" data-unit="%" data-label="MIX" data-small="1"></div>
+        </div>
+      </div>
+
+      <div class="eq-band-card">
+        <div class="mod-pill-header">
+          <button class="mod-led-btn" id="ledModal_tremoloEnabled" onclick="toggleEffect('tremoloEnabled')"></button>
+          <span>2C. TREMOLO</span>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <div class="knob-cell" data-id="tremoloRate" data-min="0.5" data-max="14.0" data-val="4.5" data-log="0" data-unit="Hz" data-label="RATE" data-small="1"></div>
+          <div class="knob-cell" data-id="tremoloDepth" data-min="0.0" data-max="1.0" data-val="0.50" data-log="0" data-unit="%" data-label="DEPTH" data-small="1"></div>
+        </div>
+      </div>
+
+      <div class="eq-band-card">
+        <div class="mod-pill-header">
+          <button class="mod-led-btn" id="ledModal_delayEnabled" onclick="toggleEffect('delayEnabled')"></button>
+          <span>3. DELAY</span>
+          <span class="mini-mode-pill active" id="pillPingPong" onclick="togglePingPong()">PING-PONG</span>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <div class="knob-cell" data-id="delayTimeMs" data-min="40" data-max="1500" data-val="360" data-log="0" data-unit="ms" data-label="TIME" data-small="1"></div>
+          <div class="knob-cell" data-id="delayFeedback" data-min="0.0" data-max="0.92" data-val="0.35" data-log="0" data-unit="%" data-label="FEEDBK" data-small="1"></div>
+          <div class="knob-cell" data-id="delayMix" data-min="0.0" data-max="1.0" data-val="0.25" data-log="0" data-unit="%" data-label="MIX" data-small="1"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REVERB & SHIMMER DENTRO DEL RACK -->
+    <div class="eq-band-card" style="padding:14px; gap:12px;">
+      <div class="mod-pill-header" style="padding:6px 12px;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <button class="mod-led-btn on" id="ledRack_reverbEnabled" onclick="toggleEffect('reverbEnabled')"></button>
+          <span style="font-size:11px;">4. NORD ACOUSTIC & VALHALLA SHIMMER REVERB WORKSTATION</span>
+        </div>
+        <div class="mode-pills-row" style="width:auto; gap:8px;">
+          <span class="mini-mode-pill" id="modalRevType_0" style="padding:5px 12px; font-size:10px;" onclick="selectReverbType(0)">ROOM ACÚSTICO</span>
+          <span class="mini-mode-pill" id="modalRevType_1" style="padding:5px 12px; font-size:10px;" onclick="selectReverbType(1)">STUDIO PLATE</span>
+          <span class="mini-mode-pill active" id="modalRevType_2" style="padding:5px 12px; font-size:10px;" onclick="selectReverbType(2)">CONCERT HALL</span>
+          <span class="mini-mode-pill" id="modalRevType_3" style="padding:5px 12px; font-size:10px;" onclick="selectReverbType(3)">✨ VALHALLA SHIMMER</span>
+        </div>
+      </div>
+
+      <div id="classicReverbPanel" style="display:flex; flex-direction:column; width:100%; gap:8px;">
+        <div class="eq-band-title" id="classicReverbSubtitle">CONCERT HALL — PARÁMETROS ACÚSTICOS</div>
+        <div style="display:flex; justify-content:space-around; width:100%; padding:8px 0;">
+          <div class="knob-cell" id="classicKnobMix" data-id="reverbMix" data-min="0" data-max="1" data-val="0.25" data-log="0" data-unit="%" data-label="WET MIX"></div>
+          <div class="knob-cell" id="classicKnobSize" data-id="reverbSize" data-min="0.05" data-max="1" data-val="0.65" data-log="0" data-unit="%" data-label="HALL DIMENSION"></div>
+          <div class="knob-cell" id="classicKnobDamp" data-id="reverbDamping" data-min="0" data-max="1" data-val="0.40" data-log="0" data-unit="%" data-label="AIR DAMPING"></div>
+          <div class="knob-cell" id="classicKnobPre" data-id="reverbPreDelayMs" data-min="0" data-max="150" data-val="18" data-log="0" data-unit="ms" data-label="PRE-DELAY"></div>
+          <div class="knob-cell" id="classicKnobHalo" data-id="reverbShimmer" data-min="0" data-max="1" data-val="0.45" data-log="0" data-unit="%" data-label="OCTAVE HALO"></div>
+        </div>
+      </div>
+
+      <div id="shimmerReverbPanel" style="display:none; flex-direction:column; width:100%; gap:10px;">
+        <div style="display:grid; grid-template-columns: 1.4fr 1.3fr 0.8fr; gap:10px; width:100%;">
+          <div class="eq-band-card">
+            <div class="eq-band-title">PITCH MODE (FEEDBACK LOOP)</div>
+            <div class="mode-pills-row">
+              <span class="mini-mode-pill" id="shmPitch_0" onclick="setShimmerMode('shimmerPitchMode', 0)">BYPASS</span>
+              <span class="mini-mode-pill active" id="shmPitch_1" onclick="setShimmerMode('shimmerPitchMode', 1)">SINGLE</span>
+              <span class="mini-mode-pill" id="shmPitch_2" onclick="setShimmerMode('shimmerPitchMode', 2)">DUAL</span>
+              <span class="mini-mode-pill" id="shmPitch_3" onclick="setShimmerMode('shimmerPitchMode', 3)">SINGLE REV</span>
+              <span class="mini-mode-pill" id="shmPitch_4" onclick="setShimmerMode('shimmerPitchMode', 4)">DUAL REV</span>
+            </div>
+          </div>
+
+          <div class="eq-band-card">
+            <div class="eq-band-title">REVERB ARCHITECTURE</div>
+            <div class="mode-pills-row">
+              <span class="mini-mode-pill" id="shmSpace_0" onclick="setShimmerMode('shimmerReverbMode', 0)">MONO</span>
+              <span class="mini-mode-pill" id="shmSpace_1" onclick="setShimmerMode('shimmerReverbMode', 1)">SMALL ST</span>
+              <span class="mini-mode-pill active" id="shmSpace_2" onclick="setShimmerMode('shimmerReverbMode', 2)">MEDIUM ST</span>
+              <span class="mini-mode-pill" id="shmSpace_3" onclick="setShimmerMode('shimmerReverbMode', 3)">BIG STEREO</span>
+            </div>
+          </div>
+
+          <div class="eq-band-card">
+            <div class="eq-band-title">TONE COLOR</div>
+            <div class="mode-pills-row">
+              <span class="mini-mode-pill" id="shmColor_0" onclick="setShimmerMode('shimmerColorMode', 0)">☀ BRIGHT</span>
+              <span class="mini-mode-pill active" id="shmColor_1" onclick="setShimmerMode('shimmerColorMode', 1)">🌙 DARK</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns: repeat(10, 1fr); gap:6px; width:100%; background:#0d1015; padding:10px; border-radius:8px; border:1px solid #2b323c;">
+          <div class="knob-cell" data-id="reverbMix" data-min="0" data-max="1" data-val="0.35" data-log="0" data-unit="%" data-label="DRY/WET" data-small="1"></div>
+          <div class="knob-cell" data-id="shimmerShiftSt" data-min="-12" data-max="12" data-val="12" data-log="0" data-unit="st" data-label="SHIFT" data-small="1"></div>
+          <div class="knob-cell" data-id="shimmerFeedback" data-min="0" data-max="0.98" data-val="0.65" data-log="0" data-unit="%" data-label="FEEDBACK" data-small="1"></div>
+          <div class="knob-cell" data-id="shimmerDiffusion" data-min="0" data-max="0.98" data-val="0.88" data-log="0" data-unit="%" data-label="DIFFUSION" data-small="1"></div>
+          <div class="knob-cell" data-id="reverbSize" data-min="0.05" data-max="1" data-val="0.72" data-log="0" data-unit="%" data-label="SIZE" data-small="1"></div>
+          <div class="knob-cell" data-id="shimmerLowCutHz" data-min="20" data-max="1000" data-val="140" data-log="1" data-unit="Hz" data-label="LOW CUT" data-small="1"></div>
+          <div class="knob-cell" data-id="shimmerHighCutHz" data-min="1000" data-max="20000" data-val="8500" data-log="1" data-unit="Hz" data-label="HIGH CUT" data-small="1"></div>
+          <div class="knob-cell" data-id="shimmerModRateHz" data-min="0.05" data-max="5.0" data-val="0.45" data-log="1" data-unit="Hz" data-label="MOD RATE" data-small="1"></div>
+          <div class="knob-cell" data-id="shimmerModDepth" data-min="0" data-max="1.0" data-val="0.25" data-log="0" data-unit="%" data-label="MOD DEPTH" data-small="1"></div>
+          <div class="knob-cell" data-id="reverbPreDelayMs" data-min="0" data-max="240" data-val="18" data-log="0" data-unit="ms" data-label="PRE-DLY" data-small="1"></div>
+        </div>
+
+        <div class="mode-pills-row">
+          <span style="font-size:9.5px; color:#9da5af; margin-right:6px;">INTERVALOS RÁPIDOS SHIFT:</span>
+          <span class="mini-mode-pill" onclick="setQuickShift(-12)">-12 st (Oct Inf)</span>
+          <span class="mini-mode-pill" onclick="setQuickShift(-7)">-7 st (5ta Inf)</span>
+          <span class="mini-mode-pill" onclick="setQuickShift(0)">0 st (Unísono)</span>
+          <span class="mini-mode-pill" onclick="setQuickShift(7)">+7 st (5ta Sup)</span>
+          <span class="mini-mode-pill" onclick="setQuickShift(12)">+12 st (Shimmer Oct)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VOICES / LOOP -->
 <div class="modal-backdrop" id="modalVoiceConfig">
   <div class="modal-window" style="width:780px;">
     <div class="modal-top">
       <h3>⚙ Configuración de Sample, Sustain Loop, Envolvente ADSR y Polifonía</h3>
       <button class="close-modal-btn" onclick="closeModal('modalVoiceConfig')">Cerrar ✕</button>
     </div>
-
     <div style="display:grid; grid-template-columns: 1.4fr 1fr; gap:14px;">
       <div class="eq-band-card">
         <div class="eq-band-title">AMPLIFIER ENVELOPE (A · D · S · R) & SUSTAIN LOOP HOLD</div>
@@ -1071,7 +984,6 @@ select {
           <div class="knob-cell" data-id="loopHold" data-min="0.0" data-max="1.0" data-val="0.65" data-log="0" data-unit="Hold" data-label="LOOP HOLD"></div>
         </div>
       </div>
-
       <div class="eq-band-card">
         <div class="eq-band-title">SYNTH / FILTER & POLYPHONY ENGINE</div>
         <div style="display:flex; justify-content:space-around; width:100%; padding:6px 0;">
@@ -1080,7 +992,7 @@ select {
         </div>
         <div style="width:100%; display:flex; justify-content:space-between; align-items:center; padding:6px 12px; background:#111827; border-radius:6px;">
           <span style="font-size:11px; font-weight:800;">LÍMITE DE VOCES (POLIFONÍA):</span>
-          <select class="voices-select" id="maxVoicesSelect" onchange="changeMaxVoices(this.value)">
+          <select class="voices-select" id="maxVoicesSelect" style="width:auto;" onchange="changeMaxVoices(this.value)">
             <option value="32">32 Voces</option>
             <option value="64">64 Voces</option>
             <option value="128" selected>128 Voces</option>
@@ -1093,86 +1005,7 @@ select {
   </div>
 </div>
 
-<!-- MODAL UNIFICADO: RACK MAESTRO DE EFECTOS 19" -->
-<div class="modal-backdrop" id="modalFxRack">
-  <div class="modal-window" style="width:1060px;">
-    <div class="modal-top">
-      <h3>🎚 Master Effects 19" Studio Rack (Filter SVF · Modulation · Delay · Reverb & Shimmer)</h3>
-      <div style="display:flex; gap:8px;">
-        <button class="expand-btn" onclick="closeModal('modalFxRack'); openModal('modalEq');">🎛 Abrir EQ 5-Bandas</button>
-        <button class="close-modal-btn" onclick="closeModal('modalFxRack')">Cerrar ✕</button>
-      </div>
-    </div>
-
-    <!-- UNIDAD 1 DEL RACK: FILTER FX + REVERB / SHIMMER -->
-    <div style="display:grid; grid-template-columns: 240px 1fr; gap:12px;">
-      <div class="eq-band-card">
-        <div class="mod-pill-header red-pill"><span>1. FILTER FX (SVF)</span></div>
-        <div style="display:flex; gap:12px; padding:8px 0;">
-          <div class="knob-cell" data-id="cutoff" data-min="20" data-max="20000" data-val="20000" data-log="1" data-unit="Hz" data-label="CUTOFF"></div>
-          <div class="knob-cell" data-id="resonance" data-min="0.5" data-max="12.0" data-val="0.71" data-log="0" data-unit="Q" data-label="RESONANCE"></div>
-        </div>
-      </div>
-
-      <div class="eq-band-card">
-        <div class="mod-pill-header">
-          <button class="mod-led-btn on" id="ledRack_reverbEnabled" onclick="toggleEffect('reverbEnabled')"></button>
-          <span>2. NORD ACOUSTIC & VALHALLA SHIMMER REVERB</span>
-          <div class="mode-pills-row" style="width:auto;">
-            <span class="mini-mode-pill" onclick="selectReverbType(0)">ROOM</span>
-            <span class="mini-mode-pill" onclick="selectReverbType(1)">PLATE</span>
-            <span class="mini-mode-pill" onclick="selectReverbType(2)">HALL</span>
-            <span class="mini-mode-pill" onclick="selectReverbType(3)">SHIMMER (AMB)</span>
-          </div>
-        </div>
-        <div style="display:flex; justify-content:space-around; width:100%; padding:8px 0;">
-          <div class="knob-cell" data-id="reverbMix" data-min="0" data-max="1" data-val="0.25" data-log="0" data-unit="%" data-label="WET MIX"></div>
-          <div class="knob-cell" data-id="reverbSize" data-min="0.05" data-max="1" data-val="0.65" data-log="0" data-unit="%" data-label="DECAY / SIZE"></div>
-          <div class="knob-cell" data-id="reverbDamping" data-min="0" data-max="1" data-val="0.40" data-log="0" data-unit="%" data-label="HF DAMPING"></div>
-          <div class="knob-cell" data-id="reverbPreDelayMs" data-min="0" data-max="150" data-val="18" data-log="0" data-unit="ms" data-label="PRE-DELAY"></div>
-          <div class="knob-cell" data-id="reverbShimmer" data-min="0" data-max="1" data-val="0.45" data-log="0" data-unit="%" data-label="SHIMMER (+12st)"></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- UNIDAD 2 DEL RACK: CHORUS, PHASER, TREMOLO & STEREO DELAY -->
-    <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:12px;">
-      <div class="eq-band-card">
-        <div class="mod-pill-header"><span>3A. CHORUS</span></div>
-        <div style="display:flex; gap:6px;">
-          <div class="knob-cell" data-id="chorusRate" data-min="0.1" data-max="6.0" data-val="0.8" data-log="0" data-unit="Hz" data-label="RATE" data-small="1"></div>
-          <div class="knob-cell" data-id="chorusDepth" data-min="0.0" data-max="1.0" data-val="0.45" data-log="0" data-unit="%" data-label="DEPTH" data-small="1"></div>
-          <div class="knob-cell" data-id="chorusMix" data-min="0.0" data-max="1.0" data-val="0.35" data-log="0" data-unit="%" data-label="MIX" data-small="1"></div>
-        </div>
-      </div>
-      <div class="eq-band-card">
-        <div class="mod-pill-header"><span>3B. PHASER</span></div>
-        <div style="display:flex; gap:6px;">
-          <div class="knob-cell" data-id="phaserRate" data-min="0.1" data-max="6.0" data-val="0.6" data-log="0" data-unit="Hz" data-label="RATE" data-small="1"></div>
-          <div class="knob-cell" data-id="phaserFeedback" data-min="0.0" data-max="0.85" data-val="0.40" data-log="0" data-unit="%" data-label="FEEDBK" data-small="1"></div>
-          <div class="knob-cell" data-id="phaserMix" data-min="0.0" data-max="1.0" data-val="0.35" data-log="0" data-unit="%" data-label="MIX" data-small="1"></div>
-        </div>
-      </div>
-      <div class="eq-band-card">
-        <div class="mod-pill-header"><span>3C. TREMOLO</span></div>
-        <div style="display:flex; gap:10px;">
-          <div class="knob-cell" data-id="tremoloRate" data-min="0.5" data-max="14.0" data-val="4.5" data-log="0" data-unit="Hz" data-label="RATE" data-small="1"></div>
-          <div class="knob-cell" data-id="tremoloDepth" data-min="0.0" data-max="1.0" data-val="0.50" data-log="0" data-unit="%" data-label="DEPTH" data-small="1"></div>
-        </div>
-      </div>
-      <div class="eq-band-card">
-        <div class="mod-pill-header"><span>4. STEREO DELAY</span></div>
-        <div style="display:flex; gap:6px;">
-          <div class="knob-cell" data-id="delayTimeMs" data-min="40" data-max="1500" data-val="360" data-log="0" data-unit="ms" data-label="TIME" data-small="1"></div>
-          <div class="knob-cell" data-id="delayFeedback" data-min="0.0" data-max="0.92" data-val="0.35" data-log="0" data-unit="%" data-label="FEEDBK" data-small="1"></div>
-          <div class="knob-cell" data-id="delayMix" data-min="0.0" data-max="1.0" data-val="0.25" data-log="0" data-unit="%" data-label="MIX" data-small="1"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL 1: ECUALIZADOR PARAMÉTRICO DE 5 BANDAS + HPF / LPF -->
+<!-- MODAL EQ -->
 <div class="modal-backdrop" id="modalEq">
   <div class="modal-window">
     <div class="modal-top">
@@ -1191,157 +1024,7 @@ select {
   </div>
 </div>
 
-<!-- MODAL 2: MODULACIONES Y DELAY -->
-<div class="modal-backdrop" id="modalMod">
-  <div class="modal-window">
-    <div class="modal-top">
-      <h3>🌊 Parámetros de Modulación (Chorus · Phaser · Tremolo) & Stereo Delay</h3>
-      <button class="close-modal-btn" onclick="closeModal('modalMod')">Cerrar ✕</button>
-    </div>
-    <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:12px;">
-      <div class="eq-band-card">
-        <div class="mod-pill-header">
-          <button class="mod-led-btn" id="ledModal_chorusEnabled" onclick="toggleEffect('chorusEnabled')"></button>
-          <span>CHORUS</span>
-        </div>
-        <div class="knob-cell" data-id="chorusRate" data-min="0.1" data-max="6.0" data-val="0.8" data-log="0" data-unit="Hz" data-label="RATE"></div>
-        <div class="knob-cell" data-id="chorusDepth" data-min="0.0" data-max="1.0" data-val="0.45" data-log="0" data-unit="%" data-label="DEPTH"></div>
-        <div class="knob-cell" data-id="chorusMix" data-min="0.0" data-max="1.0" data-val="0.35" data-log="0" data-unit="%" data-label="MIX"></div>
-      </div>
-      <div class="eq-band-card">
-        <div class="mod-pill-header">
-          <button class="mod-led-btn" id="ledModal_phaserEnabled" onclick="toggleEffect('phaserEnabled')"></button>
-          <span>PHASER</span>
-        </div>
-        <div class="knob-cell" data-id="phaserRate" data-min="0.1" data-max="6.0" data-val="0.6" data-log="0" data-unit="Hz" data-label="RATE"></div>
-        <div class="knob-cell" data-id="phaserDepth" data-min="0.0" data-max="1.0" data-val="0.60" data-log="0" data-unit="%" data-label="DEPTH"></div>
-        <div class="knob-cell" data-id="phaserFeedback" data-min="0.0" data-max="0.85" data-val="0.40" data-log="0" data-unit="%" data-label="FEEDBACK"></div>
-        <div class="knob-cell" data-id="phaserMix" data-min="0.0" data-max="1.0" data-val="0.35" data-log="0" data-unit="%" data-label="MIX"></div>
-      </div>
-      <div class="eq-band-card">
-        <div class="mod-pill-header">
-          <button class="mod-led-btn" id="ledModal_tremoloEnabled" onclick="toggleEffect('tremoloEnabled')"></button>
-          <span>TREMOLO</span>
-        </div>
-        <div class="knob-cell" data-id="tremoloRate" data-min="0.5" data-max="14.0" data-val="4.5" data-log="0" data-unit="Hz" data-label="RATE"></div>
-        <div class="knob-cell" data-id="tremoloDepth" data-min="0.0" data-max="1.0" data-val="0.50" data-log="0" data-unit="%" data-label="DEPTH / MIX"></div>
-      </div>
-      <div class="eq-band-card">
-        <div class="mod-pill-header">
-          <button class="mod-led-btn" id="ledModal_delayEnabled" onclick="toggleEffect('delayEnabled')"></button>
-          <span>STEREO DELAY</span>
-        </div>
-        <div class="knob-cell" data-id="delayTimeMs" data-min="40" data-max="1500" data-val="360" data-log="0" data-unit="ms" data-label="DELAY TIME"></div>
-        <div class="knob-cell" data-id="delayFeedback" data-min="0.0" data-max="0.92" data-val="0.35" data-log="0" data-unit="%" data-label="FEEDBACK"></div>
-        <div class="knob-cell" data-id="delayDamping" data-min="0.0" data-max="1.0" data-val="0.35" data-log="0" data-unit="%" data-label="DAMPING"></div>
-        <div class="knob-cell" data-id="delayMix" data-min="0.0" data-max="1.0" data-val="0.25" data-log="0" data-unit="%" data-label="MIX"></div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL 3: REVERB EXPANDIDA DINÁMICA (ADAPTA CONTROLES SEGÚN ROOM / PLATE / HALL / SHIMMER) -->
-<div class="modal-backdrop" id="modalRev">
-  <div class="modal-window" style="width:880px;">
-    <div class="modal-top">
-      <h3 id="modalRevTitle">🏛 Nord Acoustic & Shimmer Reverb Workstation</h3>
-      <button class="close-modal-btn" onclick="closeModal('modalRev')">Cerrar ✕</button>
-    </div>
-
-    <!-- Selector superior de Algoritmo dentro del Modal -->
-    <div style="display:flex; justify-content:space-between; align-items:center; background:#14181f; padding:8px 14px; border-radius:8px; border:1px solid #30353d;">
-      <span style="font-size:11px; font-weight:800; color:#cbd5e1;">ALGORITMO DE REVERB ACTIVO:</span>
-      <div class="mode-pills-row" style="width:auto; gap:8px;">
-        <span class="mini-mode-pill" id="modalRevType_0" style="padding:5px 12px; font-size:10.5px;" onclick="selectReverbType(0)">ROOM ACÚSTICO</span>
-        <span class="mini-mode-pill" id="modalRevType_1" style="padding:5px 12px; font-size:10.5px;" onclick="selectReverbType(1)">STUDIO PLATE</span>
-        <span class="mini-mode-pill active" id="modalRevType_2" style="padding:5px 12px; font-size:10.5px;" onclick="selectReverbType(2)">CONCERT HALL</span>
-        <span class="mini-mode-pill" id="modalRevType_3" style="padding:5px 12px; font-size:10.5px;" onclick="selectReverbType(3)">VALHALLA SHIMMER</span>
-      </div>
-    </div>
-
-    <!-- VISTA A: CONTROLES PARA ROOM / PLATE / HALL (Con nombres y perillas dinámicas) -->
-    <div id="classicReverbPanel" class="eq-band-card" style="padding:16px;">
-      <div class="eq-band-title" id="classicReverbSubtitle">CONCERT HALL — PARÁMETROS ACÚSTICOS</div>
-      <div style="display:flex; justify-content:space-around; width:100%; padding:12px 0;">
-        <div class="knob-cell" id="classicKnobMix" data-id="reverbMix" data-min="0" data-max="1" data-val="0.28" data-log="0" data-unit="%" data-label="WET MIX"></div>
-        <div class="knob-cell" id="classicKnobSize" data-id="reverbSize" data-min="0.05" data-max="1" data-val="0.65" data-log="0" data-unit="%" data-label="HALL SIZE"></div>
-        <div class="knob-cell" id="classicKnobDamp" data-id="reverbDamping" data-min="0" data-max="1" data-val="0.40" data-log="0" data-unit="%" data-label="HF DAMPING"></div>
-        <div class="knob-cell" id="classicKnobPre" data-id="reverbPreDelayMs" data-min="0" data-max="150" data-val="18" data-log="0" data-unit="ms" data-label="PRE-DELAY"></div>
-        <div class="knob-cell" id="classicKnobHalo" data-id="reverbShimmer" data-min="0" data-max="1" data-val="0.45" data-log="0" data-unit="%" data-label="OCTAVE HALO"></div>
-      </div>
-    </div>
-
-    <!-- VISTA B: CONTROLES EXCLUSIVOS DE SHIMMER REVERB ENGINE (Arquitectura ValhallaShimmer) -->
-    <div id="shimmerReverbPanel" style="display:none; flex-direction:column; gap:12px;">
-      <!-- Selectores de Modo: Pitch Mode, Reverb Space Mode y Color Mode -->
-      <div style="display:grid; grid-template-columns: 1.4fr 1.3fr 0.8fr; gap:10px;">
-        <div class="eq-band-card">
-          <div class="eq-band-title">PITCH MODE (FEEDBACK LOOP)</div>
-          <div class="mode-pills-row" style="margin-top:4px;">
-            <span class="mini-mode-pill" id="shmPitch_0" onclick="setShimmerMode('shimmerPitchMode', 0)">BYPASS</span>
-            <span class="mini-mode-pill active" id="shmPitch_1" onclick="setShimmerMode('shimmerPitchMode', 1)">SINGLE</span>
-            <span class="mini-mode-pill" id="shmPitch_2" onclick="setShimmerMode('shimmerPitchMode', 2)">DUAL</span>
-            <span class="mini-mode-pill" id="shmPitch_3" onclick="setShimmerMode('shimmerPitchMode', 3)">SINGLE REV</span>
-            <span class="mini-mode-pill" id="shmPitch_4" onclick="setShimmerMode('shimmerPitchMode', 4)">DUAL REV</span>
-          </div>
-        </div>
-
-        <div class="eq-band-card">
-          <div class="eq-band-title">REVERB ARCHITECTURE</div>
-          <div class="mode-pills-row" style="margin-top:4px;">
-            <span class="mini-mode-pill" id="shmSpace_0" onclick="setShimmerMode('shimmerReverbMode', 0)">MONO</span>
-            <span class="mini-mode-pill" id="shmSpace_1" onclick="setShimmerMode('shimmerReverbMode', 1)">SMALL ST</span>
-            <span class="mini-mode-pill active" id="shmSpace_2" onclick="setShimmerMode('shimmerReverbMode', 2)">MEDIUM ST</span>
-            <span class="mini-mode-pill" id="shmSpace_3" onclick="setShimmerMode('shimmerReverbMode', 3)">BIG STEREO</span>
-          </div>
-        </div>
-
-        <div class="eq-band-card">
-          <div class="eq-band-title">TONE COLOR</div>
-          <div class="mode-pills-row" style="margin-top:4px;">
-            <span class="mini-mode-pill" id="shmColor_0" onclick="setShimmerMode('shimmerColorMode', 0)">☀ BRIGHT</span>
-            <span class="mini-mode-pill active" id="shmColor_1" onclick="setShimmerMode('shimmerColorMode', 1)">🌙 DARK</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Fila 1 de Perillas Shimmer: Mix, Shift, Feedback, Diffusion, Size -->
-      <div class="eq-band-card">
-        <div class="eq-band-title">SHIMMER CORE — PITCH, FEEDBACK, DIFFUSION & SPACE SIZE</div>
-        <div style="display:flex; justify-content:space-around; width:100%; padding:8px 0;">
-          <div class="knob-cell" data-id="reverbMix" data-min="0" data-max="1" data-val="0.35" data-log="0" data-unit="%" data-label="DRY/WET MIX"></div>
-          <div class="knob-cell" data-id="shimmerShiftSt" data-min="-12" data-max="12" data-val="12" data-log="0" data-unit="st" data-label="PITCH SHIFT"></div>
-          <div class="knob-cell" data-id="shimmerFeedback" data-min="0" data-max="0.98" data-val="0.60" data-log="0" data-unit="%" data-label="FEEDBACK"></div>
-          <div class="knob-cell" data-id="shimmerDiffusion" data-min="0" data-max="0.98" data-val="0.88" data-log="0" data-unit="%" data-label="DIFFUSION"></div>
-          <div class="knob-cell" data-id="reverbSize" data-min="0.05" data-max="1" data-val="0.65" data-log="0" data-unit="%" data-label="SPACE SIZE"></div>
-        </div>
-        <!-- Botones rápidos de intervalo armónico para Shift -->
-        <div class="mode-pills-row">
-          <span style="font-size:9.5px; color:#9da5af; margin-right:6px;">INTERVALOS RÁPIDOS SHIFT:</span>
-          <span class="mini-mode-pill" onclick="setQuickShift(-12)">-12 st (Oct Inf)</span>
-          <span class="mini-mode-pill" onclick="setQuickShift(-7)">-7 st (5ta Inf)</span>
-          <span class="mini-mode-pill" onclick="setQuickShift(0)">0 st (Unísono)</span>
-          <span class="mini-mode-pill" onclick="setQuickShift(7)">+7 st (5ta Sup)</span>
-          <span class="mini-mode-pill" onclick="setQuickShift(12)">+12 st (Shimmer Oct)</span>
-        </div>
-      </div>
-
-      <!-- Fila 2 de Perillas Shimmer: Low Cut, High Cut, Mod Rate, Mod Depth, Pre-Delay -->
-      <div class="eq-band-card">
-        <div class="eq-band-title">FEEDBACK FILTERING (LOW/HIGH CUT) & TANK MODULATION</div>
-        <div style="display:flex; justify-content:space-around; width:100%; padding:8px 0;">
-          <div class="knob-cell" data-id="shimmerLowCutHz" data-min="20" data-max="1000" data-val="140" data-log="1" data-unit="Hz" data-label="FB LOW CUT"></div>
-          <div class="knob-cell" data-id="shimmerHighCutHz" data-min="1000" data-max="20000" data-val="8500" data-log="1" data-unit="Hz" data-label="FB HIGH CUT"></div>
-          <div class="knob-cell" data-id="shimmerModRateHz" data-min="0.05" data-max="5.0" data-val="0.45" data-log="1" data-unit="Hz" data-label="MOD RATE"></div>
-          <div class="knob-cell" data-id="shimmerModDepth" data-min="0" data-max="1.0" data-val="0.22" data-log="0" data-unit="%" data-label="MOD DEPTH"></div>
-          <div class="knob-cell" data-id="reverbPreDelayMs" data-min="0" data-max="240" data-val="18" data-log="0" data-unit="ms" data-label="PRE-DELAY"></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL 5: EXPLORADOR Y CLASIFICADOR DE SAMPLES -->
+<!-- MODAL BROWSER -->
 <div class="modal-backdrop" id="modalBrowser">
   <div class="modal-window" style="width:940px;">
     <div class="modal-top">
@@ -1367,7 +1050,7 @@ select {
           <select id="extFilterSelect" onchange="renderBrowserList()">
             <option value="ALL">Todos los formatos</option>
             <option value=".npno">Solo .npno (Piano)</option>
-            <option value=".nsmp">Solo .nsmp / .nsmp3</option>
+            <option value=".nsmp">Solo .nsmp / .nsmp3 / .nsmp4</option>
             <option value="PROG">Solo Programas (.ns3f/.nw2p)</option>
           </select>
         </div>
@@ -1384,6 +1067,9 @@ const SOUND_GROUPS = [
   'Acoustic Pianos', 'Electric Pianos', 'Accordion & Organ',
   'Xylophone & Mallets', 'Strings, Brass & Pads', 'Synth & Misc Samples', 'Programs'
 ];
+const SYNTH_PRESET_NAMES = [
+  '', 'P1: Warm Pad', 'P2: 80s Brass', 'P3: SuperSaw', 'P4: Crystal Bell', 'P5: Strings'
+];
 
 const state = {
   tune: 0, volume: 0.85, pan: 0.0,
@@ -1398,26 +1084,44 @@ const state = {
   phaserEnabled: false, phaserRate: 0.6, phaserDepth: 0.60, phaserFeedback: 0.40, phaserMix: 0.35,
   tremoloEnabled: false, tremoloRate: 4.5, tremoloDepth: 0.50,
   delayEnabled: false, delayTimeMs: 360, delayFeedback: 0.35, delayDamping: 0.35, delayMix: 0.25, delayPingPong: true,
-  reverbEnabled: true, reverbType: 2, reverbMix: 0.22, reverbSize: 0.65, reverbDamping: 0.40, reverbPreDelayMs: 18, reverbShimmer: 0.45,
+  reverbEnabled: true, reverbType: 2, reverbMix: 0.25, reverbSize: 0.65, reverbDamping: 0.40, reverbPreDelayMs: 18, reverbShimmer: 0.45,
+  shimmerShiftSt: 12, shimmerFeedback: 0.65, shimmerDiffusion: 0.88,
+  shimmerLowCutHz: 140, shimmerHighCutHz: 8500,
+  shimmerModRateHz: 0.45, shimmerModDepth: 0.25,
+  shimmerPitchMode: 1, shimmerReverbMode: 2, shimmerColorMode: 1,
+  synthEnabled: false, synthPresetId: 1, synthMasterVol: 0.80, synthMacroCutoff: 1.0,
+  organEnabled: false, organVolume: 0.75, organRotaryFast: false, organDrive: 0.15,
   activeModTab: 'chorus', storeMode: false, activeProgramSlot: 0,
   programs: [], libraryItems: [], filteredList: [],
   selectedCategory: 'ALL', currentSourcePath: '', currentInstId: 0,
-  keyboardVisible: true, mousePressedNote: -1,
-  shimmerShiftSt: 12, shimmerFeedback: 0.60, shimmerDiffusion: 0.88,
-  shimmerLowCutHz: 140, shimmerHighCutHz: 8500,
-  shimmerModRateHz: 0.45, shimmerModDepth: 0.22,
-  shimmerPitchMode: 1, shimmerReverbMode: 2, shimmerColorMode: 1,
+  keyboardVisible: true, mousePressedNote: -1
 };
 
 function openSettingsWindow() {
   window.open('/settings', 'NordAudioMidiSetup', 'width=780,height=660');
 }
 function openModal(id) {
-  document.getElementById(id).classList.add('open');
+  if (id === 'modalRev') id = 'modalFxRack';
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('open');
   if (id === 'modalEq') drawEqCurve();
   if (id === 'modalBrowser') { renderCategorySidebar(); renderBrowserList(); }
 }
-function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) el.classList.remove('open');
+}
+
+function switchWorkstationPage(page) {
+  document.getElementById('pageView_main').style.display  = (page === 'main')  ? 'grid' : 'none';
+  document.getElementById('pageView_synth').style.display = (page === 'synth') ? 'flex' : 'none';
+  document.getElementById('pageView_organ').style.display = (page === 'organ') ? 'flex' : 'none';
+  ['main', 'synth', 'organ'].forEach(p => {
+    const btn = document.getElementById(`pageBtn_${p}`);
+    if (btn) btn.classList.toggle('active-toggle', p === page);
+  });
+}
 
 function toggleKeyboardVisibility() {
   state.keyboardVisible = !state.keyboardVisible;
@@ -1441,6 +1145,7 @@ function resetFilterCutoff() {
 
 function buildParametricEqModal() {
   const box = document.getElementById('paramEqBandsContainer');
+  if (!box) return;
   box.innerHTML = '';
   for (let b = 0; b < 5; b++) {
     let leds = '';
@@ -1476,18 +1181,6 @@ function buildParametricEqModal() {
       window.addEventListener('mouseup', onUp);
     });
   }
-
-  const SYNTH_PRESET_NAMES = [
-  '', 'P1: Warm Pad', 'P2: 80s Brass', 'P3: SuperSaw', 'P4: Crystal Bell', 'P5: Strings'
-  ];
-
-function switchWorkstationPage(page) {
-  document.getElementById('pageView_main').style.display  = (page === 'main')  ? 'grid' : 'none';
-  document.getElementById('pageView_synth').style.display = (page === 'synth') ? 'flex' : 'none';
-  document.getElementById('pageView_organ').style.display = (page === 'organ') ? 'flex' : 'none';
-  ['main', 'synth', 'organ'].forEach(p => {
-    document.getElementById(`pageBtn_${p}`).classList.toggle('active-toggle', p === page);
-  });
 }
 
 function buildSynth3LayersPage() {
@@ -1546,19 +1239,53 @@ function buildSynth3LayersPage() {
   }
 }
 
+// ============================================================
+// NORD C2D AUTHENTIC DRAWBAR DECK (FADERS LED VERDE VERTICAL)
+// ============================================================
+const DRAWBAR_NAMES = ["16'", "5⅓'", "8'", "4'", "2⅔'", "2'", "1⡗'", "1⅓'", "1'"];
+const DRAWBAR_LEDS = 16;
+
 function buildOrganDrawbarsPage() {
-  const box = document.getElementById('organDrawbarsContainer');
-  if (!box) return;
-  const labels = ["16'", "5 1/3'", "8'", "4'", "2 2/3'", "2'", "1 3/5'", "1 1/3'", "1'"];
-  const defaults = [0.8, 0.6, 0.9, 0.4, 0.2, 0.3, 0.1, 0.1, 0.2];
-  let html = '';
-  labels.forEach((lbl, idx) => {
-    state[`drawbar${idx}`] = defaults[idx];
-    html += `<div class="knob-cell" data-id="drawbar${idx}" data-min="0" data-max="1" data-val="${defaults[idx]}" data-log="0" data-unit="%" data-label="DB ${lbl}"></div>`;
+  const deck = document.getElementById('organDrawbarsDeck');
+  if (!deck) return;
+  deck.innerHTML = '';
+
+  for (let i = 0; i < 9; i++) {
+    state[`drawbar${i}`] = state[`drawbar${i}`] !== undefined ? state[`drawbar${i}`] : 0.8;
+    const col = document.createElement('div');
+    col.className = 'drawbar-column';
+    col.innerHTML = `
+      <div class="drawbar-label">${DRAWBAR_NAMES[i]}</div>
+      <div class="drawbar-track-wrap" id="dbTrack_${i}">
+        <div class="drawbar-led-strip" id="dbLedStrip_${i}">
+          ${Array(DRAWBAR_LEDS).fill(0).map(() => `<div class="drawbar-led"></div>`).join('')}
+        </div>
+        <input type="range" class="drawbar-input-range" min="0" max="1" step="0.01" value="${state[`drawbar${i}`]}" oninput="onDrawbarSlider(${i}, this.value)">
+      </div>
+      <div class="drawbar-val-badge" id="dbValBadge_${i}">8</div>
+    `;
+    deck.appendChild(col);
+    updateDrawbarVisual(i, state[`drawbar${i}`]);
+  }
+}
+
+function onDrawbarSlider(idx, valStr) {
+  const val = parseFloat(valStr);
+  state[`drawbar${idx}`] = val;
+  updateDrawbarVisual(idx, val);
+  sendParam(`drawbar${idx}`, val);
+}
+
+function updateDrawbarVisual(idx, normVal) {
+  const strip = document.getElementById(`dbLedStrip_${idx}`);
+  const badge = document.getElementById(`dbValBadge_${idx}`);
+  if (!strip || !badge) return;
+  const leds = strip.querySelectorAll('.drawbar-led');
+  const litCount = Math.round(normVal * DRAWBAR_LEDS);
+  leds.forEach((led, lIdx) => {
+    led.classList.toggle('lit', lIdx < litCount);
   });
-  html += `<div class="knob-cell" data-id="organDrive" data-min="0" data-max="1" data-val="0.15" data-log="0" data-unit="%" data-label="TUBE DRIVE" data-large="1"></div>`;
-  html += `<div class="knob-cell" data-id="organVolume" data-min="0" data-max="1.5" data-val="0.75" data-log="0" data-unit="%" data-label="ORGAN LEVEL" data-large="1"></div>`;
-  box.innerHTML = html;
+  badge.innerText = Math.round(normVal * 8);
 }
 
 function setLayerWave(layerNum, waveIdx) {
@@ -1573,14 +1300,18 @@ function setLayerWave(layerNum, waveIdx) {
 function toggleSynthLayer(zeroIdx) {
   const i = zeroIdx + 1;
   state[`L${i}_en`] = !state[`L${i}_en`];
-  const led = document.getElementById(`led_L${i}`);
-  if (led) led.classList.toggle('on', state[`L${i}_en`]);
-  const mainPill = document.getElementById(`mainPill_L${i}`);
-  if (mainPill) {
-    mainPill.classList.toggle('active', state[`L${i}_en`]);
-    mainPill.innerText = `L${i} ${state[`L${i}_en`] ? 'ON' : 'OFF'}`;
-  }
+  updateSynthLayerBadges(i, state[`L${i}_en`]);
   sendParam(`L${i}_en`, state[`L${i}_en`] ? 1 : 0);
+}
+
+function updateSynthLayerBadges(layerNum, enabled) {
+  const led = document.getElementById(`led_L${layerNum}`);
+  if (led) led.classList.toggle('on', !!enabled);
+  const mainPill = document.getElementById(`mainPill_L${layerNum}`);
+  if (mainPill) {
+    mainPill.classList.toggle('active', !!enabled);
+    mainPill.innerText = `L${layerNum} ${enabled ? 'ON' : 'OFF'}`;
+  }
 }
 
 let currentSynthPreset = 1;
@@ -1588,24 +1319,39 @@ function stepSynthPreset(dir) {
   currentSynthPreset = ((currentSynthPreset - 1 + dir + 5) % 5) + 1;
   selectSynthPreset(currentSynthPreset);
 }
+
 function selectSynthPreset(id) {
   currentSynthPreset = id;
+  state.synthPresetId = id;
   document.getElementById('synthPresetNameMain').innerText = SYNTH_PRESET_NAMES[id] || `Preset ${id}`;
-  if (!state.synthEnabled) toggleEffect('synthEnabled');
+  for (let p = 1; p <= 5; p++) {
+    const btn = document.getElementById(`synthPreBtn_${p}`);
+    if (btn) btn.classList.toggle('active', p === id);
+  }
+  if (!state.synthEnabled) {
+    state.synthEnabled = true;
+    sendParam('synthEnabled', 1);
+    updateModLeds();
+  }
   sendParam('synthPresetId', id);
 }
 
 function toggleOrganRotary() {
   state.organRotaryFast = !state.organRotaryFast;
-  document.getElementById('pillRotaryMain').innerText = state.organRotaryFast ? 'ROTARY: FAST' : 'ROTARY: SLOW';
-  document.getElementById('pillRotaryMain').classList.toggle('active', state.organRotaryFast);
-  document.getElementById('btnRotaryPage').innerText = state.organRotaryFast ? 'ROTARY SPEAKER: FAST (TREMOLO)' : 'ROTARY SPEAKER: SLOW (CHORALE)';
+  updateOrganRotaryVisual();
   sendParam('organRotaryFast', state.organRotaryFast ? 1 : 0);
 }
 
-buildSynth3LayersPage();
-buildOrganDrawbarsPage();
-
+function updateOrganRotaryVisual() {
+  const pMain = document.getElementById('pillRotaryMain');
+  if (pMain) {
+    pMain.innerText = state.organRotaryFast ? 'ROTARY: FAST' : 'ROTARY: SLOW';
+    pMain.classList.toggle('active', state.organRotaryFast);
+  }
+  const bPage = document.getElementById('btnRotaryPage');
+  if (bPage) {
+    bPage.innerText = state.organRotaryFast ? 'ROTARY SPEAKER: FAST (TREMOLO)' : 'ROTARY SPEAKER: SLOW (CHORALE)';
+  }
 }
 
 function updateEqFaderVisual(b, db) {
@@ -1719,12 +1465,15 @@ function formatReadout(val, unit) {
   if (unit === "Hold") return val >= 0.98 ? "∞ HOLD" : Math.round(val * 100) + " %";
   if (unit === "Pan") return Math.abs(val) < 0.04 ? "CENTER" : (val < 0 ? "L" + Math.round(-val * 100) : "R" + Math.round(val * 100));
   if (unit === "st") return (val >= 0 ? "+" : "") + val.toFixed(1) + " st";
+  if (unit === "oct") return (val >= 0 ? "+" : "") + Math.round(val) + " oct";
   return val.toFixed(2) + " " + unit;
 }
 function updateSingleKnobCell(cell, val) {
   const norm = Math.max(0, Math.min(1, valToNorm(cell, val)));
-  cell.querySelector('.knob-pointer').setAttribute('transform', `rotate(${-135 + norm * 270} 40 40)`);
-  cell.querySelector('.knob-readout').innerText = formatReadout(val, cell.dataset.unit);
+  const ptr = cell.querySelector('.knob-pointer');
+  const ro  = cell.querySelector('.knob-readout');
+  if (ptr) ptr.setAttribute('transform', `rotate(${-135 + norm * 270} 40 40)`);
+  if (ro)  ro.innerText = formatReadout(val, cell.dataset.unit);
 }
 function updateAllControlsForId(id, val) {
   document.querySelectorAll(`.knob-cell[data-id="${id}"]`).forEach(c => updateSingleKnobCell(c, val));
@@ -1733,13 +1482,18 @@ function updateAllControlsForId(id, val) {
 
 function selectModTab(tab) {
   state.activeModTab = tab;
-  ['chorus', 'phaser', 'tremolo'].forEach(t => document.getElementById(`modTab_${t}`).classList.toggle('active', t === tab));
+  ['chorus', 'phaser', 'tremolo'].forEach(t => {
+    const el = document.getElementById(`modTab_${t}`);
+    if (el) el.classList.toggle('active', t === tab);
+  });
   const mixCell = document.querySelector('#mainModMixContainer .knob-cell');
   const paramMap = { chorus: 'chorusMix', phaser: 'phaserMix', tremolo: 'tremoloDepth' };
   const targetParam = paramMap[tab];
-  mixCell.dataset.id = targetParam;
-  mixCell.querySelector('.knob-title').innerText = tab.toUpperCase() + " MIX";
-  updateSingleKnobCell(mixCell, state[targetParam]);
+  if (mixCell) {
+    mixCell.dataset.id = targetParam;
+    mixCell.querySelector('.knob-title').innerText = tab.toUpperCase() + " MIX";
+    updateSingleKnobCell(mixCell, state[targetParam]);
+  }
   updateModLeds();
 }
 function toggleActiveModEffect() { toggleEffect(`${state.activeModTab}Enabled`); }
@@ -1763,10 +1517,9 @@ function updateModLeds() {
     const el = document.getElementById(`ledModal_${k}`);
     if (el) el.classList.toggle('on', !!state[k]);
   });
-  document.getElementById('led_modActive').classList.toggle('on', !!state[`${state.activeModTab}Enabled`]);
+  const modLed = document.getElementById('led_modActive');
+  if (modLed) modLed.classList.toggle('on', !!state[`${state.activeModTab}Enabled`]);
 }
-
-
 
 function selectReverbType(t) {
   state.reverbType = t;
@@ -1777,31 +1530,12 @@ function selectReverbType(t) {
     if (p2) p2.classList.toggle('active', i === t);
   });
 
-  // 1. Adaptar las perillas del módulo de Reverb en el Panel Principal
-  const mainK2 = document.getElementById('mainRevKnob2');
   const mainTitle = document.getElementById('reverbMainHeaderTitle');
-  if (mainK2) {
-    if (t === 3) {
-      // En modo SHIMMER la segunda perilla del panel principal controla el FEEDBACK de la cola
-      mainTitle.innerText = 'SHIMMER REV';
-      mainK2.dataset.id = 'shimmerFeedback';
-      mainK2.dataset.min = '0';
-      mainK2.dataset.max = '0.98';
-      mainK2.querySelector('.knob-title').innerText = 'FEEDBACK';
-      updateSingleKnobCell(mainK2, state.shimmerFeedback);
-    } else {
-      const names = ['ROOM', 'PLATE', 'HALL'];
-      const sizeLabels = ['ROOM SIZE', 'PLATE DECAY', 'HALL SIZE'];
-      mainTitle.innerText = `REVERB (${names[t]})`;
-      mainK2.dataset.id = 'reverbSize';
-      mainK2.dataset.min = '0.05';
-      mainK2.dataset.max = '1';
-      mainK2.querySelector('.knob-title').innerText = sizeLabels[t];
-      updateSingleKnobCell(mainK2, state.reverbSize);
-    }
+  if (mainTitle) {
+    const names = ['ROOM', 'PLATE', 'HALL', 'SHIMMER'];
+    mainTitle.innerText = names[t] || 'REVERB';
   }
 
-  // 2. Adaptar dinámicamente los paneles y perillas dentro del Modal Expandido (#modalRev)
   const classicPanel = document.getElementById('classicReverbPanel');
   const shimmerPanel = document.getElementById('shimmerReverbPanel');
   if (classicPanel && shimmerPanel) {
@@ -1823,11 +1557,9 @@ function selectReverbType(t) {
       document.getElementById('classicReverbSubtitle').innerText = subtitles[t];
       document.querySelector('#classicKnobSize .knob-title').innerText = sizeNames[t];
       document.querySelector('#classicKnobDamp .knob-title').innerText = dampNames[t];
-      // Ocultar la 5ta perilla (Octave Halo) en Room y Plate para que solo aparezca en Hall
       document.getElementById('classicKnobHalo').style.display = (t === 2) ? 'flex' : 'none';
     }
   }
-
   sendParam('reverbType', t);
 }
 
@@ -1854,7 +1586,6 @@ function setQuickShift(st) {
   sendParam('shimmerShiftSt', st);
 }
 
-
 function togglePingPong() {
   state.delayPingPong = !state.delayPingPong;
   document.getElementById('pillPingPong').classList.toggle('active', state.delayPingPong);
@@ -1863,6 +1594,7 @@ function togglePingPong() {
 
 function initProgramButtons() {
   const grid = document.getElementById('programsGrid');
+  if (!grid) return;
   grid.innerHTML = '';
   for (let i = 0; i < 8; i++) {
     const wrap = document.createElement('div');
@@ -1877,12 +1609,14 @@ function initProgramButtons() {
     wrap.onclick = () => onProgramButtonClick(i);
     grid.appendChild(wrap);
   }
-  fetch('/api/programs').then(r => r.json()).then(d => { state.programs = d; });
+  fetch('/api/programs').then(r => r.json()).then(d => { state.programs = d; }).catch(() => {});
 }
+
 function toggleStoreMode() {
   state.storeMode = !state.storeMode;
   document.getElementById('btnStore').classList.toggle('blink', state.storeMode);
 }
+
 function onProgramButtonClick(slotIdx) {
   if (state.storeMode) {
     state.storeMode = false;
@@ -1893,7 +1627,7 @@ function onProgramButtonClick(slotIdx) {
     }).then(r => r.json()).then(res => {
       if (res.programs) state.programs = res.programs;
       setActiveProgramPad(slotIdx);
-    });
+    }).catch(() => {});
   } else {
     fetch('/api/programs/recall', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
@@ -1903,13 +1637,18 @@ function onProgramButtonClick(slotIdx) {
       if (res.instrumentName) document.getElementById('lcdSampleName').innerText = res.instrumentName;
       if (res.sourcePath) state.currentSourcePath = res.sourcePath;
       if (res.params) syncFromServerParams(res.params);
-    });
+    }).catch(() => {});
   }
 }
+
 function setActiveProgramPad(slotIdx) {
   state.activeProgramSlot = slotIdx;
-  for (let i = 0; i < 8; i++) document.getElementById(`progPad_${i}`).classList.toggle('active', i === slotIdx);
+  for (let i = 0; i < 8; i++) {
+    const pad = document.getElementById(`progPad_${i}`);
+    if (pad) pad.classList.toggle('active', i === slotIdx);
+  }
 }
+
 function downloadProgramsJson() {
   const blob = new Blob([JSON.stringify(state.programs, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
@@ -1917,6 +1656,7 @@ function downloadProgramsJson() {
   a.download = 'nord_stage_programs.json';
   a.click();
 }
+
 function importProgramsFile(inputEl) {
   const file = inputEl.files[0];
   if (!file) return;
@@ -1930,7 +1670,7 @@ function importProgramsFile(inputEl) {
         state.programs = res.programs;
         onProgramButtonClick(0);
       }
-    });
+    }).catch(() => {});
   };
   reader.readAsText(file);
 }
@@ -1956,12 +1696,6 @@ function toggleSoftRelease() {
   document.getElementById('hwBtnSoftRel').classList.toggle('active', state.softRelease);
   sendParam('softRelease', state.softRelease ? 1 : 0);
 }
-function sendParam(id, value) {
-  fetch('/api/param', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ id, value: parseFloat(value) })
-  });
-}
 
 function scanLibrary() {
   const dir = document.getElementById('libDirInput').value;
@@ -1972,7 +1706,7 @@ function scanLibrary() {
       rebuildFilteredList();
       renderCategorySidebar();
       renderBrowserList();
-    });
+    }).catch(() => {});
 }
 function onQuickCategoryChange(cat) {
   state.selectedCategory = cat;
@@ -2099,7 +1833,7 @@ function saveSampleTag(name, group, favorite) {
   fetch('/api/library/tag', {
     method: 'POST', headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({ name, group, favorite })
-  });
+  }).catch(() => {});
 }
 function stepLibrary(dir) {
   rebuildFilteredList();
@@ -2123,7 +1857,7 @@ function loadInstrument(path) {
     document.getElementById('zoneCountNum').innerText = res.zoneCount || 0;
     document.getElementById('ramTopText').innerText = (res.memoryMB || 0).toFixed(1) + " MB";
     if (res.params) syncFromServerParams(res.params);
-  });
+  }).catch(() => {});
 }
 
 function syncFromServerParams(p) {
@@ -2153,11 +1887,14 @@ function syncFromServerParams(p) {
     reverbMix: p.reverbMix, reverbSize: p.reverbSize, reverbDamping: p.reverbDamping, reverbPreDelayMs: p.reverbPreDelayMs, reverbShimmer: p.reverbShimmer,
     shimmerShiftSt: p.shimmerShiftSt, shimmerFeedback: p.shimmerFeedback, shimmerDiffusion: p.shimmerDiffusion,
     shimmerLowCutHz: p.shimmerLowCutHz, shimmerHighCutHz: p.shimmerHighCutHz,
-    shimmerModRateHz: p.shimmerModRateHz, shimmerModDepth: p.shimmerModDepth
+    shimmerModRateHz: p.shimmerModRateHz, shimmerModDepth: p.shimmerModDepth,
+    synthMasterVol: p.synthMasterVol, synthMacroCutoff: p.synthMacroCutoff,
+    organVolume: p.organVolume, organDrive: p.organDrive
   };
   Object.keys(direct).forEach(k => {
     if (direct[k] !== undefined) { state[k] = direct[k]; updateAllControlsForId(k, direct[k]); }
   });
+
   if (p.eqBands) {
     for (let i = 0; i < 5; i++) {
       state[`eqFreq${i}`] = p.eqBands[i].freqHz;
@@ -2168,6 +1905,59 @@ function syncFromServerParams(p) {
       updateAllControlsForId(`eqGain${i}`, p.eqBands[i].gainDb);
     }
   }
+
+  if (p.synthLayers) {
+    for (let i = 0; i < 3; i++) {
+      const L = p.synthLayers[i];
+      const n = i + 1;
+      state[`L${n}_en`] = !!L.enabled;
+      updateSynthLayerBadges(n, state[`L${n}_en`]);
+      if (L.waveType !== undefined) {
+        state[`L${n}_wave`] = L.waveType;
+        for (let w = 0; w < 6; w++) {
+          const el = document.getElementById(`wavePill_${n}_${w}`);
+          if (el) el.classList.toggle('active', w === L.waveType);
+        }
+      }
+      const lMap = {
+        vol: L.volume, pan: L.pan, oct: L.octave, det: L.detuneCents,
+        cut: L.cutoffHz, res: L.resonanceQ, atk: L.attackSec, dec: L.decaySec, sus: L.sustainLevel, rel: L.releaseSec
+      };
+      Object.keys(lMap).forEach(sub => {
+        if (lMap[sub] !== undefined) {
+          state[`L${n}_${sub}`] = lMap[sub];
+          updateAllControlsForId(`L${n}_${sub}`, lMap[sub]);
+        }
+      });
+    }
+  }
+
+  if (p.drawbars) {
+    for (let d = 0; d < 9; d++) {
+      state[`drawbar${d}`] = p.drawbars[d];
+      updateDrawbarVisual(d, p.drawbars[d]);
+    }
+  }
+
+  if (p.synthEnabled !== undefined) {
+    state.synthEnabled = !!p.synthEnabled;
+    const ledS = document.getElementById('led_synthEnabled');
+    if (ledS) ledS.classList.toggle('on', state.synthEnabled);
+    const ledPS = document.getElementById('ledPage_synthEnabled');
+    if (ledPS) ledPS.classList.toggle('on', state.synthEnabled);
+  }
+  if (p.organEnabled !== undefined) {
+    state.organEnabled = !!p.organEnabled;
+    const ledO = document.getElementById('led_organEnabled');
+    if (ledO) ledO.classList.toggle('on', state.organEnabled);
+    const ledPO = document.getElementById('ledPage_organEnabled');
+    if (ledPO) ledPO.classList.toggle('on', state.organEnabled);
+  }
+  if (p.organRotaryFast !== undefined) {
+    state.organRotaryFast = !!p.organRotaryFast;
+    updateOrganRotaryVisual();
+  }
+
   state.eqEnabled = !!p.eqEnabled;
   state.chorusEnabled = !!p.chorusEnabled;
   state.phaserEnabled = !!p.phaserEnabled;
@@ -2184,6 +1974,7 @@ function syncFromServerParams(p) {
 
 function build88KeyPiano() {
   const roll = document.getElementById('pianoRoll');
+  if (!roll) return;
   roll.innerHTML = '';
   const isBlack = [false, true, false, true, false, false, true, false, true, false, true, false];
   let whiteCount = 0;
@@ -2205,12 +1996,12 @@ function build88KeyPiano() {
     const on = () => {
       state.mousePressedNote = midi;
       k.classList.add('held');
-      fetch('/api/note', { method:'POST', body:JSON.stringify({key:midi, vel:105, on:true}) });
+      fetch('/api/note', { method:'POST', body:JSON.stringify({key:midi, vel:105, on:true}) }).catch(() => {});
     };
     const off = () => {
       if (state.mousePressedNote === midi) state.mousePressedNote = -1;
       k.classList.remove('held');
-      fetch('/api/note', { method:'POST', body:JSON.stringify({key:midi, vel:0, on:false}) });
+      fetch('/api/note', { method:'POST', body:JSON.stringify({key:midi, vel:0, on:false}) }).catch(() => {});
     };
     k.addEventListener('mousedown', on);
     k.addEventListener('mouseup', off);
@@ -2223,7 +2014,7 @@ function build88KeyPiano() {
       state.mousePressedNote = -1;
       const el = document.getElementById(`vkey_${prev}`);
       if (el) el.classList.remove('held');
-      fetch('/api/note', { method:'POST', body:JSON.stringify({key:prev, vel:0, on:false}) });
+      fetch('/api/note', { method:'POST', body:JSON.stringify({key:prev, vel:0, on:false}) }).catch(() => {});
     }
   });
 }
@@ -2247,7 +2038,6 @@ setInterval(() => {
       document.getElementById('clipLed').classList.toggle('on', !!s.clipping);
       document.getElementById('pedalBadgeTop').innerText = s.pedalDown ? "Pedal: DOWN" : "Pedal: UP";
 
-      // Monitoreo de conexión / desconexión MIDI y Audio en vivo
       const midiBadge = document.getElementById('midiConnectionBadge');
       const setupBtn = document.getElementById('btnAudioMidiTop');
       const hasHwWarning = (s.disconnectedMidiCount > 0) || !!s.savedAudioMissing;
@@ -2286,13 +2076,17 @@ setInterval(() => {
     .catch(() => {});
 }, 55);
 
-buildParametricEqModal();
-initAllKnobs();
-initProgramButtons();
-build88KeyPiano();
-scanLibrary();
-
-
+// Inicializar la UI de manera correcta y limpia
+document.addEventListener('DOMContentLoaded', () => {
+  buildParametricEqModal();
+  buildSynth3LayersPage();
+  buildOrganDrawbarsPage();
+  initAllKnobs();
+  initProgramButtons();
+  build88KeyPiano();
+  selectReverbType(state.reverbType);
+  scanLibrary();
+});
 </script>
 </body>
 </html>

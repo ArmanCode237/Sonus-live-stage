@@ -1,7 +1,7 @@
 [
   {
-    "fileName": "Royal Grand 3D XL 6.1.npno",
-    "name": "Royal Grand 3D [YaS6      XL]",
+    "fileName": "Amber Upright XL 6.2.npno",
+    "name": "Amber Upright [GrSt 132  XL]",
     "params": {
       "attackSec": 0.0010000000474974513,
       "chorusDepth": 0.44999998807907104,
@@ -65,7 +65,17 @@
       "reverbPreDelayMs": 18.0,
       "reverbShimmer": 0.44999998807907104,
       "reverbSize": 0.6499999761581421,
-      "reverbType": 0,
+      "reverbType": 2,
+      "shimmerColorMode": 1,
+      "shimmerDiffusion": 0.8799999952316284,
+      "shimmerFeedback": 0.6000000238418579,
+      "shimmerHighCutHz": 8500.0,
+      "shimmerLowCutHz": 140.0,
+      "shimmerModDepth": 0.2199999988079071,
+      "shimmerModRateHz": 0.44999998807907104,
+      "shimmerPitchMode": 1,
+      "shimmerReverbMode": 2,
+      "shimmerShiftSt": 12.0,
       "softRelease": false,
       "sustainLevel": 1.0,
       "transposeSemis": 0,
@@ -75,7 +85,7 @@
       "volume": 1.5
     },
     "slot": 1,
-    "sourcePath": "./samples/Royal Grand 3D XL 6.1.npno"
+    "sourcePath": "./samples/piano-ep/Amber Upright XL 6.2.npno"
   },
   {
     "fileName": "Ballad EP1 Med 6.0 (1).npno",

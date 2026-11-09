@@ -1195,6 +1195,160 @@ int main(int argc, char* argv[]) {
         res.set_content("{\"ok\":true}", "application/json");
     });
 
+    // ============================================================
+// PRESETS DE SINTETIZADOR Y ÓRGANO
+// ============================================================
+const std::string synthPresetsPath = "synth_presets.json";
+const std::string organPresetsPath = "organ_presets.json";
+
+auto loadPresetsFile = [](const std::string& path) {
+    json arr = json::array();
+    if (fs::exists(path)) {
+        try {
+            std::ifstream f(path);
+            arr = json::parse(f);
+        } catch (...) {}
+    }
+    return arr;
+};
+
+auto savePresetsFile = [](const std::string& path, const json& arr) {
+    std::ofstream f(path);
+    if (f) f << arr.dump(2);
+};
+
+// --- SYNTH PRESETS ---
+svr.Get("/api/synth/presets", [&](const httplib::Request&, httplib::Response& res) {
+    res.set_content(loadPresetsFile(synthPresetsPath).dump(), "application/json");
+});
+
+svr.Post("/api/synth/presets/save", [&](const httplib::Request& req, httplib::Response& res) {
+    auto body = json::parse(req.body, nullptr, false);
+    std::string name = body.value("name", "Untitled");
+    json presets = loadPresetsFile(synthPresetsPath);
+    json newPreset = {
+        {"name", name},
+        {"timestamp", std::chrono::system_clock::now().time_since_epoch().count()},
+        {"params", {
+            {"synthEnabled", engine.getSynthEnabled()},
+            {"synthMasterVol", engine.getSynthMasterVol()},
+            {"synthMacroCutoff", engine.getSynthMacroCutoff()},
+            {"layers", engine.getSynthLayersJson()},
+            {"lfos", engine.getSynthLFOsJson()},
+            {"envelopes", engine.getSynthEnvelopesJson()}
+        }}
+    };
+    // Reemplazar si existe, sino agregar
+    bool replaced = false;
+    for (auto& p : presets) {
+        if (p.value("name", "") == name) { p = newPreset; replaced = true; break; }
+    }
+    if (!replaced) presets.push_back(newPreset);
+    savePresetsFile(synthPresetsPath, presets);
+    res.set_content(json({{"ok", true}, {"presets", presets}}).dump(), "application/json");
+});
+
+svr.Post("/api/synth/presets/load", [&](const httplib::Request& req, httplib::Response& res) {
+    auto body = json::parse(req.body, nullptr, false);
+    std::string name = body.value("name", "");
+    json presets = loadPresetsFile(synthPresetsPath);
+    for (const auto& p : presets) {
+        if (p.value("name", "") == name) {
+            engine.applySynthPresetJson(p.value("params", json::object()));
+            res.set_content(json({{"ok", true}, {"preset", p}}).dump(), "application/json");
+            return;
+        }
+    }
+    res.set_content("{\"ok\":false,\"error\":\"Preset no encontrado\"}", "application/json");
+});
+
+svr.Post("/api/synth/presets/delete", [&](const httplib::Request& req, httplib::Response& res) {
+    auto body = json::parse(req.body, nullptr, false);
+    std::string name = body.value("name", "");
+    json presets = loadPresetsFile(synthPresetsPath);
+    presets.erase(std::remove_if(presets.begin(), presets.end(),
+        [&](const json& p) { return p.value("name", "") == name; }), presets.end());
+    savePresetsFile(synthPresetsPath, presets);
+    res.set_content(json({{"ok", true}, {"presets", presets}}).dump(), "application/json");
+});
+
+// --- ORGAN PRESETS ---
+svr.Get("/api/organ/presets", [&](const httplib::Request&, httplib::Response& res) {
+    res.set_content(loadPresetsFile(organPresetsPath).dump(), "application/json");
+});
+
+svr.Post("/api/organ/presets/save", [&](const httplib::Request& req, httplib::Response& res) {
+    auto body = json::parse(req.body, nullptr, false);
+    std::string name = body.value("name", "Untitled");
+    json presets = loadPresetsFile(organPresetsPath);
+    json newPreset = {
+        {"name", name},
+        {"timestamp", std::chrono::system_clock::now().time_since_epoch().count()},
+        {"params", engine.getOrganParamsJson()}
+    };
+    bool replaced = false;
+    for (auto& p : presets) {
+        if (p.value("name", "") == name) { p = newPreset; replaced = true; break; }
+    }
+    if (!replaced) presets.push_back(newPreset);
+    savePresetsFile(organPresetsPath, presets);
+    res.set_content(json({{"ok", true}, {"presets", presets}}).dump(), "application/json");
+});
+
+svr.Post("/api/organ/presets/load", [&](const httplib::Request& req, httplib::Response& res) {
+    auto body = json::parse(req.body, nullptr, false);
+    std::string name = body.value("name", "");
+    json presets = loadPresetsFile(organPresetsPath);
+    for (const auto& p : presets) {
+        if (p.value("name", "") == name) {
+            engine.applyOrganPresetJson(p.value("params", json::object()));
+            res.set_content(json({{"ok", true}, {"preset", p}}).dump(), "application/json");
+            return;
+        }
+    }
+    res.set_content("{\"ok\":false,\"error\":\"Preset no encontrado\"}", "application/json");
+});
+
+svr.Post("/api/organ/presets/delete", [&](const httplib::Request& req, httplib::Response& res) {
+    auto body = json::parse(req.body, nullptr, false);
+    std::string name = body.value("name", "");
+    json presets = loadPresetsFile(organPresetsPath);
+    presets.erase(std::remove_if(presets.begin(), presets.end(),
+        [&](const json& p) { return p.value("name", "") == name; }), presets.end());
+    savePresetsFile(organPresetsPath, presets);
+    res.set_content(json({{"ok", true}, {"presets", presets}}).dump(), "application/json");
+});
+
+// --- WAVETABLE BANK ---
+svr.Get("/api/synth/wavetables", [&](const httplib::Request&, httplib::Response& res) {
+    json arr = json::array();
+    for (const auto& wt : engine.getWavetableBank()) {
+        arr.push_back({{"name", wt.name}, {"custom", wt.custom}, {"size", SYNTH_WAVETABLE_SIZE}});
+    }
+    res.set_content(arr.dump(), "application/json");
+});
+
+svr.Post("/api/synth/wavetables/create", [&](const httplib::Request& req, httplib::Response& res) {
+    auto body = json::parse(req.body, nullptr, false);
+    Wavetable wt;
+    wt.name = body.value("name", "Custom");
+    wt.custom = true;
+    if (body.contains("data") && body["data"].is_array()) {
+        for (size_t i = 0; i < SYNTH_WAVETABLE_SIZE && i < body["data"].size(); ++i)
+            wt.data[i] = std::clamp(body["data"][i].get<float>(), -1.0f, 1.0f);
+    }
+    engine.addWavetable(wt);
+    res.set_content("{\"ok\":true}", "application/json");
+});
+
+// --- ORGAN SAMPLE LOADER ---
+svr.Post("/api/organ/loadsample", [&](const httplib::Request& req, httplib::Response& res) {
+    auto body = json::parse(req.body, nullptr, false);
+    std::string path = body.value("path", "");
+    bool ok = engine.loadOrganSample(path);
+    res.set_content(json({{"ok", ok}, {"path", path}}).dump(), "application/json");
+});
+
     std::cout << "\n[GUI] Nord Virtual Stage: http://localhost:8080\n";
 #if defined(_WIN32)
     std::system("start http://localhost:8080");
@@ -1202,6 +1356,87 @@ int main(int argc, char* argv[]) {
     std::system("open http://localhost:8080");
 #endif
 
+// Endpoints de Presets Independientes para Sintetizador y Órgano
+    const std::string synthPresetsFile = "synth_presets.json";
+    const std::string organPresetsFile = "organ_presets.json";
+    json synthPresetsArr = json::array();
+    json organPresetsArr = json::array();
+    if (fs::exists(synthPresetsFile)) { try { std::ifstream f(synthPresetsFile); synthPresetsArr = json::parse(f); } catch (...) {} }
+    if (fs::exists(organPresetsFile)) { try { std::ifstream f(organPresetsFile); organPresetsArr = json::parse(f); } catch (...) {} }
+
+    svr.Get("/api/synth/presets", [&](const httplib::Request&, httplib::Response& res) {
+        std::lock_guard<std::mutex> lock(dataMutex);
+        res.set_content(synthPresetsArr.dump(), "application/json");
+    });
+    svr.Post("/api/synth/presets/save", [&](const httplib::Request& req, httplib::Response& res) {
+        std::lock_guard<std::mutex> lock(dataMutex);
+        auto b = json::parse(req.body, nullptr, false);
+        std::string name = b.value("name", "Synth Preset");
+        json entry = {
+            {"name", name},
+            {"synthEnabled", engine.getSynthEnabled()},
+            {"synthMasterVol", engine.getSynthMasterVol()},
+            {"synthMacroCutoff", engine.getSynthMacroCutoff()},
+            {"layers", engine.getSynthLayersJson()},
+            {"lfos", engine.getSynthLFOsJson()}
+        };
+        synthPresetsArr.push_back(entry);
+        std::ofstream f(synthPresetsFile); if (f) f << synthPresetsArr.dump(2);
+        res.set_content(json({{"ok", true}, {"presets", synthPresetsArr}}).dump(), "application/json");
+    });
+    svr.Post("/api/synth/presets/load", [&](const httplib::Request& req, httplib::Response& res) {
+        std::lock_guard<std::mutex> lock(dataMutex);
+        auto b = json::parse(req.body, nullptr, false);
+        std::string name = b.value("name", "");
+        for (const auto& p : synthPresetsArr) {
+            if (p.value("name", "") == name) { engine.applySynthPresetJson(p); break; }
+        }
+        res.set_content("{\"ok\":true}", "application/json");
+    });
+    svr.Post("/api/synth/presets/delete", [&](const httplib::Request& req, httplib::Response& res) {
+        std::lock_guard<std::mutex> lock(dataMutex);
+        auto b = json::parse(req.body, nullptr, false);
+        std::string name = b.value("name", "");
+        synthPresetsArr.erase(std::remove_if(synthPresetsArr.begin(), synthPresetsArr.end(),
+            [&](const json& x) { return x.value("name", "") == name; }), synthPresetsArr.end());
+        std::ofstream f(synthPresetsFile); if (f) f << synthPresetsArr.dump(2);
+        res.set_content(json({{"ok", true}, {"presets", synthPresetsArr}}).dump(), "application/json");
+    });
+
+    svr.Get("/api/organ/presets", [&](const httplib::Request&, httplib::Response& res) {
+        std::lock_guard<std::mutex> lock(dataMutex);
+        res.set_content(organPresetsArr.dump(), "application/json");
+    });
+    svr.Post("/api/organ/presets/save", [&](const httplib::Request& req, httplib::Response& res) {
+        std::lock_guard<std::mutex> lock(dataMutex);
+        auto b = json::parse(req.body, nullptr, false);
+        std::string name = b.value("name", "Organ Preset");
+        json entry = engine.getOrganParamsJson();
+        entry["name"] = name;
+        organPresetsArr.push_back(entry);
+        std::ofstream f(organPresetsFile); if (f) f << organPresetsArr.dump(2);
+        res.set_content(json({{"ok", true}, {"presets", organPresetsArr}}).dump(), "application/json");
+    });
+    svr.Post("/api/organ/presets/load", [&](const httplib::Request& req, httplib::Response& res) {
+        std::lock_guard<std::mutex> lock(dataMutex);
+        auto b = json::parse(req.body, nullptr, false);
+        std::string name = b.value("name", "");
+        for (const auto& p : organPresetsArr) {
+            if (p.value("name", "") == name) { engine.applyOrganPresetJson(p); break; }
+        }
+        res.set_content("{\"ok\":true}", "application/json");
+    });
+    svr.Post("/api/organ/presets/delete", [&](const httplib::Request& req, httplib::Response& res) {
+        std::lock_guard<std::mutex> lock(dataMutex);
+        auto b = json::parse(req.body, nullptr, false);
+        std::string name = b.value("name", "");
+        organPresetsArr.erase(std::remove_if(organPresetsArr.begin(), organPresetsArr.end(),
+            [&](const json& x) { return x.value("name", "") == name; }), organPresetsArr.end());
+        std::ofstream f(organPresetsFile); if (f) f << organPresetsArr.dump(2);
+        res.set_content(json({{"ok", true}, {"presets", organPresetsArr}}).dump(), "application/json");
+    });
+
+    
     svr.listen("0.0.0.0", 8080);
     return 0;
 }

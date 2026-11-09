@@ -6,9 +6,9 @@
 namespace NordDSP {
 
 constexpr double NSP_SAMPLE_RATE = 44100.0;
-constexpr double NSMP_SAMPLE_RATE = 35002.0;   // 0x88BA exacto según nsmp.ts
+constexpr double NSMP_SAMPLE_RATE = 35002.0;
 constexpr double NSP_ENVELOPE_RATE = 22050.0;
-constexpr double NSMP_ENVELOPE_RATE = 21700.0; // Exacto según nsmp.ts
+constexpr double NSMP_ENVELOPE_RATE = 21700.0;
 constexpr int NSP_ROOT_OFFSET = 4;
 
 struct LoopInfo {
@@ -73,13 +73,14 @@ struct EqBandParams {
     float gainDb = 0.0f;
 };
 
+// Configuración completa de cada capa del Sintetizador (29 campos alineados)
 struct SynthLayerConfig {
     bool enabled = false;
-    int waveType = 0;       // 0=Saw, 1=Square, 2=Triangle, 3=Sine, 4=SuperSaw, 5=Noise
+    int waveType = 0;           // 0=Saw, 1=Square, 2=Triangle, 3=Sine, 4=SuperSaw, 5=Noise, 6=Wavetable, 7=Sample
     float volume = 0.75f;
     float pan = 0.0f;
-    int octave = 0;         // -2 a +2
-    int semitones = 0;      // -12 a +12
+    int octave = 0;             // -2 a +2
+    int semitones = 0;          // -12 a +12
     float detuneCents = 0.0f;
     float cutoffHz = 8500.0f;
     float resonanceQ = 0.85f;
@@ -87,6 +88,24 @@ struct SynthLayerConfig {
     float decaySec = 1.200f;
     float sustainLevel = 0.80f;
     float releaseSec = 0.450f;
+
+    // Parámetros avanzados (Unison, Oscilador, Wavetable y Envolvente de Filtro)
+    int unisonVoices = 1;       // 1 a 8 voces por nota
+    float unisonDetune = 10.0f; // 0 a 50 cents
+    float unisonSpread = 0.50f; // 0.0 a 1.0 (apertura estéreo)
+    float phaseOffset = 0.0f;   // 0.0 a 1.0
+    float keyTrack = 1.0f;      // 0.0 a 2.0
+    float velToCutoff = 0.20f;  // 0.0 a 1.0
+    float velToAmp = 1.0f;      // 0.0 a 2.0
+    int wavetableIdx = 0;       // 0 a 5
+    std::string samplePath = "";
+    int filterType = 0;         // 0=LP, 1=HP, 2=BP
+    float filterEnvAmt = 0.0f;  // -1.0 a +1.0
+    float filterKeyTrack = 0.5f;
+    float filtAttackSec = 0.01f;
+    float filtDecaySec = 0.40f;
+    float filtSustainLvl = 0.50f;
+    float filtReleaseSec = 0.40f;
 };
 
 struct SynthPresetParams {
@@ -114,19 +133,20 @@ struct SynthPresetParams {
     int synthPresetId = 1;
     float synthMasterVol = 0.80f;
     float synthMacroCutoff = 1.0f;
-    SynthLayerConfig synthLayers[3] = {
-        {true,  4, 0.80f, -0.15f,  0, 0, -8.0f,  9500.0f, 0.9f, 0.015f, 1.5f, 0.85f, 0.60f},
-        {true,  0, 0.65f,  0.15f, -1, 0,  8.0f,  6200.0f, 1.1f, 0.020f, 1.8f, 0.75f, 0.70f},
-        {false, 3, 0.55f,  0.00f, +1, 0,  0.0f, 12000.0f, 0.7f, 0.180f, 2.2f, 0.90f, 1.10f}
-    };
+    SynthLayerConfig synthLayers[3];
 
-    // Módulo 3: Órgano (B3 / Vox / Farfisa con Drawbars y Rotary)
+    // Módulo 3: Órgano Nord C2D (B3 / Vox / Farfisa / Pipe)
     bool organEnabled = false;
-    int organModel = 0;
-    float organVolume = 0.75f;
+    int organModel = 0;         // 0=B3, 1=Vox, 2=Farfisa, 3=Pipe
+    float organVolume = 0.80f;
     bool organRotaryFast = false;
-    float organDrive = 0.15f;
-    float drawbars[9] = {0.8f, 0.6f, 0.9f, 0.4f, 0.2f, 0.3f, 0.1f, 0.1f, 0.2f};
+    float organDrive = 0.12f;
+    float drawbars[9] = {1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}; // 88 8000 000
+    int organVibratoMode = 0;   // 0=Off, 1=V1, 2=V2, 3=V3, 4=C1, 5=C2, 6=C3
+    bool organPercEnabled = false;
+    int organPercHarmonic = 3;  // 2=2nd, 3=3rd
+    float organPercDecaySec = 0.35f;
+    float organPercLevel = 0.85f;
 
     // Ecualizador Paramétrico de 5 Bandas
     bool eqEnabled = true;
@@ -140,7 +160,7 @@ struct SynthPresetParams {
         {12000.0f, 0.9f, 0.0f}
     };
 
-    // Modulaciones
+    // Modulaciones y Delay
     bool chorusEnabled = false;
     float chorusRateHz = 0.8f;
     float chorusDepth = 0.45f;
@@ -156,7 +176,6 @@ struct SynthPresetParams {
     float tremoloRateHz = 4.5f;
     float tremoloDepth = 0.50f;
 
-    // Delay
     bool delayEnabled = false;
     float delayTimeMs = 360.0f;
     float delayFeedback = 0.35f;
@@ -164,7 +183,7 @@ struct SynthPresetParams {
     float delayMix = 0.25f;
     bool delayPingPong = true;
 
-    // Reverb Clásica y ShimmerReverbEngine
+    // Reverb y Shimmer
     bool reverbEnabled = true;
     int reverbType = 2;
     float reverbMix = 0.25f;
@@ -174,12 +193,12 @@ struct SynthPresetParams {
     float reverbShimmer = 0.45f;
 
     float shimmerShiftSt = 12.0f;
-    float shimmerFeedback = 0.60f;
+    float shimmerFeedback = 0.65f;
     float shimmerDiffusion = 0.88f;
     float shimmerLowCutHz = 140.0f;
     float shimmerHighCutHz = 8500.0f;
     float shimmerModRateHz = 0.45f;
-    float shimmerModDepth = 0.22f;
+    float shimmerModDepth = 0.25f;
     int shimmerPitchMode = 1;
     int shimmerReverbMode = 2;
     int shimmerColorMode = 1;

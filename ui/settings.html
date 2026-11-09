@@ -45,170 +45,12 @@
     border-radius: 4px; padding: 2px 7px; font-size: 10px; cursor: pointer;
   }
   .forget-btn:hover { background: #7f1d1d; color: #fff; }
-
-/* ========================================================================
-   SETTINGS UI REFINEMENT v2 — visual layer only
-   ======================================================================== */
-:root {
-  --s-bg:#08090b; --s-panel:#111419; --s-panel2:#171a1f;
-  --s-line:#30353d; --s-text:#f2f4f6; --s-muted:#9da5af;
-  --s-red:#d21b25; --s-green:#48e889; --s-amber:#f2b84b;
-}
-html { background:var(--s-bg); }
-body {
-  min-height:100vh;
-  max-width:1120px;
-  margin:0 auto;
-  padding:28px;
-  background:
-    radial-gradient(circle at 50% 0%,rgba(210,27,37,.11),transparent 38%),
-    linear-gradient(180deg,#0d0f12,#070809 75%);
-  color:var(--s-text);
-}
-.header-bar {
-  position:sticky; top:0; z-index:5;
-  min-height:58px;
-  margin:0 -28px 20px;
-  padding:0 28px 12px;
-  background:linear-gradient(180deg,rgba(13,15,18,.98),rgba(13,15,18,.90));
-  border-bottom:1px solid #3a0b0f;
-  box-shadow:0 10px 30px rgba(0,0,0,.24);
-  backdrop-filter:blur(10px);
-}
-.header-bar h2 { font-size:15px; letter-spacing:1.4px; color:#fff; }
-.header-bar h2::first-letter { color:#f0444d; }
-.card {
-  position:relative;
-  background:linear-gradient(180deg,#171a1f,#101216);
-  border:1px solid #30353d;
-  border-radius:13px;
-  padding:18px 20px;
-  margin-bottom:16px;
-  box-shadow:0 16px 38px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.035);
-}
-.card-title {
-  min-height:32px;
-  margin-bottom:17px;
-  padding-bottom:11px;
-  border-bottom:1px solid #2a2e35;
-  color:#f2b84b;
-  letter-spacing:1.05px;
-}
-.card-title span { color:#e9edf1; }
-.card-title::before {
-  content:"";
-  display:inline-block;
-  width:3px; height:16px;
-  margin-right:9px;
-  vertical-align:-3px;
-  border-radius:2px;
-  background:#d21b25;
-  box-shadow:0 0 10px rgba(210,27,37,.4);
-}
-.form-grid {
-  grid-template-columns:minmax(190px,220px) minmax(0,1fr);
-  gap:12px 18px;
-  padding:4px 0;
-}
-label { color:#aeb6c0; font-size:11px; letter-spacing:.25px; }
-select {
-  min-height:38px;
-  padding:8px 11px;
-  border-radius:7px;
-  border:1px solid #3b414a;
-  background:#0b0d10;
-  color:#f4f6f8;
-  transition:border-color .16s ease,box-shadow .16s ease,background .16s ease;
-}
-select:hover { border-color:#59616c; background:#0f1114; }
-select:focus { border-color:#d21b25; box-shadow:0 0 0 3px rgba(210,27,37,.14); }
-.btn {
-  min-height:34px;
-  border-radius:7px;
-  border:1px solid #454b54;
-  background:#252a30;
-  padding:0 13px;
-  letter-spacing:.35px;
-  box-shadow:0 3px 8px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.05);
-  transition:transform .15s ease,background .15s ease,border-color .15s ease;
-}
-.btn:hover { background:#323840; border-color:#69717c; transform:translateY(-1px); }
-.btn:active { transform:translateY(0); }
-.btn.primary { background:linear-gradient(180deg,#d9232d,#a41118); border-color:#ef5b62; }
-.btn.primary:hover { background:linear-gradient(180deg,#e72d36,#b5161d); }
-.btn-row { margin-top:18px; padding-top:14px; border-top:1px solid #272b31; }
-.status-box {
-  margin-top:14px;
-  padding:11px 13px;
-  min-height:40px;
-  display:flex; align-items:center;
-  background:#0b0d10;
-  border:1px solid #2d333b;
-  border-left:3px solid var(--s-green);
-  border-radius:7px;
-  color:#a9f0bd;
-  box-shadow:inset 0 0 14px rgba(0,0,0,.4);
-}
-.alert-banner {
-  padding:12px 14px;
-  margin-bottom:16px;
-  border-radius:9px;
-  background:rgba(210,27,37,.12);
-  border:1px solid rgba(244,68,77,.55);
-  box-shadow:0 10px 25px rgba(0,0,0,.18);
-}
-.midi-ports-box {
-  max-height:300px;
-  padding:6px;
-  border-radius:9px;
-  border:1px solid #2f353d;
-  background:#0b0d10;
-}
-.midi-item {
-  min-height:48px;
-  margin:3px 0;
-  padding:8px 10px;
-  border:1px solid transparent;
-  border-bottom-color:#242930;
-  border-radius:7px;
-  transition:background .15s ease,border-color .15s ease;
-}
-.midi-item:hover { background:#15191e; border-color:#343a43; }
-.midi-item.disconnected { background:rgba(210,27,37,.07); }
-.midi-item input[type="checkbox"] { width:15px; height:15px; accent-color:#d21b25; }
-.conn-badge { border-radius:999px; padding:4px 8px; letter-spacing:.4px; }
-.conn-badge.ok { background:rgba(72,232,137,.12); color:#72eea0; border:1px solid rgba(72,232,137,.25); }
-.conn-badge.missing { background:rgba(244,68,77,.12); color:#ff9ca2; border:1px solid rgba(244,68,77,.28); }
-.forget-btn { min-height:26px; border-radius:6px; transition:all .15s ease; }
-.forget-btn:hover { background:#9f1820; border-color:#ef5b62; }
-button:focus-visible,select:focus-visible,input:focus-visible { outline:2px solid rgba(113,183,255,.7); outline-offset:2px; }
-::-webkit-scrollbar { width:9px; height:9px; }
-::-webkit-scrollbar-track { background:#08090b; }
-::-webkit-scrollbar-thumb { background:#363c44; border-radius:999px; border:2px solid #08090b; }
-::-webkit-scrollbar-thumb:hover { background:#555e68; }
-@media (max-width:720px) {
-  body { padding:18px 14px; }
-  .header-bar { margin:0 -14px 16px; padding:0 14px 10px; }
-  .header-bar h2 { font-size:13px; }
-  .form-grid { grid-template-columns:1fr; gap:7px; }
-  .form-grid label { margin-top:6px; }
-  .btn-row { flex-direction:column; }
-  .btn-row .btn { width:100%; }
-  .card { padding:15px; }
-}
-@media (max-width:460px) {
-  .header-bar { align-items:flex-start; gap:10px; flex-direction:column; }
-  .header-bar .btn { width:100%; }
-  .card-title { align-items:flex-start; gap:8px; flex-direction:column; }
-  .midi-item { align-items:flex-start; }
-}
-
 </style>
 </head>
 <body>
 
 <div class="header-bar">
-  <h2>⚙ Configuración Persistente de Audio & MIDI</h2>
+  <h2>⚙ Configuración de Audio & MIDI</h2>
   <button class="btn" onclick="window.close()">Cerrar Ventana</button>
 </div>
 
@@ -216,9 +58,10 @@ button:focus-visible,select:focus-visible,input:focus-visible { outline:2px soli
 
 <div class="card">
   <div class="card-title">
-    <span>1. Motor de Audio (ASIO / WASAPI), Dispositivo y Sample Rate</span>
+    <span>1. Selección de Motor de Audio (ASIO / WASAPI), Dispositivo y Sample Rate</span>
     <button class="btn" style="padding:3px 8px; font-size:10px;" onclick="rescanAudio()">Re-escanear Hardware</button>
   </div>
+
   <div class="form-grid">
     <label for="apiSelect">1. Motor / Tipo de Driver:</label>
     <select id="apiSelect" onchange="onApiFilterChange()"></select>
@@ -241,16 +84,18 @@ button:focus-visible,select:focus-visible,input:focus-visible { outline:2px soli
     <label>Latencia Estimada:</label>
     <div id="latencyPreview" style="font-family:Consolas,monospace; font-size:13px; color:var(--green);">2.67 ms</div>
   </div>
+
   <div class="btn-row">
     <button class="btn" onclick="testTone()">🔊 Tono de Prueba (440 Hz)</button>
-    <button class="btn primary" onclick="applyAudioSettings()">Guardar y Aplicar Audio</button>
+    <button class="btn primary" onclick="applyAudioSettings()">Aplicar Audio</button>
   </div>
+
   <div class="status-box" id="audioStatusBox">Cargando dispositivos...</div>
 </div>
 
 <div class="card">
   <div class="card-title">
-    <span>2. Entradas MIDI (Detección Hot-Plug y Estado de Conexión en Vivo)</span>
+    <span>2. Entradas MIDI (Desmarcadas por defecto — Selecciona tu controlador)</span>
     <button class="btn" style="padding:3px 8px; font-size:10px;" onclick="refreshMidi()">Refrescar MIDI</button>
   </div>
   <div class="midi-ports-box" id="midiList"></div>
@@ -260,31 +105,27 @@ button:focus-visible,select:focus-visible,input:focus-visible { outline:2px soli
 let hwData = null;
 
 function loadHardware() {
-  fetch('/api/hardware').then(r => r.json()).then(hw => {
-    hwData = hw;
-    document.getElementById('bufSelect').value = hw.bufferSize || 128;
+  fetch('/api/hardware')
+    .then(r => r.json())
+    .then(hw => {
+      hwData = hw;
+      document.getElementById('bufSelect').value = hw.bufferSize || 128;
 
-    const banner = document.getElementById('missingAudioBanner');
-    if (hw.savedAudioMissing && hw.savedAudioDeviceName) {
-      banner.style.display = 'block';
-      banner.innerText = `⚠ La interfaz guardada "[${hw.savedAudioApi}] ${hw.savedAudioDeviceName}" no está conectada actualmente. Usando salida de respaldo activa.`;
-    } else {
-      banner.style.display = 'none';
-    }
+      const apiSel = document.getElementById('apiSelect');
+      apiSel.innerHTML = '';
+      (hw.availableApis || ['WASAPI', 'ASIO']).forEach(api => {
+        const opt = document.createElement('option');
+        opt.value = api;
+        opt.text = `Windows ${api}`;
+        if (api === hw.activeApi) opt.selected = true;
+        apiSel.appendChild(opt);
+      });
 
-    const apiSel = document.getElementById('apiSelect');
-    apiSel.innerHTML = '';
-    (hw.availableApis || ['WASAPI', 'ASIO']).forEach(api => {
-      const opt = document.createElement('option');
-      opt.value = api; opt.text = `Windows ${api}`;
-      if (api === hw.activeApi) opt.selected = true;
-      apiSel.appendChild(opt);
+      onApiFilterChange(hw.activeAudioUid, hw.sampleRate);
+      renderMidi(hw.midiPorts);
+      document.getElementById('audioStatusBox').innerText =
+        `ACTIVO: [${hw.activeApi}] ${hw.activeAudioDeviceName} @ ${hw.sampleRate} Hz (${hw.bufferSize} samples — ${hw.latencyMs.toFixed(2)} ms)`;
     });
-    onApiFilterChange(hw.activeAudioUid, hw.sampleRate);
-    renderMidi(hw.midiPorts);
-    document.getElementById('audioStatusBox').innerText =
-      `ACTIVO (Guardado en hardware_config.json): [${hw.activeApi}] ${hw.activeAudioDeviceName} @ ${hw.sampleRate} Hz (${hw.bufferSize} samples — ${hw.latencyMs.toFixed(2)} ms)`;
-  });
 }
 
 function onApiFilterChange(preferredUid = null, preferredSr = null) {
@@ -292,12 +133,15 @@ function onApiFilterChange(preferredUid = null, preferredSr = null) {
   const chosenApi = document.getElementById('apiSelect').value;
   const devSel = document.getElementById('deviceSelect');
   devSel.innerHTML = '';
+
   hwData.audioDevices.filter(d => d.api === chosenApi).forEach(d => {
     const opt = document.createElement('option');
-    opt.value = d.uid; opt.text = `${d.name} (${d.channels} ch)`;
+    opt.value = d.uid;
+    opt.text = `${d.name} (${d.channels} ch)`;
     if (preferredUid !== null && d.uid === preferredUid) opt.selected = true;
     devSel.appendChild(opt);
   });
+
   onDeviceSelectionChange(preferredSr);
 }
 
@@ -307,11 +151,14 @@ function onDeviceSelectionChange(preferredSr = null) {
   const dev = hwData.audioDevices.find(d => d.uid === uid);
   const srSel = document.getElementById('srSelect');
   srSel.innerHTML = '';
+
   const rates = (dev && dev.sampleRates && dev.sampleRates.length) ? dev.sampleRates : [44100, 48000, 88200, 96000];
   const targetSr = preferredSr || (dev ? dev.preferredSr : 48000);
+
   rates.forEach(r => {
     const opt = document.createElement('option');
-    opt.value = r; opt.text = `${r} Hz`;
+    opt.value = r;
+    opt.text = `${r} Hz`;
     if (r === targetSr) opt.selected = true;
     srSel.appendChild(opt);
   });
@@ -328,96 +175,62 @@ function applyAudioSettings() {
   const uid = parseInt(document.getElementById('deviceSelect').value);
   const sr = parseInt(document.getElementById('srSelect').value);
   const buf = parseInt(document.getElementById('bufSelect').value);
-  document.getElementById('audioStatusBox').innerText = "Aplicando y guardando configuración...";
+
+  document.getElementById('audioStatusBox').innerText = "Aplicando configuración...";
   fetch('/api/hardware/audio', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({ uid, sampleRate: sr, bufferSize: buf })
-  }).then(r => r.json()).then(hw => {
+  })
+  .then(r => r.json())
+  .then(hw => {
     hwData = hw;
     document.getElementById('audioStatusBox').innerText = hw.message;
     onApiFilterChange(hw.activeAudioUid, hw.sampleRate);
   });
 }
 
-function rescanAudio() { fetch('/api/hardware/rescan', { method: 'POST' }).then(() => loadHardware()); }
+function rescanAudio() {
+  fetch('/api/hardware/rescan', { method: 'POST' }).then(() => loadHardware());
+}
+
 function testTone() { fetch('/api/testtone', { method: 'POST' }); }
 
 function renderMidi(ports) {
   const box = document.getElementById('midiList');
   box.innerHTML = '';
   if (!ports || !ports.length) {
-    box.innerHTML = '<div style="color:#888; padding:8px;">No se detectaron entradas MIDI USB conectadas ni guardadas.</div>';
+    box.innerHTML = '<div style="color:#888;">No se detectaron entradas MIDI USB.</div>';
     return;
   }
-  ports.forEach((p, idx) => {
+  ports.forEach(p => {
     const div = document.createElement('div');
-    div.className = 'midi-item' + (p.connected ? '' : ' disconnected');
-
-    const left = document.createElement('div');
-    left.style.cssText = 'display:flex; align-items:center; gap:10px; flex:1;';
-
-    const chk = document.createElement('input');
-    chk.type = 'checkbox';
-    chk.id = `midi_chk_${idx}`;
-    chk.checked = !!p.enabled;
-    chk.onchange = () => toggleMidiByName(p.name, chk.checked);
-
-    const lbl = document.createElement('label');
-    lbl.htmlFor = `midi_chk_${idx}`;
-    lbl.style.cssText = 'cursor:pointer; flex:1; color:' + (p.connected ? '#fff' : '#94a3b8');
-    lbl.innerText = p.connected ? `[Puerto ${p.index}] ${p.name}` : `${p.name}`;
-
-    left.append(chk, lbl);
-
-    const right = document.createElement('div');
-    right.style.cssText = 'display:flex; align-items:center; gap:8px;';
-
-    const badge = document.createElement('span');
-    badge.className = 'conn-badge ' + (p.connected ? 'ok' : 'missing');
-    badge.innerText = p.connected ? 'CONECTADO' : 'NO CONECTADO';
-    right.appendChild(badge);
-
-    if (!p.connected) {
-      const fBtn = document.createElement('button');
-      fBtn.className = 'forget-btn';
-      fBtn.innerText = '✕ Olvidar';
-      fBtn.onclick = () => forgetMidiPort(p.name);
-      right.appendChild(fBtn);
-    }
-
-    div.append(left, right);
+    div.className = 'midi-item';
+    div.innerHTML = `
+      <input type="checkbox" id="m_${p.index}" ${p.enabled ? 'checked' : ''} onchange="toggleMidi(${p.index}, this.checked)">
+      <label for="m_${p.index}" style="cursor:pointer; flex:1;">Puerto [${p.index}]: ${p.name}</label>
+    `;
     box.appendChild(div);
   });
 }
 
-function toggleMidiByName(portName, enabled) {
+function toggleMidi(index, enabled) {
   fetch('/api/hardware/midi', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ name: portName, enabled })
-  }).then(r => r.json()).then(hw => renderMidi(hw.midiPorts));
-}
-
-function forgetMidiPort(portName) {
-  fetch('/api/hardware/midi', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ forgetName: portName })
-  }).then(r => r.json()).then(hw => renderMidi(hw.midiPorts));
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ index, enabled })
+  });
 }
 
 function refreshMidi() {
   fetch('/api/hardware/midi', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({ refresh: true })
-  }).then(r => r.json()).then(hw => renderMidi(hw.midiPorts));
+  })
+  .then(r => r.json())
+  .then(hw => renderMidi(hw.midiPorts));
 }
-
-// Monitorear en tiempo real cada 2 segundos si se conecta o desconecta algún teclado MIDI
-setInterval(() => {
-  fetch('/api/hardware').then(r => r.json()).then(hw => {
-    hwData = hw;
-    renderMidi(hw.midiPorts);
-  }).catch(() => {});
-}, 2000);
 
 loadHardware();
 </script>

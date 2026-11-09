@@ -127,6 +127,24 @@ void NordPianoEngine::applyPreset(const SynthPresetParams& p) {
     setShimmerPitchMode(p.shimmerPitchMode);
     setShimmerReverbMode(p.shimmerReverbMode);
     setShimmerColorMode(p.shimmerColorMode);
+
+    // Al final de NordPianoEngine::applyPreset(const SynthPresetParams& p):
+    multiSynth_.synthEnabled = p.synthEnabled;
+    multiSynth_.synthPresetId = p.synthPresetId;
+    multiSynth_.synthMasterVol = p.synthMasterVol;
+    multiSynth_.synthMacroCutoff = p.synthMacroCutoff;
+    for (int i = 0; i < 3; ++i) {
+        multiSynth_.layers[i].cfg = p.synthLayers[i];
+    }
+
+    organModule_.organEnabled = p.organEnabled;
+    organModule_.organModel = p.organModel;
+    organModule_.organVolume = p.organVolume;
+    organModule_.organRotaryFast = p.organRotaryFast;
+    organModule_.organDrive = p.organDrive;
+    for (int d = 0; d < 9; ++d) {
+        organModule_.drawbars[d] = p.drawbars[d];
+    }
 }
 
 void NordPianoEngine::setEqBandGainDb(int bandIdx, float db) {
@@ -218,6 +236,26 @@ SynthPresetParams NordPianoEngine::getCurrentParams() const {
     p.shimmerPitchMode = shimmerPitchMode_.load();
     p.shimmerReverbMode = shimmerReverbMode_.load();
     p.shimmerColorMode = shimmerColorMode_.load();
+
+    // Al final de NordPianoEngine::getCurrentParams() const (antes de return p;):
+    p.synthEnabled = multiSynth_.synthEnabled;
+    p.synthPresetId = multiSynth_.synthPresetId;
+    p.synthMasterVol = multiSynth_.synthMasterVol;
+    p.synthMacroCutoff = multiSynth_.synthMacroCutoff;
+    for (int i = 0; i < 3; ++i) {
+        p.synthLayers[i] = multiSynth_.layers[i].cfg;
+    }
+
+    p.organEnabled = organModule_.organEnabled;
+    p.organModel = organModule_.organModel;
+    p.organVolume = organModule_.organVolume;
+    p.organRotaryFast = organModule_.organRotaryFast;
+    p.organDrive = organModule_.organDrive;
+    for (int d = 0; d < 9; ++d) {
+        p.drawbars[d] = organModule_.drawbars[d];
+    }
+
+    
     return p;
 }
 
@@ -411,10 +449,13 @@ void NordPianoEngine::handleNoteOnInternal(const PianoInstrument& inst, int rawM
 }
 
 void NordPianoEngine::handleNoteOffInternal(int rawMidiKey) {
+    // Propagar Note Off a los submódulos de sintetizador y órgano
+    multiSynth_.noteOff(rawMidiKey, sustainPedalDown_);
+    organModule_.noteOff(rawMidiKey, sustainPedalDown_);
+
     for (auto& v : voices_) {
         if (v.active && v.midiKey == rawMidiKey && v.keyHeld) {
             v.keyHeld = false;
-            // CORRECCIÓN: Si el pedal NO está presionado, pasar siempre a Release (incluso en las últimas 2 octavas)
             if (sustainPedalDown_) {
                 v.sustainedByPedal = true;
             } else if (v.stage != EnvStage::FastStealFade) {
@@ -428,6 +469,10 @@ void NordPianoEngine::handleNoteOffInternal(int rawMidiKey) {
 void NordPianoEngine::handleSustainInternal(bool down) {
     if (sustainPedalDown_ == down) return;
     sustainPedalDown_ = down;
+
+    // Propagar el estado del pedal de sostenido a los submódulos
+    multiSynth_.setSustain(down);
+    organModule_.setSustain(down);
 
     if (down) {
         for (auto& v : voices_) {
@@ -463,6 +508,8 @@ void NordPianoEngine::render(float* outInterleavedStereo, unsigned int numFrames
         else if (ev.type == 3) handleSustainInternal(ev.data1 != 0);
         else if (ev.type == 4) {
             for (auto& v : voices_) { v.active = false; v.stage = EnvStage::Idle; }
+            multiSynth_.allNotesOff();
+            organModule_.allNotesOff();
         }
     }
     midiReadIdx_.store(r, std::memory_order_release);
