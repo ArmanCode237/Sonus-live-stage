@@ -6,7 +6,9 @@
 namespace NordDSP {
 
 constexpr double NSP_SAMPLE_RATE = 44100.0;
+constexpr double NSMP_SAMPLE_RATE = 35002.0;   // 0x88BA exacto según nsmp.ts
 constexpr double NSP_ENVELOPE_RATE = 22050.0;
+constexpr double NSMP_ENVELOPE_RATE = 21700.0; // Exacto según nsmp.ts
 constexpr int NSP_ROOT_OFFSET = 4;
 
 struct LoopInfo {
@@ -71,6 +73,22 @@ struct EqBandParams {
     float gainDb = 0.0f;
 };
 
+struct SynthLayerConfig {
+    bool enabled = false;
+    int waveType = 0;       // 0=Saw, 1=Square, 2=Triangle, 3=Sine, 4=SuperSaw, 5=Noise
+    float volume = 0.75f;
+    float pan = 0.0f;
+    int octave = 0;         // -2 a +2
+    int semitones = 0;      // -12 a +12
+    float detuneCents = 0.0f;
+    float cutoffHz = 8500.0f;
+    float resonanceQ = 0.85f;
+    float attackSec = 0.010f;
+    float decaySec = 1.200f;
+    float sustainLevel = 0.80f;
+    float releaseSec = 0.450f;
+};
+
 struct SynthPresetParams {
     int maxVoices = 128;
     int transposeSemis = 0;
@@ -79,7 +97,8 @@ struct SynthPresetParams {
     bool softRelease = false;
     int kbdTouch = 1;
 
-    // Filtro y Envolvente
+    // Módulo 1: Piano / Sample Principal
+    bool pianoEnabled = true;
     float cutoffHz = 20000.0f;
     float resonanceQ = 0.707f;
     float attackSec = 0.001f;
@@ -90,7 +109,26 @@ struct SynthPresetParams {
     float volume = 0.85f;
     float pan = 0.0f;
 
-    // Ecualizador Paramétrico de 5 Bandas + HPF/LPF
+    // Módulo 2: Sintetizador de 3 Capas
+    bool synthEnabled = false;
+    int synthPresetId = 1;
+    float synthMasterVol = 0.80f;
+    float synthMacroCutoff = 1.0f;
+    SynthLayerConfig synthLayers[3] = {
+        {true,  4, 0.80f, -0.15f,  0, 0, -8.0f,  9500.0f, 0.9f, 0.015f, 1.5f, 0.85f, 0.60f},
+        {true,  0, 0.65f,  0.15f, -1, 0,  8.0f,  6200.0f, 1.1f, 0.020f, 1.8f, 0.75f, 0.70f},
+        {false, 3, 0.55f,  0.00f, +1, 0,  0.0f, 12000.0f, 0.7f, 0.180f, 2.2f, 0.90f, 1.10f}
+    };
+
+    // Módulo 3: Órgano (B3 / Vox / Farfisa con Drawbars y Rotary)
+    bool organEnabled = false;
+    int organModel = 0;
+    float organVolume = 0.75f;
+    bool organRotaryFast = false;
+    float organDrive = 0.15f;
+    float drawbars[9] = {0.8f, 0.6f, 0.9f, 0.4f, 0.2f, 0.3f, 0.1f, 0.1f, 0.2f};
+
+    // Ecualizador Paramétrico de 5 Bandas
     bool eqEnabled = true;
     float lowCutHz = 20.0f;
     float highCutHz = 20000.0f;
@@ -102,7 +140,7 @@ struct SynthPresetParams {
         {12000.0f, 0.9f, 0.0f}
     };
 
-    // Modulaciones (Chorus, Phaser, Tremolo)
+    // Modulaciones
     bool chorusEnabled = false;
     float chorusRateHz = 0.8f;
     float chorusDepth = 0.45f;
@@ -118,7 +156,7 @@ struct SynthPresetParams {
     float tremoloRateHz = 4.5f;
     float tremoloDepth = 0.50f;
 
-    // Delay Independiente
+    // Delay
     bool delayEnabled = false;
     float delayTimeMs = 360.0f;
     float delayFeedback = 0.35f;
@@ -126,26 +164,25 @@ struct SynthPresetParams {
     float delayMix = 0.25f;
     bool delayPingPong = true;
 
-    // Reverb Clásica (0 = Room, 1 = Plate, 2 = Hall, 3 = ShimmerReverbEngine)
+    // Reverb Clásica y ShimmerReverbEngine
     bool reverbEnabled = true;
     int reverbType = 2;
-    float reverbMix = 0.28f;
+    float reverbMix = 0.25f;
     float reverbSize = 0.65f;
     float reverbDamping = 0.40f;
     float reverbPreDelayMs = 18.0f;
     float reverbShimmer = 0.45f;
 
-    // Parámetros dedicados de ShimmerReverbEngine (ValhallaShimmer Architecture)
-    float shimmerShiftSt = 12.0f;       // -12 a +12 semitonos
-    float shimmerFeedback = 0.60f;      // 0.0 a 0.985
-    float shimmerDiffusion = 0.88f;     // 0.0 a 0.98
-    float shimmerLowCutHz = 140.0f;     // 20 a 1000 Hz
-    float shimmerHighCutHz = 8500.0f;   // 1000 a 20000 Hz
-    float shimmerModRateHz = 0.45f;     // 0.05 a 5.0 Hz
-    float shimmerModDepth = 0.22f;      // 0.0 a 1.0
-    int shimmerPitchMode = 1;           // 0=Bypass, 1=Single, 2=Dual, 3=SingleReverse, 4=DualReverse
-    int shimmerReverbMode = 2;          // 0=Mono, 1=SmallStereo, 2=MediumStereo, 3=BigStereo
-    int shimmerColorMode = 1;           // 0=Bright, 1=Dark
+    float shimmerShiftSt = 12.0f;
+    float shimmerFeedback = 0.60f;
+    float shimmerDiffusion = 0.88f;
+    float shimmerLowCutHz = 140.0f;
+    float shimmerHighCutHz = 8500.0f;
+    float shimmerModRateHz = 0.45f;
+    float shimmerModDepth = 0.22f;
+    int shimmerPitchMode = 1;
+    int shimmerReverbMode = 2;
+    int shimmerColorMode = 1;
 };
 
 struct PianoInstrument {

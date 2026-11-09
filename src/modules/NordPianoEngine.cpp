@@ -25,6 +25,8 @@ NordPianoEngine::NordPianoEngine() {
 void NordPianoEngine::setSampleRate(double sr) {
     hostSampleRate_ = (sr > 8000.0) ? sr : 48000.0;
     float fsr = static_cast<float>(hostSampleRate_);
+    multiSynth_.init(fsr);
+    organModule_.init(fsr);
     svfFilter_.reset();
     modRack_.init(fsr);
     delayFx_.init(fsr);
@@ -310,6 +312,10 @@ const StrokeSample* NordPianoEngine::selectStrokeFor(const PianoInstrument& inst
 void NordPianoEngine::handleNoteOnInternal(const PianoInstrument& inst, int rawMidiKey, int velocity) {
     int midiKey = std::clamp(rawMidiKey + transposeSemis_.load() + octaveShift_.load() * 12, 0, 127);
 
+    multiSynth_.noteOn(rawMidiKey, midiKey, velocity);
+    organModule_.noteOn(rawMidiKey, midiKey, velocity);
+
+
     const StrokeSample* stroke = selectStrokeFor(inst, midiKey, velocity);
     if (!stroke || stroke->frames < 4) return;
 
@@ -508,6 +514,9 @@ void NordPianoEngine::render(float* outInterleavedStereo, unsigned int numFrames
 
     int activeCount = 0;
     uint8_t localKeyMap[128] = {0};
+
+    multiSynth_.render(outInterleavedStereo, numFrames);
+    organModule_.render(outInterleavedStereo, numFrames);
 
     if (inst && !inst->strokes.empty()) {
         for (size_t vIdx = 0; vIdx < maxAllowed; ++vIdx) {

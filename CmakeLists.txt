@@ -1,126 +1,96 @@
-cmake_minimum_required(VERSION 3.20)
-project(NordVirtualStage VERSION 2.0.0 LANGUAGES C CXX)
+cmake_minimum_required(VERSION 3.16)
+project(NordVirtualStage VERSION 5.1 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(POLICY CMP0169)
-    cmake_policy(SET CMP0169 OLD)
-endif()
-
 include(FetchContent)
 
-# 1. RtMidi
-FetchContent_Declare(
-    rtmidi
-    GIT_REPOSITORY https://github.com/thestk/rtmidi.git
-    GIT_TAG 6.0.0
-)
-FetchContent_GetProperties(rtmidi)
-if(NOT rtmidi_POPULATED)
-    FetchContent_Populate(rtmidi)
+# Evitar colisión del target "uninstall" entre RtAudio y RtMidi y activar ASIO/WASAPI
+set(RTAUDIO_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(RTAUDIO_BUILD_TESTING OFF CACHE BOOL "" FORCE)
+set(RTAUDIO_TARGETNAME_UNINSTALL "uninstall_rtaudio" CACHE STRING "" FORCE)
+if(WIN32)
+    set(RTAUDIO_API_WASAPI ON CACHE BOOL "" FORCE)
+    set(RTAUDIO_API_ASIO ON CACHE BOOL "" FORCE)
 endif()
 
-# 2. RtAudio
 FetchContent_Declare(
     rtaudio
     GIT_REPOSITORY https://github.com/thestk/rtaudio.git
     GIT_TAG 6.0.1
 )
-FetchContent_GetProperties(rtaudio)
-if(NOT rtaudio_POPULATED)
-    FetchContent_Populate(rtaudio)
-endif()
 
-# 3. nlohmann/json
-set(JSON_BuildTests OFF CACHE INTERNAL "")
+set(RTMIDI_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+set(RTMIDI_BUILD_TESTING OFF CACHE BOOL "" FORCE)
+set(RTMIDI_TARGETNAME_UNINSTALL "uninstall_rtmidi" CACHE STRING "" FORCE)
+
+FetchContent_Declare(
+    rtmidi
+    GIT_REPOSITORY https://github.com/thestk/rtmidi.git
+    GIT_TAG 6.0.0
+)
+
 FetchContent_Declare(
     json
     GIT_REPOSITORY https://github.com/nlohmann/json.git
     GIT_TAG v3.11.3
 )
-FetchContent_MakeAvailable(json)
 
-# 4. Descargar dr_wav.h y httplib.h automáticamente
-file(MAKE_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/third_party")
-
-set(DR_WAV_PATH "${CMAKE_CURRENT_SOURCE_DIR}/third_party/dr_wav.h")
-if(NOT EXISTS "${DR_WAV_PATH}")
-    file(DOWNLOAD
-        "https://raw.githubusercontent.com/mackron/dr_libs/master/dr_wav.h"
-        "${DR_WAV_PATH}"
-        SHOW_PROGRESS
-    )
-endif()
-
-set(HTTPLIB_PATH "${CMAKE_CURRENT_SOURCE_DIR}/third_party/httplib.h")
-if(NOT EXISTS "${HTTPLIB_PATH}")
-    file(DOWNLOAD
-        "https://raw.githubusercontent.com/yhirose/cpp-httplib/master/httplib.h"
-        "${HTTPLIB_PATH}"
-        SHOW_PROGRESS
-    )
-endif()
-
-set(RTMIDI_SOURCES "${rtmidi_SOURCE_DIR}/RtMidi.cpp")
-set(RTAUDIO_SOURCES "${rtaudio_SOURCE_DIR}/RtAudio.cpp")
-
-if(WIN32)
-    list(APPEND RTAUDIO_SOURCES
-        "${rtaudio_SOURCE_DIR}/include/asio.cpp"
-        "${rtaudio_SOURCE_DIR}/include/asiodrivers.cpp"
-        "${rtaudio_SOURCE_DIR}/include/asiolist.cpp"
-        "${rtaudio_SOURCE_DIR}/include/iasiothiscallresolver.cpp"
-    )
-endif()
+FetchContent_MakeAvailable(rtaudio rtmidi json)
 
 add_executable(NordVirtualStage
     src/main.cpp
-    src/BankLoader.cpp
-    src/NordPianoEngine.cpp
-    ${RTMIDI_SOURCES}
-    ${RTAUDIO_SOURCES}
+    src/core/WorkstationHost.cpp
+    src/loaders/BankLoader.cpp
+    src/loaders/NsmpLoader.cpp
+    src/modules/NordPianoEngine.cpp
+    src/modules/NordSynthModule.cpp
+    src/modules/NordOrganModule.cpp
+    src/control/MidiOscMapper.cpp
 )
 
 target_include_directories(NordVirtualStage PRIVATE
     src
+    src/core
+    src/loaders
+    src/modules
+    src/dsp
+    src/control
     third_party
-    "${rtmidi_SOURCE_DIR}"
-    "${rtaudio_SOURCE_DIR}"
-    "${rtaudio_SOURCE_DIR}/include"
+    ${rtaudio_SOURCE_DIR}
+    ${rtaudio_SOURCE_DIR}/include
+    ${rtmidi_SOURCE_DIR}
 )
 
 if(WIN32)
     target_compile_definitions(NordVirtualStage PRIVATE
-        __WINDOWS_ASIO__
-        __WINDOWS_WASAPI__
-        __WINDOWS_MM__
         _WIN32_WINNT=0x0A00
+        __WINDOWS_WASAPI__
+        __WINDOWS_ASIO__
+        __WINDOWS_MM__
     )
     target_link_libraries(NordVirtualStage PRIVATE
+        rtaudio
+        rtmidi
         nlohmann_json::nlohmann_json
-        ws2_32
         winmm
         ole32
         ksuser
         mfplat
         mfuuid
         wmcodecdspuuid
+        ws2_32
     )
 elseif(APPLE)
-    target_compile_definitions(NordVirtualStage PRIVATE
-        __MACOSX_CORE__
-    )
+    target_compile_definitions(NordVirtualStage PRIVATE __MACOSX_CORE__)
     target_link_libraries(NordVirtualStage PRIVATE
+        rtaudio
+        rtmidi
         nlohmann_json::nlohmann_json
         "-framework CoreAudio"
         "-framework CoreMIDI"
         "-framework CoreFoundation"
+        "-framework AudioToolbox"
     )
-endif()
-
-if(MSVC)
-    target_compile_options(NordVirtualStage PRIVATE /O2 /fp:fast /W3)
-else()
-    target_compile_options(NordVirtualStage PRIVATE -O3 -ffast-math -Wall)
 endif()

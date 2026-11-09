@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 
+
 namespace NordDSP {
 
 class BankLoader {
@@ -15,6 +16,7 @@ public:
     static bool loadClaviaProgramPreset(const std::string& filePath, PianoInstrument& ioInstrument, std::string& outStatusMsg);
     static ClaviaHeaderInfo inspectClaviaHeader(const std::string& filePath);
     static std::vector<LibraryEntry> scanLibraryDirectory(const std::string& rootDir);
+    static bool loadNsmpNative(const std::string& filePath, PianoInstrument& outInstrument, std::string& outStatusMsg);
 
 private:
     static void ensureSustainLoop(StrokeSample& s);

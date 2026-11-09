@@ -12,6 +12,7 @@
 #include <thread>
 #include <atomic>
 #include <chrono>
+#include "NsmpLoader.h"
 
 using json = nlohmann::json;
 namespace fs = std::filesystem;
@@ -579,71 +580,185 @@ bool BankLoader::loadNpnoNative(const std::string& filePath, PianoInstrument& ou
 }
 
 // Soporte para archivos .nsmp / .nsmp3 / .nsmp4 para que seleccionarlos en la lista cambie efectivamente de instrumento
-bool BankLoader::loadNsmpFallback(const std::string& filePath, PianoInstrument& outInstrument, std::string& outStatusMsg) {
-    ClaviaHeaderInfo hdr = inspectClaviaHeader(filePath);
-    outInstrument.id = g_nextInstrumentId.fetch_add(1);
-    outInstrument.headerInfo = hdr;
-    outInstrument.name = hdr.displayName.empty() ? fs::path(filePath).stem().string() : hdr.displayName;
-    outInstrument.formatType = hdr.formatCategory.empty() ? "NORD SAMPLE (.nsmp)" : hdr.formatCategory;
-    outInstrument.sourcePath = filePath;
-    outInstrument.channels = 2;
-    outInstrument.zoneCount = 29;
-    outInstrument.strokes.clear();
+// ============================================================================
+//  Decodificador Nativo C++ para .nsmp, .nsmp3 y .nsmp4 (Códec NW1)
+//  Traducido directamente de nsmp-codec.ts y nsmp.ts
+// ============================================================================
+namespace {
 
-    std::ifstream f(filePath, std::ios::binary);
-    std::vector<uint8_t> bin(4096, 0);
-    if (f) f.read(reinterpret_cast<char*>(bin.data()), bin.size());
-    uint32_t seed = 0x811C9DC5u;
-    for (uint8_t b : bin) { seed ^= b; seed *= 0x01000193u; }
+inline uint32_t readU24BE_Nsmp(const uint8_t* p) {
+    return (static_cast<uint32_t>(p[0]) << 16) |
+           (static_cast<uint32_t>(p[1]) << 8)  |
+            static_cast<uint32_t>(p[2]);
+}
 
-    const uint32_t sr = 44100;
-    const uint32_t frames = sr * 2;
-    const float detune = 0.0008f + ((seed & 0xFF) / 255.0f) * 0.0015f;
+const int NW1_PRED_LEN[8] = {0, 1, 2, 3, 4, 5, 6, 7};
+const int NW1_PRED_COEFF[8][7] = {
+    {0,   0,   0,   0,  0,  0, 0},
+    {1,   0,   0,   0,  0,  0, 0},
+    {2,  -1,   0,   0,  0,  0, 0},
+    {3,  -3,   1,   0,  0,  0, 0},
+    {4,  -6,   4,  -1,  0,  0, 0},
+    {5, -10,  10,  -5,  1,  0, 0},
+    {6, -15,  20, -15,  6, -1, 0},
+    {7, -21,  35, -35, 21, -7, 1}
+};
 
-    int idx = 0;
-    for (int k = 21; k <= 108; k += 3) {
-        StrokeSample s;
-        s.index = idx++;
-        s.zone = s.index;
-        s.layerIndex = 0;
-        s.totalLayersInZone = 1;
-        s.storedRoot = k - 4;
-        s.actualRootMidi = k;
-        s.lokey = (k == 21) ? 0 : (k - 1);
-        s.hikey = (k + 3 > 108) ? 127 : (k + 1);
-        s.lovel = 1;
-        s.hivel = 127;
-        s.frames = frames;
-        s.sampleRate = sr;
-        s.audioL.resize(frames);
-        s.audioR.resize(frames);
+struct NsmpSectionInfo {
+    std::string tag;
+    uint32_t version = 0;
+    uint32_t size = 0;
+    size_t payloadOffset = 0;
+    size_t endOffset = 0;
+};
 
-        double f0 = 440.0 * std::pow(2.0, (k - 69.0) / 12.0);
-        double period = sr / f0;
-        uint32_t loopLen = static_cast<uint32_t>(std::round((sr * 1.2) / period) * period);
-        s.loop = {true, false, sr / 2, loopLen, (sr / 2) + loopLen};
-        s.decayCoef = 0.999995f;
+struct NsmpMark {
+    uint32_t word = 0;
+    uint32_t sample = 0;
+    bool loopDecay = false;
+};
 
-        int maxH = std::min(20, static_cast<int>((sr * 0.42) / f0));
-        for (uint32_t n = 0; n < frames; ++n) {
-            float L = 0.0f, R = 0.0f;
-            for (int h = 1; h <= maxH; ++h) {
-                float amp = 1.0f / std::pow(static_cast<float>(h), 1.15f);
-                L += static_cast<float>(std::sin(2.0 * 3.141592653589793 * (f0 * h) * n / sr + h * 0.4)) * amp;
-                R += static_cast<float>(std::sin(2.0 * 3.141592653589793 * (f0 * h * (1.0 + detune)) * n / sr + h * 1.1)) * amp;
-            }
-            s.audioL[n] = L * 0.25f;
-            s.audioR[n] = R * 0.25f;
+struct DecodedNw1Stroke {
+    std::vector<int32_t> chL;
+    std::vector<int32_t> chR;
+    int channelCount = 1;
+    size_t endOffset = 0;
+    std::vector<NsmpMark> marks;
+};
+
+inline int32_t signExtendNw1(uint32_t v, int bw) {
+    uint32_t half = 1u << (bw - 1);
+    return (v >= half) ? static_cast<int32_t>(v) - static_cast<int32_t>(1u << bw) : static_cast<int32_t>(v);
+}
+
+bool decodeNw1Stream(const std::vector<uint8_t>& bytes, size_t byteOffset, size_t sectionEnd,
+                     int channelCount, bool wordInterleaved, bool u24, DecodedNw1Stroke& out) {
+    const size_t hdrBytes  = u24 ? 3 : 4;
+    const size_t wordBytes = u24 ? 3 : 4;
+    const int wordBits     = u24 ? 24 : 32;
+
+    struct ChState {
+        int32_t ring[32] = {0};
+        int head = 0;
+        std::vector<int32_t> samples;
+    };
+    ChState chs[2];
+    chs[0].samples.reserve(65536);
+    if (channelCount > 1) chs[1].samples.reserve(65536);
+
+    auto emitSample = [&](int c, int32_t residual, int order) -> bool {
+        ChState& cs = chs[c];
+        int64_t pred = 0;
+        const int* coeff = NW1_PRED_COEFF[order];
+        for (int k = 0; k < order; ++k) {
+            pred += static_cast<int64_t>(coeff[k]) * cs.ring[(cs.head - 1 - k) & 31];
         }
-        outInstrument.strokes.push_back(std::move(s));
+        int64_t val = static_cast<int64_t>(residual) + pred;
+        if (std::abs(val) >= (1LL << 26)) return false; // Límite BOUND (1 << 26) de nsmp.ts
+        cs.ring[cs.head] = static_cast<int32_t>(val);
+        cs.head = (cs.head + 1) & 31;
+        cs.samples.push_back(static_cast<int32_t>(val));
+        return true;
+    };
+
+    out.marks.clear();
+    size_t o = byteOffset;
+    uint32_t index = 0;
+    uint32_t cumIL = 0;
+
+    while (o + hdrBytes <= sectionEnd) {
+        uint32_t word = u24 ? readU24BE_Nsmp(&bytes[o]) : readU32BE(&bytes[o]);
+        uint32_t sampleCnt = word & 0x3fff;
+        int filterOrder    = (word >> 14) & 0xf;
+        bool loopDecay     = ((word >> 18) & 1) != 0;
+        int bitWidth       = ((word >> 19) & 0xf) + 1;
+        bool linMode       = ((word >> 23) & 1) != 0;
+        bool isStop        = (filterOrder == 0 && bitWidth == 1);
+
+        if (linMode) {
+            out.marks.push_back({
+                static_cast<uint32_t>((o - byteOffset) / hdrBytes),
+                wordInterleaved ? cumIL : index,
+                loopDecay
+            });
+        }
+        o += hdrBytes;
+
+        if (wordInterleaved) {
+            if (sampleCnt == 0) continue;
+            if (filterOrder > 7) break;
+            cumIL += sampleCnt;
+            uint32_t perCh = sampleCnt / channelCount;
+            uint32_t wordsPerCh = (perCh * bitWidth + 31) / 32;
+            if (o + static_cast<size_t>(wordsPerCh) * channelCount * 4 > sectionEnd) break;
+
+            uint64_t mask = (bitWidth == 32) ? 0xFFFFFFFFULL : ((1ULL << bitWidth) - 1ULL);
+            for (int ch = 0; ch < channelCount; ++ch) {
+                uint32_t count = (ch == channelCount - 1) ? (sampleCnt - perCh * (channelCount - 1)) : perCh;
+                uint64_t acc = 0;
+                int nbits = 0;
+                uint32_t produced = 0;
+                for (uint32_t w = 0; w < wordsPerCh; ++w) {
+                    uint32_t wVal = readU32BE(&bytes[o + (w * channelCount + ch) * 4]);
+                    acc |= (static_cast<uint64_t>(wVal) << (32 - nbits));
+                    nbits += 32;
+                    while (nbits >= bitWidth && produced < count) {
+                        uint32_t rawBits = static_cast<uint32_t>((acc >> (64 - bitWidth)) & mask);
+                        if (!emitSample(ch, signExtendNw1(rawBits, bitWidth), filterOrder)) return false;
+                        produced++;
+                        acc <<= bitWidth;
+                        nbits -= bitWidth;
+                    }
+                }
+            }
+            o += static_cast<size_t>(wordsPerCh) * channelCount * 4;
+            continue;
+        }
+
+        // Codec 3 y Legacy (.nsmp): flujo entrelazado por muestras terminado por isStop
+        if (isStop) break;
+        if (filterOrder > 7 || sampleCnt == 0) return false;
+
+        uint32_t nWords = (sampleCnt * bitWidth + wordBits - 1) / wordBits;
+        if (o + static_cast<size_t>(nWords) * wordBytes > sectionEnd) return false;
+
+        uint64_t mask = (bitWidth == 32) ? 0xFFFFFFFFULL : ((1ULL << bitWidth) - 1ULL);
+        uint64_t acc = 0;
+        int nbits = 0;
+        uint32_t produced = 0;
+        for (uint32_t w = 0; w < nWords; ++w) {
+            uint32_t wVal = u24 ? (readU24BE_Nsmp(&bytes[o]) << 8) : readU32BE(&bytes[o]);
+            o += wordBytes;
+            acc |= (static_cast<uint64_t>(wVal) << (32 - nbits));
+            nbits += wordBits;
+            while (nbits >= bitWidth && produced < sampleCnt) {
+                uint32_t rawBits = static_cast<uint32_t>((acc >> (64 - bitWidth)) & mask);
+                if (!emitSample(index % channelCount, signExtendNw1(rawBits, bitWidth), filterOrder)) return false;
+                produced++;
+                index++;
+                acc <<= bitWidth;
+                nbits -= bitWidth;
+            }
+        }
     }
 
-    outInstrument.defaultPreset.attackSec = 0.015f;
-    outInstrument.defaultPreset.releaseSec = 0.55f;
-    outInstrument.defaultPreset.loopHold = 0.85f;
-    outInstrument.memoryMB = (outInstrument.strokes.size() * frames * 2 * sizeof(float)) / (1024.0 * 1024.0);
-    outStatusMsg = "Sample Synth cargado: " + outInstrument.name;
+    if (chs[0].samples.size() < 100) return false;
+    out.channelCount = channelCount;
+    out.endOffset = o;
+    out.chL = std::move(chs[0].samples);
+    out.chR = (channelCount > 1) ? std::move(chs[1].samples) : out.chL;
     return true;
+}
+
+} // namespace
+
+// En src/loaders/BankLoader.cpp reemplaza las llamadas .nsmp por:
+bool BankLoader::loadNsmpNative(const std::string& filePath, PianoInstrument& outInstrument, std::string& outStatusMsg) {
+    return NsmpLoader::loadNsmpNative(filePath, outInstrument, outStatusMsg);
+}
+
+bool BankLoader::loadNsmpFallback(const std::string& filePath, PianoInstrument& outInstrument, std::string& outStatusMsg) {
+    return NsmpLoader::loadNsmpFallback(filePath, outInstrument, outStatusMsg);
 }
 
 bool BankLoader::loadClaviaProgramPreset(const std::string& filePath, PianoInstrument& ioInstrument, std::string& outStatusMsg) {
@@ -828,6 +943,7 @@ bool BankLoader::loadAny(const std::string& pathStr, PianoInstrument& outInstrum
     }
 
     if (ext == ".nsmp" || ext == ".nsmp3" || ext == ".nsmp4") {
+        if (loadNsmpNative(p.string(), outInstrument, outStatusMsg)) return true;
         if (loadNpnoNative(p.string(), outInstrument, outStatusMsg)) return true;
         return loadNsmpFallback(p.string(), outInstrument, outStatusMsg);
     }

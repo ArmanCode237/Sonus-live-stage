@@ -5,6 +5,8 @@
 #include <atomic>
 #include <mutex>
 #include <memory>
+#include "NordSynthModule.h"
+#include "NordOrganModule.h"
 
 namespace NordDSP {
 
@@ -141,6 +143,9 @@ public:
 
     void getActiveKeyStates(std::array<uint8_t, 128>& outStates) const;
     void render(float* outInterleavedStereo, unsigned int numFrames);
+
+    NordSynthModule multiSynth_;
+    NordOrganModule organModule_;
 
 private:
     void pushMidiEvent(uint8_t type, int d1, int d2);

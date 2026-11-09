@@ -753,15 +753,22 @@ select {
     </div>
   </div>
 
-  <!-- 2. BANNER -->
-  <div class="nord-banner">
-    <h1>nord <span>virtual stage</span> <small style="font-size:11px; letter-spacing:1.5px; color:#fca5a5;">WORKSTATION</small></h1>
+<!-- 2. BANNER CON SELECTOR DE PÁGINA (MAIN STAGE | SYNTH 3-LAYERS | ORGAN B3) -->
+  <div class="nord-banner" style="display:flex; justify-content:space-between; align-items:center;">
+    <h1>nord <span>virtual stage</span></h1>
+    <div style="display:flex; gap:8px;">
+      <button class="wrench-btn active-toggle" id="pageBtn_main" onclick="switchWorkstationPage('main')">🎹 PÁGINA MAIN (STAGE)</button>
+      <button class="wrench-btn" id="pageBtn_synth" onclick="switchWorkstationPage('synth')">🎛 PÁGINA SYNTH (3 CAPAS)</button>
+      <button class="wrench-btn" id="pageBtn_organ" onclick="switchWorkstationPage('organ')">⛪ PÁGINA ÓRGANO (B3 / VOX)</button>
+    </div>
   </div>
 
-  <!-- 3. PANEL PRINCIPAL DE 5 COLUMNAS -->
-  <div class="stage-main-grid">
+  <!-- =======================================================================
+       PÁGINA 1: MAIN STAGE (Con Mini-Cards de Synth/Órgano + Rack FX Unificado)
+       ======================================================================= -->
+  <div class="stage-main-grid" id="pageView_main">
 
-    <!-- COLUMNA 1: EQ PIANO + STEREO DELAY -->
+    <!-- COLUMNA 1: EQ PIANO + VOICE & LOOP CFG -->
     <div class="col-stack">
       <div class="fx-module-black">
         <div class="mod-pill-header">
@@ -776,27 +783,24 @@ select {
 
       <div class="fx-module-black">
         <div class="mod-pill-header">
-          <button class="mod-led-btn" id="led_delayEnabled" onclick="toggleEffect('delayEnabled')"></button>
-          <span>DELAY</span>
-          <button class="expand-btn" onclick="openModal('modalMod')">⤢ EDIT</button>
+          <span>VOICE & LOOP CFG</span>
+          <button class="expand-btn" onclick="openModal('modalVoiceConfig')">⤢ OPEN</button>
         </div>
-        <div style="display:flex; gap:10px;">
-          <div class="knob-cell" data-id="delayTimeMs" data-min="40" data-max="1200" data-val="360" data-log="0" data-unit="ms" data-label="TIME"></div>
-          <div class="knob-cell" data-id="delayMix" data-min="0" data-max="1" data-val="0.25" data-log="0" data-unit="%" data-label="MIX"></div>
+        <div class="seven-seg-box" style="height:44px;">
+          <div class="seven-seg-num" id="zoneCountNum">0</div>
+          <div class="seven-seg-label">ACTIVE ZONES</div>
         </div>
-        <div class="mode-pills-row">
-          <span class="mini-mode-pill active" id="pillPingPong" onclick="togglePingPong()">PING-PONG</span>
-        </div>
+        <button class="red-rect-btn" style="width:100%;" onclick="openModal('modalVoiceConfig')">⚙ LOOP / ADSR / VOICES</button>
       </div>
     </div>
 
-    <!-- COLUMNA 2: SOUND BANK + ACCESO AL ÁREA ESPECIAL DE CONFIGURACIÓN DEL SAMPLE -->
+    <!-- COLUMNA 2: SOUND BANK (.NPNO / .NSMP4) -->
     <div class="col-stack">
       <div class="slate-module">
         <div class="mod-pill-header red-pill">
           <button class="mod-led-btn on"></button>
           <span>SOUND BANK</span>
-          <span>NPNO</span>
+          <span>NPNO / NSMP4</span>
         </div>
 
         <select class="quick-cat-select" id="quickCatSelect" onchange="onQuickCategoryChange(this.value)">
@@ -829,22 +833,9 @@ select {
           </div>
         </div>
       </div>
-
-      <!-- Tarjeta de acceso al área especial de configuración (Loop Hold, Release, ADSR, Polifonía) -->
-      <div class="fx-module-black">
-        <div class="mod-pill-header">
-          <span>VOICE & LOOP CFG</span>
-          <button class="expand-btn" onclick="openModal('modalVoiceConfig')">⤢ OPEN</button>
-        </div>
-        <div class="seven-seg-box" style="height:44px;">
-          <div class="seven-seg-num" id="zoneCountNum">0</div>
-          <div class="seven-seg-label">ACTIVE ZONES</div>
-        </div>
-        <button class="red-rect-btn" style="width:100%;" onclick="openModal('modalVoiceConfig')">⚙ LOOP / ADSR / SYNTH</button>
-      </div>
     </div>
 
-    <!-- COLUMNA 3: PANTALLA CENTRAL PIXELADA + CONTROLES DE OCTAVA/TRANSPOSE + 8 PROGRAMAS -->
+    <!-- COLUMNA 3: CONSOLA CENTRAL Y 8 PROGRAMAS -->
     <div class="center-console">
       <div class="nord-center-lcd">
         <div class="lcd-sample-name" id="lcdSampleName">No Sound Loaded</div>
@@ -879,72 +870,171 @@ select {
         <span class="knob-title" style="letter-spacing:1.5px; color:#fff;">PROGRAMS (1–8 USER PRESETS)</span>
         <input type="file" id="progFileInput" accept=".json" style="display:none" onchange="importProgramsFile(this)">
         <div class="programs-row-layout">
-          <button class="expand-btn" onclick="document.getElementById('progFileInput').click()" title="Cargar archivo de programas JSON">LOAD</button>
+          <button class="expand-btn" onclick="document.getElementById('progFileInput').click()">LOAD</button>
           <div class="programs-grid-8" id="programsGrid"></div>
-          <button class="expand-btn" onclick="downloadProgramsJson()" title="Guardar los 8 programas en archivo JSON">SAVE</button>
+          <button class="expand-btn" onclick="downloadProgramsJson()">SAVE</button>
         </div>
       </div>
     </div>
 
-    <!-- COLUMNA 4 (EFECTOS): FILTER FX (CUTOFF & RESONANCE REUBICADOS EN ÁREA DE EFECTOS) -->
+    <!-- COLUMNA 4 (REEMPLAZA A FILTER FX): MINI-RECUADROS DE SYNTH (3 CAPAS) Y ÓRGANO -->
     <div class="col-stack">
-      <div class="fx-module-black">
+      <!-- Mini-Recuadro 1: SINTETIZADOR DE 3 CAPAS -->
+      <div class="slate-module">
         <div class="mod-pill-header red-pill">
-          <button class="mod-led-btn on" id="led_filterFx" onclick="resetFilterCutoff()" title="Clic para restablecer filtro a 20 kHz"></button>
-          <span>FILTER FX (SVF)</span>
-          <button class="expand-btn" onclick="openModal('modalVoiceConfig')">⤢ ENV</button>
+          <button class="mod-led-btn" id="led_synthEnabled" onclick="toggleEffect('synthEnabled')"></button>
+          <span>SYNTH 3-LAYER</span>
+          <button class="expand-btn" onclick="switchWorkstationPage('synth')">⤢ PAGE</button>
         </div>
 
-        <div class="knob-cell" data-id="cutoff" data-min="20" data-max="20000" data-val="20000" data-log="1" data-unit="Hz" data-label="FILTER CUTOFF" data-large="1"></div>
-        <div class="knob-cell" data-id="resonance" data-min="0.5" data-max="12.0" data-val="0.71" data-log="0" data-unit="Q" data-label="RESONANCE"></div>
+        <div style="display:flex; align-items:center; gap:6px; width:100%; justify-content:center;">
+          <button class="step-arrow" onclick="stepSynthPreset(-1)">◀</button>
+          <span id="synthPresetNameMain" style="font-size:10px; font-weight:800; color:#fff;">P1: Warm Pad</span>
+          <button class="step-arrow" onclick="stepSynthPreset(1)">▶</button>
+        </div>
 
         <div class="mode-pills-row">
-          <span class="mini-mode-pill" onclick="resetFilterCutoff()">BYPASS / 20kHz</span>
+          <span class="mini-mode-pill active" id="mainPill_L1" onclick="toggleSynthLayer(0)">L1 ON</span>
+          <span class="mini-mode-pill active" id="mainPill_L2" onclick="toggleSynthLayer(1)">L2 ON</span>
+          <span class="mini-mode-pill" id="mainPill_L3" onclick="toggleSynthLayer(2)">L3 OFF</span>
+        </div>
+
+        <div style="display:flex; gap:8px;">
+          <div class="knob-cell" data-id="synthMasterVol" data-min="0" data-max="1.5" data-val="0.80" data-log="0" data-unit="%" data-label="SYNTH VOL" data-small="1"></div>
+          <div class="knob-cell" data-id="synthMacroCutoff" data-min="0.1" data-max="2.0" data-val="1.0" data-log="0" data-unit="%" data-label="TIMBRE" data-small="1"></div>
+        </div>
+
+        <button class="red-rect-btn" style="width:100%; font-size:9px;" onclick="switchWorkstationPage('synth')">🎛 EDITAR 3 CAPAS</button>
+      </div>
+
+      <!-- Mini-Recuadro 2: MÓDULO DE ÓRGANO -->
+      <div class="fx-module-black">
+        <div class="mod-pill-header">
+          <button class="mod-led-btn" id="led_organEnabled" onclick="toggleEffect('organEnabled')"></button>
+          <span>ORGAN B3/VOX</span>
+          <button class="expand-btn" onclick="switchWorkstationPage('organ')">⤢ PAGE</button>
+        </div>
+
+        <div style="display:flex; gap:8px; align-items:center;">
+          <div class="knob-cell" data-id="organVolume" data-min="0" data-max="1.5" data-val="0.75" data-log="0" data-unit="%" data-label="ORGAN VOL" data-small="1"></div>
+          <div style="display:flex; flex-direction:column; gap:5px;">
+            <span class="mini-mode-pill" id="pillRotaryMain" onclick="toggleOrganRotary()">ROTARY: SLOW</span>
+            <button class="expand-btn" onclick="switchWorkstationPage('organ')">⛪ IR A ÓRGANO</button>
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- COLUMNA 5 (EFECTOS): MODULATION + REVERB -->
+    <!-- COLUMNA 5: RACK UNIFICADO DE EFECTOS (MIX RÁPIDO + BOTÓN EXPAND RACK) -->
     <div class="col-stack">
-      <div class="fx-module-black">
-        <div class="mod-pill-header">
-          <button class="mod-led-btn" id="led_modActive" onclick="toggleActiveModEffect()"></button>
-          <span>MODULATION</span>
-          <button class="expand-btn" onclick="openModal('modalMod')">⤢ EXPAND</button>
+      <div class="fx-module-black" style="justify-content:space-between; gap:6px;">
+        <div class="mod-pill-header red-pill">
+          <span>MASTER FX RACK</span>
+          <button class="expand-btn" onclick="openModal('modalFxRack')">⤢ EXPAND RACK</button>
         </div>
 
+        <!-- Fila 1 del Rack: Filter FX & Modulation Mix -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; width:100%; background:#14171c; padding:6px; border-radius:8px; border:1px solid #262b33;">
+          <div style="display:flex; flex-direction:column; align-items:center;">
+            <div style="display:flex; align-items:center; gap:4px; margin-bottom:2px;">
+              <button class="mod-led-btn on" id="led_filterFx" onclick="resetFilterCutoff()"></button>
+              <span style="font-size:9px; font-weight:800;">FILTER SVF</span>
+            </div>
+            <div class="knob-cell" data-id="cutoff" data-min="20" data-max="20000" data-val="20000" data-log="1" data-unit="Hz" data-label="CUTOFF" data-small="1"></div>
+          </div>
+
+          <div style="display:flex; flex-direction:column; align-items:center;">
+            <div style="display:flex; align-items:center; gap:4px; margin-bottom:2px;">
+              <button class="mod-led-btn" id="led_modActive" onclick="toggleActiveModEffect()"></button>
+              <span style="font-size:9px; font-weight:800;">MODULATION</span>
+            </div>
+            <div id="mainModMixContainer">
+              <div class="knob-cell" data-id="chorusMix" data-min="0" data-max="1" data-val="0.35" data-log="0" data-unit="%" data-label="MOD MIX" data-small="1"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Selector rápido de tipo de Modulación -->
         <div class="mode-pills-row">
           <span class="mini-mode-pill active" id="modTab_chorus" onclick="selectModTab('chorus')">CHORUS</span>
           <span class="mini-mode-pill" id="modTab_phaser" onclick="selectModTab('phaser')">PHASER</span>
           <span class="mini-mode-pill" id="modTab_tremolo" onclick="selectModTab('tremolo')">TREMOLO</span>
         </div>
 
-        <div id="mainModMixContainer">
-          <div class="knob-cell" data-id="chorusMix" data-min="0" data-max="1" data-val="0.35" data-log="0" data-unit="%" data-label="CHORUS MIX" data-large="1"></div>
-        </div>
-      </div>
+        <!-- Fila 2 del Rack: Delay Mix & Reverb/Shimmer Mix -->
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; width:100%; background:#14171c; padding:6px; border-radius:8px; border:1px solid #262b33;">
+          <div style="display:flex; flex-direction:column; align-items:center;">
+            <div style="display:flex; align-items:center; gap:4px; margin-bottom:2px;">
+              <button class="mod-led-btn" id="led_delayEnabled" onclick="toggleEffect('delayEnabled')"></button>
+              <span style="font-size:9px; font-weight:800;">DELAY</span>
+            </div>
+            <div class="knob-cell" data-id="delayMix" data-min="0" data-max="1" data-val="0.25" data-log="0" data-unit="%" data-label="DLY MIX" data-small="1"></div>
+          </div>
 
-<div class="fx-module-black">
-        <div class="mod-pill-header">
-          <button class="mod-led-btn on" id="led_reverbEnabled" onclick="toggleEffect('reverbEnabled')"></button>
-          <span id="reverbMainHeaderTitle">REVERB</span>
-          <button class="expand-btn" onclick="openModal('modalRev')">⤢ EXPAND</button>
+          <div style="display:flex; flex-direction:column; align-items:center;">
+            <div style="display:flex; align-items:center; gap:4px; margin-bottom:2px;">
+              <button class="mod-led-btn on" id="led_reverbEnabled" onclick="toggleEffect('reverbEnabled')"></button>
+              <span style="font-size:9px; font-weight:800;">REVERB</span>
+            </div>
+            <div class="knob-cell" data-id="reverbMix" data-min="0" data-max="1" data-val="0.25" data-log="0" data-unit="%" data-label="REV MIX" data-small="1"></div>
+          </div>
         </div>
 
+        <!-- Selector rápido de modo de Reverb -->
         <div class="mode-pills-row">
           <span class="mini-mode-pill" id="revType_0" onclick="selectReverbType(0)">ROOM</span>
           <span class="mini-mode-pill" id="revType_1" onclick="selectReverbType(1)">PLATE</span>
           <span class="mini-mode-pill active" id="revType_2" onclick="selectReverbType(2)">HALL</span>
-          <span class="mini-mode-pill" id="revType_3" onclick="selectReverbType(3)">SHIMMER</span>
+          <span class="mini-mode-pill" id="revType_3" onclick="selectReverbType(3)">AMB</span>
         </div>
 
-        <div style="display:flex; gap:10px;" id="mainReverbKnobsRow">
-          <div class="knob-cell" id="mainRevKnob1" data-id="reverbMix" data-min="0" data-max="1" data-val="0.28" data-log="0" data-unit="%" data-label="MIX"></div>
-          <div class="knob-cell" id="mainRevKnob2" data-id="reverbSize" data-min="0.05" data-max="1" data-val="0.65" data-log="0" data-unit="%" data-label="HALL SIZE"></div>
-        </div>
+        <button class="red-rect-btn" style="width:100%; font-size:9.5px;" onclick="openModal('modalFxRack')">🎚 ABRIR RACK DE EFECTOS</button>
       </div>
     </div>
 
+  </div>
+
+  <!-- =======================================================================
+       PÁGINA 2: SINTETIZADOR DE 3 CAPAS INDEPENDIENTES (SYNTH 3-LAYERS PAGE)
+       ======================================================================= -->
+  <div id="pageView_synth" style="display:none; padding:14px; flex-direction:column; gap:12px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; background:#14171c; padding:10px 16px; border-radius:10px; border:1px solid #343942;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <button class="mod-led-btn" id="ledPage_synthEnabled" onclick="toggleEffect('synthEnabled')"></button>
+        <strong style="font-size:14px; letter-spacing:1px;">NORD 3-LAYER POLYPHONIC SYNTHESIZER WORKSTATION</strong>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center;">
+        <span style="font-size:11px; color:#9ba3af;">PRESETS RÁPIDOS:</span>
+        <button class="mini-mode-pill active" onclick="selectSynthPreset(1)">1. Warm Pad</button>
+        <button class="mini-mode-pill" onclick="selectSynthPreset(2)">2. 80s Brass</button>
+        <button class="mini-mode-pill" onclick="selectSynthPreset(3)">3. SuperSaw Lead</button>
+        <button class="mini-mode-pill" onclick="selectSynthPreset(4)">4. Crystal Pluck</button>
+        <button class="mini-mode-pill" onclick="selectSynthPreset(5)">5. Analog Strings</button>
+        <button class="wrench-btn" onclick="switchWorkstationPage('main')">⬅ Volver a Main</button>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:12px;" id="synth3LayersContainer"></div>
+  </div>
+
+  <!-- =======================================================================
+       PÁGINA 3: MÓDULO DE ÓRGANO (9 DRAWBARS + ROTARY SPEAKER)
+       ======================================================================= -->
+  <div id="pageView_organ" style="display:none; padding:14px; flex-direction:column; gap:12px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; background:#14171c; padding:10px 16px; border-radius:10px; border:1px solid #343942;">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <button class="mod-led-btn" id="ledPage_organEnabled" onclick="toggleEffect('organEnabled')"></button>
+        <strong style="font-size:14px; letter-spacing:1px;">NORD C2D TONEWHEEL ORGAN & ROTARY HORN</strong>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <button class="red-rect-btn" id="btnRotaryPage" onclick="toggleOrganRotary()">ROTARY SPEAKER: SLOW (CHORALE)</button>
+        <button class="wrench-btn" onclick="switchWorkstationPage('main')">⬅ Volver a Main</button>
+      </div>
+    </div>
+
+    <div class="fx-module-black" style="padding:18px;">
+      <div style="display:grid; grid-template-columns:repeat(9, 1fr) 140px 140px; gap:12px; width:100%; align-items:center;" id="organDrawbarsContainer"></div>
+    </div>
   </div>
 
   <!-- 4. TECLADO DE 88 TECLAS (A0 = 21 a C8 = 108) -->
@@ -997,6 +1087,85 @@ select {
             <option value="192">192 Voces</option>
             <option value="256">256 Voces (Máx)</option>
           </select>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL UNIFICADO: RACK MAESTRO DE EFECTOS 19" -->
+<div class="modal-backdrop" id="modalFxRack">
+  <div class="modal-window" style="width:1060px;">
+    <div class="modal-top">
+      <h3>🎚 Master Effects 19" Studio Rack (Filter SVF · Modulation · Delay · Reverb & Shimmer)</h3>
+      <div style="display:flex; gap:8px;">
+        <button class="expand-btn" onclick="closeModal('modalFxRack'); openModal('modalEq');">🎛 Abrir EQ 5-Bandas</button>
+        <button class="close-modal-btn" onclick="closeModal('modalFxRack')">Cerrar ✕</button>
+      </div>
+    </div>
+
+    <!-- UNIDAD 1 DEL RACK: FILTER FX + REVERB / SHIMMER -->
+    <div style="display:grid; grid-template-columns: 240px 1fr; gap:12px;">
+      <div class="eq-band-card">
+        <div class="mod-pill-header red-pill"><span>1. FILTER FX (SVF)</span></div>
+        <div style="display:flex; gap:12px; padding:8px 0;">
+          <div class="knob-cell" data-id="cutoff" data-min="20" data-max="20000" data-val="20000" data-log="1" data-unit="Hz" data-label="CUTOFF"></div>
+          <div class="knob-cell" data-id="resonance" data-min="0.5" data-max="12.0" data-val="0.71" data-log="0" data-unit="Q" data-label="RESONANCE"></div>
+        </div>
+      </div>
+
+      <div class="eq-band-card">
+        <div class="mod-pill-header">
+          <button class="mod-led-btn on" id="ledRack_reverbEnabled" onclick="toggleEffect('reverbEnabled')"></button>
+          <span>2. NORD ACOUSTIC & VALHALLA SHIMMER REVERB</span>
+          <div class="mode-pills-row" style="width:auto;">
+            <span class="mini-mode-pill" onclick="selectReverbType(0)">ROOM</span>
+            <span class="mini-mode-pill" onclick="selectReverbType(1)">PLATE</span>
+            <span class="mini-mode-pill" onclick="selectReverbType(2)">HALL</span>
+            <span class="mini-mode-pill" onclick="selectReverbType(3)">SHIMMER (AMB)</span>
+          </div>
+        </div>
+        <div style="display:flex; justify-content:space-around; width:100%; padding:8px 0;">
+          <div class="knob-cell" data-id="reverbMix" data-min="0" data-max="1" data-val="0.25" data-log="0" data-unit="%" data-label="WET MIX"></div>
+          <div class="knob-cell" data-id="reverbSize" data-min="0.05" data-max="1" data-val="0.65" data-log="0" data-unit="%" data-label="DECAY / SIZE"></div>
+          <div class="knob-cell" data-id="reverbDamping" data-min="0" data-max="1" data-val="0.40" data-log="0" data-unit="%" data-label="HF DAMPING"></div>
+          <div class="knob-cell" data-id="reverbPreDelayMs" data-min="0" data-max="150" data-val="18" data-log="0" data-unit="ms" data-label="PRE-DELAY"></div>
+          <div class="knob-cell" data-id="reverbShimmer" data-min="0" data-max="1" data-val="0.45" data-log="0" data-unit="%" data-label="SHIMMER (+12st)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- UNIDAD 2 DEL RACK: CHORUS, PHASER, TREMOLO & STEREO DELAY -->
+    <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:12px;">
+      <div class="eq-band-card">
+        <div class="mod-pill-header"><span>3A. CHORUS</span></div>
+        <div style="display:flex; gap:6px;">
+          <div class="knob-cell" data-id="chorusRate" data-min="0.1" data-max="6.0" data-val="0.8" data-log="0" data-unit="Hz" data-label="RATE" data-small="1"></div>
+          <div class="knob-cell" data-id="chorusDepth" data-min="0.0" data-max="1.0" data-val="0.45" data-log="0" data-unit="%" data-label="DEPTH" data-small="1"></div>
+          <div class="knob-cell" data-id="chorusMix" data-min="0.0" data-max="1.0" data-val="0.35" data-log="0" data-unit="%" data-label="MIX" data-small="1"></div>
+        </div>
+      </div>
+      <div class="eq-band-card">
+        <div class="mod-pill-header"><span>3B. PHASER</span></div>
+        <div style="display:flex; gap:6px;">
+          <div class="knob-cell" data-id="phaserRate" data-min="0.1" data-max="6.0" data-val="0.6" data-log="0" data-unit="Hz" data-label="RATE" data-small="1"></div>
+          <div class="knob-cell" data-id="phaserFeedback" data-min="0.0" data-max="0.85" data-val="0.40" data-log="0" data-unit="%" data-label="FEEDBK" data-small="1"></div>
+          <div class="knob-cell" data-id="phaserMix" data-min="0.0" data-max="1.0" data-val="0.35" data-log="0" data-unit="%" data-label="MIX" data-small="1"></div>
+        </div>
+      </div>
+      <div class="eq-band-card">
+        <div class="mod-pill-header"><span>3C. TREMOLO</span></div>
+        <div style="display:flex; gap:10px;">
+          <div class="knob-cell" data-id="tremoloRate" data-min="0.5" data-max="14.0" data-val="4.5" data-log="0" data-unit="Hz" data-label="RATE" data-small="1"></div>
+          <div class="knob-cell" data-id="tremoloDepth" data-min="0.0" data-max="1.0" data-val="0.50" data-log="0" data-unit="%" data-label="DEPTH" data-small="1"></div>
+        </div>
+      </div>
+      <div class="eq-band-card">
+        <div class="mod-pill-header"><span>4. STEREO DELAY</span></div>
+        <div style="display:flex; gap:6px;">
+          <div class="knob-cell" data-id="delayTimeMs" data-min="40" data-max="1500" data-val="360" data-log="0" data-unit="ms" data-label="TIME" data-small="1"></div>
+          <div class="knob-cell" data-id="delayFeedback" data-min="0.0" data-max="0.92" data-val="0.35" data-log="0" data-unit="%" data-label="FEEDBK" data-small="1"></div>
+          <div class="knob-cell" data-id="delayMix" data-min="0.0" data-max="1.0" data-val="0.25" data-log="0" data-unit="%" data-label="MIX" data-small="1"></div>
         </div>
       </div>
     </div>
@@ -1307,6 +1476,136 @@ function buildParametricEqModal() {
       window.addEventListener('mouseup', onUp);
     });
   }
+
+  const SYNTH_PRESET_NAMES = [
+  '', 'P1: Warm Pad', 'P2: 80s Brass', 'P3: SuperSaw', 'P4: Crystal Bell', 'P5: Strings'
+  ];
+
+function switchWorkstationPage(page) {
+  document.getElementById('pageView_main').style.display  = (page === 'main')  ? 'grid' : 'none';
+  document.getElementById('pageView_synth').style.display = (page === 'synth') ? 'flex' : 'none';
+  document.getElementById('pageView_organ').style.display = (page === 'organ') ? 'flex' : 'none';
+  ['main', 'synth', 'organ'].forEach(p => {
+    document.getElementById(`pageBtn_${p}`).classList.toggle('active-toggle', p === page);
+  });
+}
+
+function buildSynth3LayersPage() {
+  const box = document.getElementById('synth3LayersContainer');
+  if (!box) return;
+  box.innerHTML = '';
+  const waveLabels = ['SAW', 'SQUARE', 'TRIANGLE', 'SINE', 'SUPERSAW', 'NOISE'];
+
+  for (let i = 1; i <= 3; i++) {
+    state[`L${i}_en`]   = (i <= 2);
+    state[`L${i}_wave`] = (i === 1 ? 4 : (i === 2 ? 0 : 3));
+    state[`L${i}_vol`]  = 0.75;
+    state[`L${i}_pan`]  = (i === 1 ? -0.2 : (i === 2 ? 0.2 : 0.0));
+    state[`L${i}_oct`]  = (i === 2 ? -1 : (i === 3 ? 1 : 0));
+    state[`L${i}_det`]  = (i === 1 ? -8 : (i === 2 ? 8 : 0));
+    state[`L${i}_cut`]  = 8500;
+    state[`L${i}_res`]  = 0.9;
+    state[`L${i}_atk`]  = 0.015;
+    state[`L${i}_dec`]  = 1.5;
+    state[`L${i}_sus`]  = 0.80;
+    state[`L${i}_rel`]  = 0.55;
+
+    let wavePills = '';
+    waveLabels.forEach((w, wIdx) => {
+      wavePills += `<span class="mini-mode-pill ${state[`L${i}_wave`]===wIdx?'active':''}" id="wavePill_${i}_${wIdx}" onclick="setLayerWave(${i}, ${wIdx})">${w}</span>`;
+    });
+
+    const card = document.createElement('div');
+    card.className = 'fx-module-black';
+    card.style.gap = '10px';
+    card.innerHTML = `
+      <div class="mod-pill-header red-pill">
+        <button class="mod-led-btn ${state[`L${i}_en`]?'on':''}" id="led_L${i}" onclick="toggleSynthLayer(${i-1})"></button>
+        <span>SYNTH LAYER ${i}</span>
+        <span>POLY VA</span>
+      </div>
+      <div class="mode-pills-row">${wavePills}</div>
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:6px; width:100%;">
+        <div class="knob-cell" data-id="L${i}_vol" data-min="0" data-max="1.5" data-val="0.75" data-log="0" data-unit="%" data-label="LEVEL" data-small="1"></div>
+        <div class="knob-cell" data-id="L${i}_pan" data-min="-1" data-max="1" data-val="${state[`L${i}_pan`]}" data-log="0" data-unit="Pan" data-label="PAN" data-small="1"></div>
+        <div class="knob-cell" data-id="L${i}_oct" data-min="-2" data-max="2" data-val="${state[`L${i}_oct`]}" data-log="0" data-unit="oct" data-label="OCTAVE" data-small="1"></div>
+        <div class="knob-cell" data-id="L${i}_det" data-min="-50" data-max="50" data-val="${state[`L${i}_det`]}" data-log="0" data-unit="ct" data-label="DETUNE" data-small="1"></div>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(2,1fr); gap:6px; width:100%; background:#14171c; padding:6px; border-radius:6px;">
+        <div class="knob-cell" data-id="L${i}_cut" data-min="40" data-max="20000" data-val="8500" data-log="1" data-unit="Hz" data-label="CUTOFF" data-small="1"></div>
+        <div class="knob-cell" data-id="L${i}_res" data-min="0.5" data-max="12" data-val="0.9" data-log="0" data-unit="Q" data-label="RESON" data-small="1"></div>
+      </div>
+      <div style="display:grid; grid-template-columns:repeat(4,1fr); gap:6px; width:100%;">
+        <div class="knob-cell" data-id="L${i}_atk" data-min="0.001" data-max="4" data-val="0.015" data-log="1" data-unit="s" data-label="ATTACK" data-small="1"></div>
+        <div class="knob-cell" data-id="L${i}_dec" data-min="0.02" data-max="6" data-val="1.5" data-log="1" data-unit="s" data-label="DECAY" data-small="1"></div>
+        <div class="knob-cell" data-id="L${i}_sus" data-min="0" data-max="1" data-val="0.8" data-log="0" data-unit="%" data-label="SUSTAIN" data-small="1"></div>
+        <div class="knob-cell" data-id="L${i}_rel" data-min="0.02" data-max="6" data-val="0.55" data-log="1" data-unit="s" data-label="RELEASE" data-small="1"></div>
+      </div>
+    `;
+    box.appendChild(card);
+  }
+}
+
+function buildOrganDrawbarsPage() {
+  const box = document.getElementById('organDrawbarsContainer');
+  if (!box) return;
+  const labels = ["16'", "5 1/3'", "8'", "4'", "2 2/3'", "2'", "1 3/5'", "1 1/3'", "1'"];
+  const defaults = [0.8, 0.6, 0.9, 0.4, 0.2, 0.3, 0.1, 0.1, 0.2];
+  let html = '';
+  labels.forEach((lbl, idx) => {
+    state[`drawbar${idx}`] = defaults[idx];
+    html += `<div class="knob-cell" data-id="drawbar${idx}" data-min="0" data-max="1" data-val="${defaults[idx]}" data-log="0" data-unit="%" data-label="DB ${lbl}"></div>`;
+  });
+  html += `<div class="knob-cell" data-id="organDrive" data-min="0" data-max="1" data-val="0.15" data-log="0" data-unit="%" data-label="TUBE DRIVE" data-large="1"></div>`;
+  html += `<div class="knob-cell" data-id="organVolume" data-min="0" data-max="1.5" data-val="0.75" data-log="0" data-unit="%" data-label="ORGAN LEVEL" data-large="1"></div>`;
+  box.innerHTML = html;
+}
+
+function setLayerWave(layerNum, waveIdx) {
+  state[`L${layerNum}_wave`] = waveIdx;
+  for (let w = 0; w < 6; w++) {
+    const el = document.getElementById(`wavePill_${layerNum}_${w}`);
+    if (el) el.classList.toggle('active', w === waveIdx);
+  }
+  sendParam(`L${layerNum}_wave`, waveIdx);
+}
+
+function toggleSynthLayer(zeroIdx) {
+  const i = zeroIdx + 1;
+  state[`L${i}_en`] = !state[`L${i}_en`];
+  const led = document.getElementById(`led_L${i}`);
+  if (led) led.classList.toggle('on', state[`L${i}_en`]);
+  const mainPill = document.getElementById(`mainPill_L${i}`);
+  if (mainPill) {
+    mainPill.classList.toggle('active', state[`L${i}_en`]);
+    mainPill.innerText = `L${i} ${state[`L${i}_en`] ? 'ON' : 'OFF'}`;
+  }
+  sendParam(`L${i}_en`, state[`L${i}_en`] ? 1 : 0);
+}
+
+let currentSynthPreset = 1;
+function stepSynthPreset(dir) {
+  currentSynthPreset = ((currentSynthPreset - 1 + dir + 5) % 5) + 1;
+  selectSynthPreset(currentSynthPreset);
+}
+function selectSynthPreset(id) {
+  currentSynthPreset = id;
+  document.getElementById('synthPresetNameMain').innerText = SYNTH_PRESET_NAMES[id] || `Preset ${id}`;
+  if (!state.synthEnabled) toggleEffect('synthEnabled');
+  sendParam('synthPresetId', id);
+}
+
+function toggleOrganRotary() {
+  state.organRotaryFast = !state.organRotaryFast;
+  document.getElementById('pillRotaryMain').innerText = state.organRotaryFast ? 'ROTARY: FAST' : 'ROTARY: SLOW';
+  document.getElementById('pillRotaryMain').classList.toggle('active', state.organRotaryFast);
+  document.getElementById('btnRotaryPage').innerText = state.organRotaryFast ? 'ROTARY SPEAKER: FAST (TREMOLO)' : 'ROTARY SPEAKER: SLOW (CHORALE)';
+  sendParam('organRotaryFast', state.organRotaryFast ? 1 : 0);
+}
+
+buildSynth3LayersPage();
+buildOrganDrawbarsPage();
+
 }
 
 function updateEqFaderVisual(b, db) {
@@ -1450,10 +1749,16 @@ function toggleEffect(key) {
   updateModLeds();
 }
 function updateModLeds() {
-  ['eqEnabled', 'delayEnabled', 'reverbEnabled'].forEach(k => {
+  ['eqEnabled', 'delayEnabled', 'reverbEnabled', 'synthEnabled', 'organEnabled'].forEach(k => {
     const el = document.getElementById(`led_${k}`);
     if (el) el.classList.toggle('on', !!state[k]);
   });
+  ['synthEnabled', 'organEnabled'].forEach(k => {
+    const elPage = document.getElementById(`ledPage_${k}`);
+    if (elPage) elPage.classList.toggle('on', !!state[k]);
+  });
+  const elRackRev = document.getElementById('ledRack_reverbEnabled');
+  if (elRackRev) elRackRev.classList.toggle('on', !!state.reverbEnabled);
   ['chorusEnabled', 'phaserEnabled', 'tremoloEnabled', 'delayEnabled'].forEach(k => {
     const el = document.getElementById(`ledModal_${k}`);
     if (el) el.classList.toggle('on', !!state[k]);
@@ -1986,6 +2291,8 @@ initAllKnobs();
 initProgramButtons();
 build88KeyPiano();
 scanLibrary();
+
+
 </script>
 </body>
 </html>

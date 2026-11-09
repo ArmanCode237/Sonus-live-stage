@@ -1,5 +1,7 @@
-#include "BankLoader.h"
-#include "NordPianoEngine.h"
+#include "loaders/BankLoader.h"
+#include "core/WorkstationHost.h"
+#include "control/MidiOscMapper.h"
+#include "modules/NordPianoEngine.h"
 #include "httplib.h"
 #include <nlohmann/json.hpp>
 #include <RtAudio.h>
@@ -41,6 +43,8 @@ void midiCallback(double /*deltatime*/, std::vector<unsigned char>* message, voi
     } else if (status == 0x80 || (status == 0x90 && data2 == 0)) {
         engine->noteOff(data1);
     } else if (status == 0xB0) {
+        auto* host = static_cast<WorkstationHost*>(userData);
+        if (host->getRegistry().handleMidiCC(data1, data2)) return;
         if (data1 == 64) engine->setSustainPedal(data2 >= 64);
         else if (data1 == 7) engine->setMasterGain(static_cast<float>(data2) / 100.0f);
         else if (data1 == 10) engine->setPan((static_cast<float>(data2) - 64.0f) / 63.0f);
@@ -725,7 +729,13 @@ int main(int argc, char* argv[]) {
     std::cout << "   NORD VIRTUAL STAGE 5.0 - STAGE WORKSTATION EDITION    \n";
     std::cout << "=========================================================\n\n";
 
-    NordPianoEngine engine;
+    
+
+    WorkstationHost engine;
+    MidiOscMapper oscMapper(engine);
+    oscMapper.startOscServer(9000);
+
+
     std::string libraryRootDir = (argc > 1) ? argv[1] : "./samples";
     if (!fs::exists(libraryRootDir)) libraryRootDir = ".";
 
@@ -1164,6 +1174,8 @@ int main(int argc, char* argv[]) {
         else if (id == "shimmerPitchMode")  engine.setShimmerPitchMode(static_cast<int>(val));
         else if (id == "shimmerReverbMode") engine.setShimmerReverbMode(static_cast<int>(val));
         else if (id == "shimmerColorMode")  engine.setShimmerColorMode(static_cast<int>(val));
+
+        engine.applyParamById(id, val, false);
 
         res.set_content("{\"ok\":true}", "application/json");
     });
