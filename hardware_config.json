@@ -1,0 +1,16 @@
+{
+  "audio": {
+    "api": "ASIO",
+    "bufferSize": 256,
+    "deviceName": "UMC ASIO Driver",
+    "sampleRate": 44100
+  },
+  "midi": {
+    "enabledPorts": [
+      "2- Yamaha MOXF6/MOXF8-1"
+    ],
+    "knownPorts": [
+      "2- Yamaha MOXF6/MOXF8-1"
+    ]
+  }
+}

@@ -1,0 +1,601 @@
+[
+  {
+    "fileName": "Royal Grand 3D XL 6.1.npno",
+    "name": "Royal Grand 3D [YaS6      XL]",
+    "params": {
+      "attackSec": 0.0010000000474974513,
+      "chorusDepth": 0.44999998807907104,
+      "chorusEnabled": false,
+      "chorusMix": 0.3499999940395355,
+      "chorusRateHz": 0.800000011920929,
+      "cutoffHz": 20000.0,
+      "decaySec": 3.5,
+      "delayDamping": 0.3499999940395355,
+      "delayEnabled": false,
+      "delayFeedback": 0.3499999940395355,
+      "delayMix": 0.25,
+      "delayPingPong": true,
+      "delayTimeMs": 360.0,
+      "eqBands": [
+        {
+          "freqHz": 60.0,
+          "gainDb": 0.0,
+          "q": 0.8999999761581421
+        },
+        {
+          "freqHz": 250.0,
+          "gainDb": 0.0,
+          "q": 1.0
+        },
+        {
+          "freqHz": 1000.0,
+          "gainDb": 0.0,
+          "q": 1.0
+        },
+        {
+          "freqHz": 4000.0,
+          "gainDb": 0.0,
+          "q": 1.0
+        },
+        {
+          "freqHz": 12000.0,
+          "gainDb": 0.0,
+          "q": 0.8999999761581421
+        }
+      ],
+      "eqEnabled": true,
+      "highCutHz": 20000.0,
+      "kbdTouch": 1,
+      "loopHold": 0.6499999761581421,
+      "lowCutHz": 20.0,
+      "masterTuneCents": 0.0,
+      "maxVoices": 128,
+      "octaveShift": 0,
+      "pan": 0.0,
+      "phaserDepth": 0.6000000238418579,
+      "phaserEnabled": false,
+      "phaserFeedback": 0.4000000059604645,
+      "phaserMix": 0.3499999940395355,
+      "phaserRateHz": 0.6000000238418579,
+      "releaseSec": 0.3499999940395355,
+      "resonanceQ": 0.7070000171661377,
+      "reverbDamping": 0.4000000059604645,
+      "reverbEnabled": false,
+      "reverbMix": 0.2199999988079071,
+      "reverbPreDelayMs": 18.0,
+      "reverbShimmer": 0.44999998807907104,
+      "reverbSize": 0.6499999761581421,
+      "reverbType": 0,
+      "softRelease": false,
+      "sustainLevel": 1.0,
+      "transposeSemis": 0,
+      "tremoloDepth": 0.5,
+      "tremoloEnabled": false,
+      "tremoloRateHz": 4.5,
+      "volume": 1.5
+    },
+    "slot": 1,
+    "sourcePath": "./samples/Royal Grand 3D XL 6.1.npno"
+  },
+  {
+    "fileName": "Ballad EP1 Med 6.0 (1).npno",
+    "name": "Ballad EP1 [          Med]",
+    "params": {
+      "attackSec": 0.0010000000474974513,
+      "chorusDepth": 0.44999998807907104,
+      "chorusEnabled": false,
+      "chorusMix": 0.3499999940395355,
+      "chorusRateHz": 0.800000011920929,
+      "cutoffHz": 20000.0,
+      "decaySec": 3.5,
+      "delayDamping": 0.3499999940395355,
+      "delayEnabled": false,
+      "delayFeedback": 0.3499999940395355,
+      "delayMix": 0.25,
+      "delayPingPong": false,
+      "delayTimeMs": 360.0,
+      "eqBands": [
+        {
+          "freqHz": 60.0,
+          "gainDb": 0.0,
+          "q": 0.8999999761581421
+        },
+        {
+          "freqHz": 250.0,
+          "gainDb": 0.0,
+          "q": 1.0
+        },
+        {
+          "freqHz": 1000.0,
+          "gainDb": 0.0,
+          "q": 1.0
+        },
+        {
+          "freqHz": 4000.0,
+          "gainDb": 0.0,
+          "q": 1.0
+        },
+        {
+          "freqHz": 12000.0,
+          "gainDb": 0.0,
+          "q": 0.8999999761581421
+        }
+      ],
+      "eqEnabled": true,
+      "highCutHz": 20000.0,
+      "kbdTouch": 1,
+      "loopHold": 0.6499999761581421,
+      "lowCutHz": 20.0,
+      "masterTuneCents": 0.0,
+      "maxVoices": 128,
+      "octaveShift": 0,
+      "pan": 0.0,
+      "phaserDepth": 0.6000000238418579,
+      "phaserEnabled": false,
+      "phaserFeedback": 0.4000000059604645,
+      "phaserMix": 0.3499999940395355,
+      "phaserRateHz": 0.6000000238418579,
+      "releaseSec": 0.3499999940395355,
+      "resonanceQ": 0.7070000171661377,
+      "reverbDamping": 0.0,
+      "reverbEnabled": false,
+      "reverbMix": 0.4123076796531677,
+      "reverbPreDelayMs": 0.0,
+      "reverbShimmer": 0.0,
+      "reverbSize": 0.3649999797344208,
+      "reverbType": 0,
+      "softRelease": false,
+      "sustainLevel": 1.0,
+      "transposeSemis": 0,
+      "tremoloDepth": 0.5,
+      "tremoloEnabled": false,
+      "tremoloRateHz": 4.5,
+      "volume": 0.8500000238418579
+    },
+    "slot": 2,
+    "sourcePath": "./samples/Ballad EP1 Med 6.0 (1).npno"
+  },
+  {
+    "fileName": "DX7 FullTines Lrg 6.0.npno",
+    "name": "DX7 FullTines [          Lrg]",
+    "params": {
+      "attackSec": 0.0010000000474974513,
+      "chorusDepth": 1.0,
+      "chorusEnabled": true,
+      "chorusMix": 0.9807692170143127,
+      "chorusRateHz": 0.10000000149011612,
+      "cutoffHz": 20000.0,
+      "decaySec": 3.5,
+      "delayDamping": 0.3499999940395355,
+      "delayEnabled": false,
+      "delayFeedback": 0.3499999940395355,
+      "delayMix": 0.25,
+      "delayPingPong": true,
+      "delayTimeMs": 360.0,
+      "eqBands": [
+        {
+          "freqHz": 60.0,
+          "gainDb": 0.0,
+          "q": 0.8999999761581421
+        },
+        {
+          "freqHz": 250.0,
+          "gainDb": 0.0,
+          "q": 1.0
+        },
+        {
+          "freqHz": 1000.0,
+          "gainDb": 0.0,
+          "q": 1.0
+        },
+        {
+          "freqHz": 4000.0,
+          "gainDb": 0.0,
+          "q": 1.0
+        },
+        {
+          "freqHz": 12000.0,
+          "gainDb": 0.0,
+          "q": 0.8999999761581421
+        }
+      ],
+      "eqEnabled": true,
+      "highCutHz": 20000.0,
+      "kbdTouch": 1,
+      "loopHold": 0.6499999761581421,
+      "lowCutHz": 20.0,
+      "masterTuneCents": 0.0,
+      "maxVoices": 128,
+      "octaveShift": 0,
+      "pan": 0.0,
+      "phaserDepth": 0.6000000238418579,
+      "phaserEnabled": false,
+      "phaserFeedback": 0.4000000059604645,
+      "phaserMix": 0.3499999940395355,
+      "phaserRateHz": 0.6000000238418579,
+      "releaseSec": 0.3499999940395355,
+      "resonanceQ": 0.7070000171661377,
+      "reverbDamping": 0.4000000059604645,
+      "reverbEnabled": false,
+      "reverbMix": 0.2199999988079071,
+      "reverbPreDelayMs": 18.0,
+      "reverbShimmer": 0.0,
+      "reverbSize": 0.6499999761581421,
+      "reverbType": 2,
+      "softRelease": false,
+      "sustainLevel": 1.0,
+      "transposeSemis": 0,
+      "tremoloDepth": 0.5,
+      "tremoloEnabled": false,
+      "tremoloRateHz": 4.5,
+      "volume": 0.9769231081008911
+    },
+    "slot": 3,
+    "sourcePath": "./samples/DX7 FullTines Lrg 6.0.npno"
+  },
+  {
+    "name": "Amber Upright [GrSt 132  XL]",
+    "params": {
+      "attackSec": 0.0010000000474974513,
+      "chorusDepth": 0.44999998807907104,
+      "chorusEnabled": false,
+      "chorusMix": 0.3499999940395355,
+      "chorusRateHz": 0.800000011920929,
+      "cutoffHz": 20000.0,
+      "decaySec": 3.5,
+      "delayEnabled": false,
+      "delayFeedback": 0.3499999940395355,
+      "delayMix": 0.25,
+      "delayPingPong": true,
+      "delayTimeMs": 360.0,
+      "eqBands": [
+        {
+          "freqHz": 60.0,
+          "gainDb": 0.0,
+          "q": 0.8999999761581421
+        },
+        {
+          "freqHz": 250.0,
+          "gainDb": 0.0,
+          "q": 1.0
+        },
+        {
+          "freqHz": 1000.0,
+          "gainDb": 0.0,
+          "q": 1.0
+        },
+        {
+          "freqHz": 4000.0,
+          "gainDb": 0.0,
+          "q": 1.0
+        },
+        {
+          "freqHz": 12000.0,
+          "gainDb": 0.0,
+          "q": 0.8999999761581421
+        }
+      ],
+      "eqEnabled": true,
+      "highCutHz": 20000.0,
+      "loopHold": 0.6499999761581421,
+      "lowCutHz": 20.0,
+      "masterTuneCents": 0.0,
+      "maxVoices": 128,
+      "octaveShift": 0,
+      "pan": 0.0,
+      "phaserDepth": 0.6000000238418579,
+      "phaserEnabled": false,
+      "phaserFeedback": 0.4000000059604645,
+      "phaserMix": 0.3499999940395355,
+      "phaserRateHz": 0.6000000238418579,
+      "releaseSec": 0.3499999940395355,
+      "resonanceQ": 0.7070000171661377,
+      "reverbDamping": 0.4000000059604645,
+      "reverbEnabled": true,
+      "reverbMix": 0.2199999988079071,
+      "reverbPreDelayMs": 18.0,
+      "reverbSize": 0.6499999761581421,
+      "reverbType": 2,
+      "sustainLevel": 1.0,
+      "transposeSemis": 0,
+      "tremoloDepth": 0.5,
+      "tremoloEnabled": false,
+      "tremoloRateHz": 4.5,
+      "volume": 0.8500000238418579
+    },
+    "slot": 4,
+    "sourcePath": ".\\samples\\Amber Upright XL 6.2.npno"
+  },
+  {
+    "name": "Amber Upright [GrSt 132  XL]",
+    "params": {
+      "attackSec": 0.0010000000474974513,
+      "chorusDepth": 0.44999998807907104,
+      "chorusEnabled": false,
+      "chorusMix": 0.3499999940395355,
+      "chorusRateHz": 0.800000011920929,
+      "cutoffHz": 20000.0,
+      "decaySec": 3.5,
+      "delayEnabled": false,
+      "delayFeedback": 0.3499999940395355,
+      "delayMix": 0.25,
+      "delayPingPong": true,
+      "delayTimeMs": 360.0,
+      "eqBands": [
+        {
+          "freqHz": 60.0,
+          "gainDb": 0.0,
+          "q": 0.8999999761581421
+        },
+        {
+          "freqHz": 250.0,
+          "gainDb": 0.0,
+          "q": 1.0
+        },
+        {
+          "freqHz": 1000.0,
+          "gainDb": 0.0,
+          "q": 1.0
+        },
+        {
+          "freqHz": 4000.0,
+          "gainDb": 0.0,
+          "q": 1.0
+        },
+        {
+          "freqHz": 12000.0,
+          "gainDb": 0.0,
+          "q": 0.8999999761581421
+        }
+      ],
+      "eqEnabled": true,
+      "highCutHz": 20000.0,
+      "loopHold": 0.6499999761581421,
+      "lowCutHz": 20.0,
+      "masterTuneCents": 0.0,
+      "maxVoices": 128,
+      "octaveShift": 0,
+      "pan": 0.0,
+      "phaserDepth": 0.6000000238418579,
+      "phaserEnabled": false,
+      "phaserFeedback": 0.4000000059604645,
+      "phaserMix": 0.3499999940395355,
+      "phaserRateHz": 0.6000000238418579,
+      "releaseSec": 0.3499999940395355,
+      "resonanceQ": 0.7070000171661377,
+      "reverbDamping": 0.4000000059604645,
+      "reverbEnabled": true,
+      "reverbMix": 0.2199999988079071,
+      "reverbPreDelayMs": 18.0,
+      "reverbSize": 0.6499999761581421,
+      "reverbType": 2,
+      "sustainLevel": 1.0,
+      "transposeSemis": 0,
+      "tremoloDepth": 0.5,
+      "tremoloEnabled": false,
+      "tremoloRateHz": 4.5,
+      "volume": 0.8500000238418579
+    },
+    "slot": 5,
+    "sourcePath": ".\\samples\\Amber Upright XL 6.2.npno"
+  },
+  {
+    "name": "Amber Upright [GrSt 132  XL]",
+    "params": {
+      "attackSec": 0.0010000000474974513,
+      "chorusDepth": 0.44999998807907104,
+      "chorusEnabled": false,
+      "chorusMix": 0.3499999940395355,
+      "chorusRateHz": 0.800000011920929,
+      "cutoffHz": 20000.0,
+      "decaySec": 3.5,
+      "delayEnabled": false,
+      "delayFeedback": 0.3499999940395355,
+      "delayMix": 0.25,
+      "delayPingPong": true,
+      "delayTimeMs": 360.0,
+      "eqBands": [
+        {
+          "freqHz": 60.0,
+          "gainDb": 0.0,
+          "q": 0.8999999761581421
+        },
+        {
+          "freqHz": 250.0,
+          "gainDb": 0.0,
+          "q": 1.0
+        },
+        {
+          "freqHz": 1000.0,
+          "gainDb": 0.0,
+          "q": 1.0
+        },
+        {
+          "freqHz": 4000.0,
+          "gainDb": 0.0,
+          "q": 1.0
+        },
+        {
+          "freqHz": 12000.0,
+          "gainDb": 0.0,
+          "q": 0.8999999761581421
+        }
+      ],
+      "eqEnabled": true,
+      "highCutHz": 20000.0,
+      "loopHold": 0.6499999761581421,
+      "lowCutHz": 20.0,
+      "masterTuneCents": 0.0,
+      "maxVoices": 128,
+      "octaveShift": 0,
+      "pan": 0.0,
+      "phaserDepth": 0.6000000238418579,
+      "phaserEnabled": false,
+      "phaserFeedback": 0.4000000059604645,
+      "phaserMix": 0.3499999940395355,
+      "phaserRateHz": 0.6000000238418579,
+      "releaseSec": 0.3499999940395355,
+      "resonanceQ": 0.7070000171661377,
+      "reverbDamping": 0.4000000059604645,
+      "reverbEnabled": true,
+      "reverbMix": 0.2199999988079071,
+      "reverbPreDelayMs": 18.0,
+      "reverbSize": 0.6499999761581421,
+      "reverbType": 2,
+      "sustainLevel": 1.0,
+      "transposeSemis": 0,
+      "tremoloDepth": 0.5,
+      "tremoloEnabled": false,
+      "tremoloRateHz": 4.5,
+      "volume": 0.8500000238418579
+    },
+    "slot": 6,
+    "sourcePath": ".\\samples\\Amber Upright XL 6.2.npno"
+  },
+  {
+    "name": "Amber Upright [GrSt 132  XL]",
+    "params": {
+      "attackSec": 0.0010000000474974513,
+      "chorusDepth": 0.44999998807907104,
+      "chorusEnabled": false,
+      "chorusMix": 0.3499999940395355,
+      "chorusRateHz": 0.800000011920929,
+      "cutoffHz": 20000.0,
+      "decaySec": 3.5,
+      "delayEnabled": false,
+      "delayFeedback": 0.3499999940395355,
+      "delayMix": 0.25,
+      "delayPingPong": true,
+      "delayTimeMs": 360.0,
+      "eqBands": [
+        {
+          "freqHz": 60.0,
+          "gainDb": 0.0,
+          "q": 0.8999999761581421
+        },
+        {
+          "freqHz": 250.0,
+          "gainDb": 0.0,
+          "q": 1.0
+        },
+        {
+          "freqHz": 1000.0,
+          "gainDb": 0.0,
+          "q": 1.0
+        },
+        {
+          "freqHz": 4000.0,
+          "gainDb": 0.0,
+          "q": 1.0
+        },
+        {
+          "freqHz": 12000.0,
+          "gainDb": 0.0,
+          "q": 0.8999999761581421
+        }
+      ],
+      "eqEnabled": true,
+      "highCutHz": 20000.0,
+      "loopHold": 0.6499999761581421,
+      "lowCutHz": 20.0,
+      "masterTuneCents": 0.0,
+      "maxVoices": 128,
+      "octaveShift": 0,
+      "pan": 0.0,
+      "phaserDepth": 0.6000000238418579,
+      "phaserEnabled": false,
+      "phaserFeedback": 0.4000000059604645,
+      "phaserMix": 0.3499999940395355,
+      "phaserRateHz": 0.6000000238418579,
+      "releaseSec": 0.3499999940395355,
+      "resonanceQ": 0.7070000171661377,
+      "reverbDamping": 0.4000000059604645,
+      "reverbEnabled": true,
+      "reverbMix": 0.2199999988079071,
+      "reverbPreDelayMs": 18.0,
+      "reverbSize": 0.6499999761581421,
+      "reverbType": 2,
+      "sustainLevel": 1.0,
+      "transposeSemis": 0,
+      "tremoloDepth": 0.5,
+      "tremoloEnabled": false,
+      "tremoloRateHz": 4.5,
+      "volume": 0.8500000238418579
+    },
+    "slot": 7,
+    "sourcePath": ".\\samples\\Amber Upright XL 6.2.npno"
+  },
+  {
+    "name": "Amber Upright [GrSt 132  XL]",
+    "params": {
+      "attackSec": 0.0010000000474974513,
+      "chorusDepth": 0.44999998807907104,
+      "chorusEnabled": false,
+      "chorusMix": 0.3499999940395355,
+      "chorusRateHz": 0.800000011920929,
+      "cutoffHz": 20000.0,
+      "decaySec": 3.5,
+      "delayEnabled": false,
+      "delayFeedback": 0.3499999940395355,
+      "delayMix": 0.25,
+      "delayPingPong": true,
+      "delayTimeMs": 360.0,
+      "eqBands": [
+        {
+          "freqHz": 60.0,
+          "gainDb": 0.0,
+          "q": 0.8999999761581421
+        },
+        {
+          "freqHz": 250.0,
+          "gainDb": 0.0,
+          "q": 1.0
+        },
+        {
+          "freqHz": 1000.0,
+          "gainDb": 0.0,
+          "q": 1.0
+        },
+        {
+          "freqHz": 4000.0,
+          "gainDb": 0.0,
+          "q": 1.0
+        },
+        {
+          "freqHz": 12000.0,
+          "gainDb": 0.0,
+          "q": 0.8999999761581421
+        }
+      ],
+      "eqEnabled": true,
+      "highCutHz": 20000.0,
+      "loopHold": 0.6499999761581421,
+      "lowCutHz": 20.0,
+      "masterTuneCents": 0.0,
+      "maxVoices": 128,
+      "octaveShift": 0,
+      "pan": 0.0,
+      "phaserDepth": 0.6000000238418579,
+      "phaserEnabled": false,
+      "phaserFeedback": 0.4000000059604645,
+      "phaserMix": 0.3499999940395355,
+      "phaserRateHz": 0.6000000238418579,
+      "releaseSec": 0.3499999940395355,
+      "resonanceQ": 0.7070000171661377,
+      "reverbDamping": 0.4000000059604645,
+      "reverbEnabled": true,
+      "reverbMix": 0.2199999988079071,
+      "reverbPreDelayMs": 18.0,
+      "reverbSize": 0.6499999761581421,
+      "reverbType": 2,
+      "sustainLevel": 1.0,
+      "transposeSemis": 0,
+      "tremoloDepth": 0.5,
+      "tremoloEnabled": false,
+      "tremoloRateHz": 4.5,
+      "volume": 0.8500000238418579
+    },
+    "slot": 8,
+    "sourcePath": ".\\samples\\Amber Upright XL 6.2.npno"
+  }
+]
