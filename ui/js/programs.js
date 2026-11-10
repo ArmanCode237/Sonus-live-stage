@@ -47,6 +47,7 @@ function onProgramButtonClick(slotIdx) {
       if (res.instrumentName) setText('lcdSampleName', res.instrumentName);
       if (res.sourcePath) state.currentSourcePath = res.sourcePath;
       if (res.params) syncFromServerParams(res.params);
+      if (res.pianoLayers && typeof updatePianoLayerSources==='function')updatePianoLayerSources(res.pianoLayers);
     }).catch(() => {});
   }
 }

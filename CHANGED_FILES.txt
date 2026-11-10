@@ -1,0 +1,23 @@
+ARCHIVOS NUEVOS / MODIFICADOS:
+CAMBIOS_PIANO_ORGANO.md
+CHANGED_FILES.txt
+RECOMPILAR_LIVE_STAGE.cmd
+src/core/Nordtypes.h
+src/core/WorkstationHost.cpp
+src/main.cpp
+src/modules/NordPianoEngine.cpp
+src/modules/NordPianoEngine.h
+tests/piano_layers_contract.py
+tests/piano_layers_smoke.cpp
+ui/css/drawbars.css
+ui/css/piano.css
+ui/index.html
+ui/js/core.js
+ui/js/knobs.js
+ui/js/library.js
+ui/js/organ.js
+ui/js/piano.js
+ui/js/polling.js
+ui/js/programs.js
+ui/js/sync.js
+ui/organ.html

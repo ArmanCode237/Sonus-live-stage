@@ -19,7 +19,10 @@ const SYNTH_PRESET_NAMES = [
 ];
 
 const state = {
-  pianoEnabled: true,
+  pianoEnabled: true, pianoVolume: 1.0,
+  activePianoLayer: 0,
+  pianoLayers: [{enabled:true,volume:1},{enabled:false,volume:0.75},{enabled:false,volume:0.75}],
+  pianoLayerSources: [{name:'Sin sonido',sourcePath:''},{name:'VACÍA',sourcePath:''},{name:'VACÍA',sourcePath:''}],
   tune: 0, volume: 0.85, pan: 0.0,
   transpose: 0, octave: 0, touch: 1, softRelease: false,
   cutoff: 20000, resonance: 0.71,

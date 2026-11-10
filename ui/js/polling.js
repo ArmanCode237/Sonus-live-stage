@@ -25,6 +25,7 @@ function startWorkstationPolling() {
       setText('ramTopText', (s.memoryMB || 0).toFixed(1) + ' MB');
       if (s.activeProgramSlot !== undefined) setActiveProgramPad(s.activeProgramSlot);
       if (s.params) syncFromServerParams(s.params);
+      if (s.pianoLayers && typeof updatePianoLayerSources === 'function') updatePianoLayerSources(s.pianoLayers);
     }
 
     setText('activeVoicesText', s.activeVoices);

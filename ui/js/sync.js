@@ -11,6 +11,10 @@ function syncFromServerParams(p) {
   if (!p || state.isDraggingControl) return;
 
   state.pianoEnabled = p.pianoEnabled !== undefined ? !!p.pianoEnabled : true;
+  if(p.pianoLayers && Array.isArray(p.pianoLayers)) {
+    state.pianoLayers = p.pianoLayers.map((l,i)=>({enabled:!!l.enabled, volume:Number(l.volume ?? (i===0?1:0.75))}));
+  }
+  if(typeof updatePianoLayerControls==='function') updatePianoLayerControls();
   const mv = p.maxVoices || 128;
   const mvSel = $('maxVoicesSelect');
   if (mvSel) mvSel.value = mv;
@@ -29,7 +33,7 @@ function syncFromServerParams(p) {
   setText('btnTouch', tLabels[state.touch] || 'TOUCH: NORM');
 
   const direct = {
-    tune: p.masterTuneCents, volume: p.volume, pan: p.pan,
+    tune: p.masterTuneCents, volume: p.volume, pianoVolume: p.pianoVolume, pan: p.pan,
     cutoff: p.cutoffHz, resonance: p.resonanceQ,
     attack: p.attackSec, decay: p.decaySec, sustain: p.sustainLevel, release: p.releaseSec, loopHold: p.loopHold,
     lowCut: p.lowCutHz, highCut: p.highCutHz,

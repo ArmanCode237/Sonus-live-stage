@@ -55,6 +55,9 @@ function updateSingleKnobCell(cell, val) {
 
 function updateAllControlsForId(id, val) {
   document.querySelectorAll(`.knob-cell[data-id="${id}"]`).forEach(c => updateSingleKnobCell(c, val));
+  if (id.startsWith('eqGain') && typeof updateMainEqSlider === 'function') {
+    updateMainEqSlider(parseInt(id.replace('eqGain','')), val);
+  }
   if (id.startsWith('eqGain') && typeof updateEqFaderVisual === 'function') {
     updateEqFaderVisual(parseInt(id.replace('eqGain', '')), val);
   }

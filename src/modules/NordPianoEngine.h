@@ -24,6 +24,8 @@ struct Voice {
     uint64_t ageOrder = 0;
 
     const StrokeSample* sample = nullptr;
+    std::shared_ptr<const PianoInstrument> sampleBank; // keeps samples alive after bank changes
+    int pianoLayer = 0;
     double pos = 0.0;
     double step = 1.0;
 
@@ -51,6 +53,12 @@ public:
     void setInstrument(std::shared_ptr<const PianoInstrument> inst);
     void setInstrument(const PianoInstrument* inst);
     std::shared_ptr<const PianoInstrument> getInstrument() const;
+    void setLayerInstrument(int layer, std::shared_ptr<const PianoInstrument> inst);
+    std::shared_ptr<const PianoInstrument> getLayerInstrument(int layer) const;
+    std::array<std::shared_ptr<const PianoInstrument>, 3> getPianoInstruments() const;
+    void setPianoVolume(float level) { pianoVolume_.store(std::clamp(level, 0.0f, 1.5f)); }
+    void setPianoLayerEnabled(int layer, bool enabled) { if (layer >= 0 && layer < 3) pianoLayerEnabled_[layer].store(enabled); }
+    void setPianoLayerVolume(int layer, float volume) { if (layer >= 0 && layer < 3) pianoLayerVolume_[layer].store(std::clamp(volume, 0.0f, 1.5f)); }
 
     void applyPreset(const SynthPresetParams& p);
 
@@ -150,7 +158,8 @@ public:
 
 private:
     void pushMidiEvent(uint8_t type, int d1, int d2);
-    void handleNoteOnInternal(const PianoInstrument* inst, int rawMidiKey, int velocity);
+    void handleNoteOnInternal(const std::array<std::shared_ptr<const PianoInstrument>, 3>& instruments, int rawMidiKey, int velocity);
+    void startPianoVoice(const std::shared_ptr<const PianoInstrument>& inst, int layer, int rawMidiKey, int midiKey, int velocity);
     void handleNoteOffInternal(int rawMidiKey);
     void handleSustainInternal(bool down);
 
@@ -158,7 +167,8 @@ private:
     int touchAttenuation(int velocity) const;
 
     double hostSampleRate_ = 48000.0;
-    std::shared_ptr<const PianoInstrument> instrument_;
+    std::shared_ptr<const PianoInstrument> instrument_; // legacy layer 1
+    std::array<std::shared_ptr<const PianoInstrument>, 2> extraPianoInstruments_{};
     mutable std::mutex instPtrMutex_;
 
     std::array<Voice, MAX_VOICES> voices_;
@@ -173,6 +183,9 @@ private:
     double testTonePhase_ = 0.0;
 
     std::atomic<bool> pianoEnabled_{true};
+    std::atomic<float> pianoVolume_{1.0f};
+    std::array<std::atomic<bool>, 3> pianoLayerEnabled_{{true, false, false}};
+    std::array<std::atomic<float>, 3> pianoLayerVolume_{{1.0f, 0.75f, 0.75f}};
     std::atomic<int> maxVoicesLimit_{128};
     std::atomic<int> transposeSemis_{0};
     std::atomic<int> octaveShift_{0};

@@ -672,6 +672,12 @@ json serializeParams(const SynthPresetParams& p) {
 
     return {
         {"pianoEnabled", p.pianoEnabled},
+        {"pianoVolume", p.pianoVolume},
+        {"pianoLayers", json::array({
+            {{"enabled", p.pianoLayerEnabled[0]}, {"volume", p.pianoLayerVolume[0]}},
+            {{"enabled", p.pianoLayerEnabled[1]}, {"volume", p.pianoLayerVolume[1]}},
+            {{"enabled", p.pianoLayerEnabled[2]}, {"volume", p.pianoLayerVolume[2]}}
+        })},
         {"maxVoices", p.maxVoices},
         {"transposeSemis", p.transposeSemis},
         {"octaveShift", p.octaveShift},
@@ -759,6 +765,15 @@ SynthPresetParams deserializeParams(const json& j, const SynthPresetParams& fall
     SynthPresetParams p = fallback;
     if (!j.is_object()) return p;
     p.pianoEnabled     = j.value("pianoEnabled", p.pianoEnabled);
+    p.pianoVolume      = j.value("pianoVolume", p.pianoVolume);
+    if (j.contains("pianoLayers") && j["pianoLayers"].is_array()) {
+        for (size_t i = 0; i < std::min<size_t>(3, j["pianoLayers"].size()); ++i) {
+            const auto& layer = j["pianoLayers"][i];
+            if (!layer.is_object()) continue;
+            p.pianoLayerEnabled[i] = layer.value("enabled", p.pianoLayerEnabled[i]);
+            p.pianoLayerVolume[i] = layer.value("volume", p.pianoLayerVolume[i]);
+        }
+    }
     p.maxVoices        = j.value("maxVoices", p.maxVoices);
     p.transposeSemis   = j.value("transposeSemis", p.transposeSemis);
     p.octaveShift      = j.value("octaveShift", p.octaveShift);
@@ -945,6 +960,64 @@ SynthPresetParams deserializeParams(const json& j, const SynthPresetParams& fall
     return p;
 }
 
+// The piano-layer source paths are stored separately from the realtime DSP parameters.
+// This keeps legacy "sourcePath" (layer 1) compatible with older programs.json files.
+json serializePianoLayerSources(const NordPianoEngine& engine) {
+    json layers = json::array();
+    const auto banks = engine.getPianoInstruments();
+    for (int i = 0; i < 3; ++i) {
+        auto bank = banks[i];
+        const std::string path = bank ? fs::path(bank->sourcePath).generic_string() : "";
+        layers.push_back({{"layer", i}, {"name", bank ? bank->name : "Sin sonido"},
+                          {"sourcePath", path},
+                          {"fileName", path.empty() ? "" : fs::path(path).filename().string()},
+                          {"instrumentId", bank ? bank->id : 0}});
+    }
+    return layers;
+}
+
+bool restorePianoLayerSources(const json& program, NordPianoEngine& engine,
+                              const std::string& libraryRoot, std::string& statusMsg) {
+    bool loadedFirst = false;
+    const json layers = (program.contains("pianoLayers") && program["pianoLayers"].is_array())
+        ? program["pianoLayers"] : json::array();
+    for (int i = 0; i < 3; ++i) {
+        const json layer = (i < static_cast<int>(layers.size()) && layers[i].is_object())
+            ? layers[i] : json::object();
+        const std::string savedPath = i == 0 && layer.empty()
+            ? program.value("sourcePath", std::string{}) : layer.value("sourcePath", std::string{});
+        const std::string filename = i == 0 && layer.empty()
+            ? program.value("fileName", std::string{}) : layer.value("fileName", std::string{});
+        fs::path resolved(savedPath);
+        if ((!fs::exists(resolved) || savedPath.empty()) && !filename.empty()) {
+            const fs::path replacement = fs::path(libraryRoot) / filename;
+            if (fs::exists(replacement)) resolved = replacement;
+        }
+        if (savedPath.empty() && filename.empty()) {
+            engine.setLayerInstrument(i, {});
+            continue;
+        }
+        if (!fs::exists(resolved) || !fs::is_regular_file(resolved)) {
+            statusMsg = "No se encontró el sample de la capa " + std::to_string(i + 1) + ": " + filename;
+            engine.setLayerInstrument(i, {}); // prevent a different program's layer from leaking in
+            continue;
+        }
+        auto oldBank = engine.getLayerInstrument(i);
+        if (oldBank && fs::path(oldBank->sourcePath) == resolved) {
+            if (i == 0) loadedFirst = true;
+            continue;
+        }
+        auto bank = std::make_shared<PianoInstrument>();
+        if (BankLoader::loadAny(resolved.generic_string(), *bank, statusMsg)) {
+            engine.setLayerInstrument(i, bank);
+            if (i == 0) loadedFirst = true;
+        } else {
+            engine.setLayerInstrument(i, {});
+        }
+    }
+    return loadedFirst;
+}
+
 int main(int argc, char* argv[]) {
     std::cout << "=========================================================\n";
     std::cout << "   NORD VIRTUAL STAGE 5.1 - STAGE WORKSTATION EDITION    \n";
@@ -972,28 +1045,14 @@ int main(int argc, char* argv[]) {
     }
 
     bool loadedFromProgram1 = false;
-    if (userPrograms.is_array() && userPrograms.size() == 8) {
+    if (userPrograms.is_array() && userPrograms.size() == 8 && userPrograms[0].is_object()) {
         const auto& prog0 = userPrograms[0];
-        std::string targetPath = prog0.value("sourcePath", "");
-        std::string targetFile = prog0.value("fileName", "");
-
-        if (!targetPath.empty() && !fs::exists(targetPath) && !targetFile.empty()) {
-            fs::path fallbackPath = fs::path(libraryRootDir) / targetFile;
-            if (fs::exists(fallbackPath)) targetPath = fallbackPath.generic_string();
+        loadedFromProgram1 = restorePianoLayerSources(prog0, engine, libraryRootDir, statusMsg);
+        if (prog0.contains("params")) {
+            engine.applyPreset(deserializeParams(prog0["params"], engine.getCurrentParams()));
         }
-
-        if (!targetPath.empty() && fs::exists(targetPath)) {
-            auto initInst = std::make_shared<PianoInstrument>();
-            if (BankLoader::loadAny(targetPath, *initInst, statusMsg)) {
-                engine.setInstrument(initInst);
-                if (prog0.contains("params")) {
-                    SynthPresetParams p = deserializeParams(prog0["params"], engine.getCurrentParams());
-                    engine.applyPreset(p);
-                }
-                loadedFromProgram1 = true;
-                std::cout << "[Inicio] Programa 1 cargado automaticamente: " << initInst->name << "\n";
-            }
-        }
+        // A program may intentionally contain only synth / organ, with no piano.
+        if (prog0.value("sourcePath", std::string{}).empty()) loadedFromProgram1 = true;
     }
 
     if (!loadedFromProgram1) {
@@ -1002,26 +1061,23 @@ int main(int argc, char* argv[]) {
             engine.setInstrument(initInst);
             std::cout << "[Inicio] " << statusMsg << "\n";
         }
+    }
 
-        if (!userPrograms.is_array() || userPrograms.size() != 8) {
-            userPrograms = json::array();
-            auto inst = engine.getInstrument();
-            std::string normPath = inst ? fs::path(inst->sourcePath).generic_string() : "";
-            for (int i = 0; i < 8; ++i) {
-                userPrograms.push_back({
-                    {"slot", i + 1},
-                    {"name", inst ? inst->name : ("Program " + std::to_string(i + 1))},
-                    {"sourcePath", normPath},
-                    {"fileName", inst ? fs::path(inst->sourcePath).filename().string() : ""},
-                    {"params", serializeParams(engine.getCurrentParams())}
-                });
-            }
-            std::ofstream pf(programsFilePath);
-            if (pf) pf << userPrograms.dump(2);
-        } else if (userPrograms[0].contains("params")) {
-            SynthPresetParams p = deserializeParams(userPrograms[0]["params"], engine.getCurrentParams());
-            engine.applyPreset(p);
+    if (!userPrograms.is_array() || userPrograms.size() != 8) {
+        userPrograms = json::array();
+        auto inst = engine.getInstrument();
+        std::string normPath = inst ? fs::path(inst->sourcePath).generic_string() : "";
+        for (int i = 0; i < 8; ++i) {
+            userPrograms.push_back({
+                {"slot", i + 1}, {"name", inst ? inst->name : ("Program " + std::to_string(i + 1))},
+                {"sourcePath", normPath},
+                {"fileName", inst ? fs::path(inst->sourcePath).filename().string() : ""},
+                {"pianoLayers", serializePianoLayerSources(engine)},
+                {"params", serializeParams(engine.getCurrentParams())}
+            });
         }
+        std::ofstream pf(programsFilePath);
+        if (pf) pf << userPrograms.dump(2);
     }
 
     HardwareManager hw(engine);
@@ -1078,6 +1134,7 @@ int main(int argc, char* argv[]) {
         json j = {
             {"activeProgramSlot", activeProgramSlot},
             {"paramRev", paramRevCounter.load()},
+            {"pianoLayers", serializePianoLayerSources(engine)},
             {"instrumentId", inst ? inst->id : 0},
             {"instrumentName", inst ? inst->name : "Synth / Organ Stage"},
             {"sourcePath", inst ? fs::path(inst->sourcePath).generic_string() : ""},
@@ -1127,6 +1184,7 @@ int main(int argc, char* argv[]) {
             {"name", instName},
             {"sourcePath", normPath},
             {"fileName", fName},
+            {"pianoLayers", serializePianoLayerSources(engine)},
             {"params", serializeParams(engine.getCurrentParams())}
         };
         std::ofstream pf(programsFilePath);
@@ -1147,28 +1205,10 @@ int main(int argc, char* argv[]) {
         activeProgramSlot = slotIdx;
         const auto& prog = userPrograms[slotIdx];
 
-        std::string targetPath = prog.value("sourcePath", "");
-        std::string targetFile = prog.value("fileName", "");
-
-        if (!targetPath.empty() && !fs::exists(targetPath) && !targetFile.empty()) {
-            fs::path fallbackPath = fs::path(libraryRootDir) / targetFile;
-            if (fs::exists(fallbackPath)) targetPath = fallbackPath.generic_string();
-        }
-
-        auto curInst = engine.getInstrument();
-        std::string curPath = curInst ? fs::path(curInst->sourcePath).generic_string() : "";
-
-        if (!targetPath.empty() && fs::exists(targetPath) && curPath != fs::path(targetPath).generic_string()) {
-            auto newInst = std::make_shared<PianoInstrument>();
-            if (BankLoader::loadAny(targetPath, *newInst, statusMsg)) {
-                engine.setInstrument(newInst);
-            }
-        }
+        restorePianoLayerSources(prog, engine, libraryRootDir, statusMsg);
         if (prog.contains("params")) {
             SynthPresetParams p = deserializeParams(prog["params"], engine.getCurrentParams());
             engine.applyPreset(p);
-        } else {
-            engine.applyPreset(engine.getCurrentParams());
         }
         paramRevCounter.fetch_add(1);
 
@@ -1176,6 +1216,7 @@ int main(int argc, char* argv[]) {
         res.set_content(json({
             {"ok", true},
             {"slot", slotIdx},
+            {"pianoLayers", serializePianoLayerSources(engine)},
             {"instrumentId", activeInst ? activeInst->id : 0},
             {"instrumentName", activeInst ? activeInst->name : prog.value("name", "Program")},
             {"sourcePath", activeInst ? fs::path(activeInst->sourcePath).generic_string() : ""},
@@ -1291,6 +1332,7 @@ int main(int argc, char* argv[]) {
     svr.Post("/api/load", [&](const httplib::Request& req, httplib::Response& res) {
         auto body = json::parse(req.body, nullptr, false);
         std::string targetPath = body.value("path", "");
+        int pianoLayer = std::clamp(body.value("layer", 0), 0, 2);
 
         fs::path p(targetPath);
         std::string ext = p.extension().string();
@@ -1306,7 +1348,8 @@ int main(int argc, char* argv[]) {
             auto newInst = std::make_shared<PianoInstrument>();
             ok = BankLoader::loadAny(targetPath, *newInst, statusMsg);
             if (ok) {
-                engine.setInstrument(newInst);
+                engine.setLayerInstrument(pianoLayer, newInst);
+                engine.setPianoLayerEnabled(pianoLayer, true);
                 engine.setMaxVoices(keepParams.maxVoices);
             }
         }
@@ -1315,6 +1358,8 @@ int main(int argc, char* argv[]) {
         auto activeInst = engine.getInstrument();
         res.set_content(json({
             {"ok", ok},
+            {"layer", pianoLayer},
+            {"pianoLayers", serializePianoLayerSources(engine)},
             {"message", statusMsg},
             {"instrumentId", activeInst ? activeInst->id : 0},
             {"instrumentName", activeInst ? activeInst->name : "No Sound Loaded"},
@@ -1325,6 +1370,22 @@ int main(int argc, char* argv[]) {
             {"memoryMB", activeInst ? activeInst->memoryMB : 0.0},
             {"params", serializeParams(engine.getCurrentParams())}
         }).dump(), "application/json");
+    });
+
+    svr.Post("/api/piano/layers/clear", [&](const httplib::Request& req, httplib::Response& res) {
+        auto body = json::parse(req.body, nullptr, false);
+        if (!body.is_object() || !body.contains("layer") || !body["layer"].is_number_integer()
+            || body["layer"].get<int>() < 0 || body["layer"].get<int>() >= 3) {
+            res.status = 400;
+            res.set_content(R"({"ok":false,"error":"Capa inválida"})", "application/json");
+            return;
+        }
+        const int layer = body["layer"].get<int>();
+        engine.setLayerInstrument(layer, {});
+        engine.setPianoLayerEnabled(layer, false);
+        paramRevCounter.fetch_add(1);
+        res.set_content(json({{"ok", true}, {"pianoLayers", serializePianoLayerSources(engine)},
+                              {"params", serializeParams(engine.getCurrentParams())}}).dump(), "application/json");
     });
 
     svr.Post("/api/param", [&](const httplib::Request& req, httplib::Response& res) {

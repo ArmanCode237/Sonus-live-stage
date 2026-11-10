@@ -157,6 +157,11 @@ struct SynthPresetParams {
 
     // Módulo 1: Piano / Sample Principal
     bool pianoEnabled = true;
+    // Piano mixer: three independent sample instruments, defaults preserve
+    // programs created before the layer mixer existed.
+    float pianoVolume = 1.0f;
+    bool pianoLayerEnabled[3] = {true, false, false};
+    float pianoLayerVolume[3] = {1.0f, 0.75f, 0.75f};
     float cutoffHz = 20000.0f;
     float resonanceQ = 0.707f;
     float attackSec = 0.001f;

@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="/css/components.css">
 <link rel="stylesheet" href="/css/console.css">
 <link rel="stylesheet" href="/css/drawbars.css">
+<link rel="stylesheet" href="/css/piano.css">
 <link rel="stylesheet" href="/css/keyboard.css">
 <link rel="stylesheet" href="/css/modals.css">
 </head>
@@ -26,30 +27,38 @@
   <!-- ===================== CONTENIDO PROPIO DE ESTA PÁGINA ===================== -->
   <div class="stage-main-grid" id="pageView_main">
 
-    <!-- COLUMNA 1: EQ PIANO + VOICE & LOOP CFG -->
+    <!-- COLUMNA 1: Ecualización expandida (Voice/Loops sigue en su modal, no en MAIN) -->
     <div class="col-stack">
-      <div class="fx-module-black">
+      <section class="fx-module-black eq-module-tall" aria-label="Ecualizador de piano de cinco bandas">
         <div class="mod-pill-header">
-          <button class="mod-led-btn on" id="led_eqEnabled" onclick="toggleEffect('eqEnabled')"></button>
-          <span>EQ PIANO</span>
-          <button class="expand-btn" onclick="openModal('modalEq')">⤢ 5-BAND</button>
+          <button class="mod-led-btn on" id="led_eqEnabled" onclick="toggleEffect('eqEnabled')" aria-label="Activar o desactivar EQ"></button>
+          <span>EQ PIANO · 5 BAND</span>
+          <button class="expand-btn" onclick="openModal('modalEq')">⤢ EDIT</button>
         </div>
-        <div class="knob-cell" data-id="eqGain4" data-min="-15" data-max="15" data-val="0" data-log="0" data-unit="dB" data-label="TREBLE (B5)"></div>
-        <div class="knob-cell" data-id="eqGain2" data-min="-15" data-max="15" data-val="0" data-log="0" data-unit="dB" data-label="MID (B3)"></div>
-        <div class="knob-cell" data-id="eqGain0" data-min="-15" data-max="15" data-val="0" data-log="0" data-unit="dB" data-label="BASS (B1)"></div>
-      </div>
-
-      <div class="fx-module-black">
-        <div class="mod-pill-header">
-          <span>VOICE & LOOP CFG</span>
-          <button class="expand-btn" onclick="openModal('modalVoiceConfig')">⤢ OPEN</button>
+        <div class="eq-main-bands">
+          <div class="eq-main-band">
+            <div class="eq-main-band-label"><label for="eqMainSlider0">BASS · 60 Hz</label><output id="eqMainValue0">+0.0 dB</output></div>
+            <input type="range" id="eqMainSlider0" min="-15" max="15" step="0.1" value="0" oninput="adjustMainEqGain(0, this.value)" aria-label="Ganancia BASS · 60 Hz">
+          </div>
+          <div class="eq-main-band">
+            <div class="eq-main-band-label"><label for="eqMainSlider1">LOW MID · 250 Hz</label><output id="eqMainValue1">+0.0 dB</output></div>
+            <input type="range" id="eqMainSlider1" min="-15" max="15" step="0.1" value="0" oninput="adjustMainEqGain(1, this.value)" aria-label="Ganancia LOW MID · 250 Hz">
+          </div>
+          <div class="eq-main-band">
+            <div class="eq-main-band-label"><label for="eqMainSlider2">MID · 1 kHz</label><output id="eqMainValue2">+0.0 dB</output></div>
+            <input type="range" id="eqMainSlider2" min="-15" max="15" step="0.1" value="0" oninput="adjustMainEqGain(2, this.value)" aria-label="Ganancia MID · 1 kHz">
+          </div>
+          <div class="eq-main-band">
+            <div class="eq-main-band-label"><label for="eqMainSlider3">HI MID · 4 kHz</label><output id="eqMainValue3">+0.0 dB</output></div>
+            <input type="range" id="eqMainSlider3" min="-15" max="15" step="0.1" value="0" oninput="adjustMainEqGain(3, this.value)" aria-label="Ganancia HI MID · 4 kHz">
+          </div>
+          <div class="eq-main-band">
+            <div class="eq-main-band-label"><label for="eqMainSlider4">TREBLE · 12 kHz</label><output id="eqMainValue4">+0.0 dB</output></div>
+            <input type="range" id="eqMainSlider4" min="-15" max="15" step="0.1" value="0" oninput="adjustMainEqGain(4, this.value)" aria-label="Ganancia TREBLE · 12 kHz">
+          </div>
         </div>
-        <div class="seven-seg-box" style="height:44px;">
-          <div class="seven-seg-num" id="zoneCountNum">0</div>
-          <div class="seven-seg-label">ACTIVE ZONES</div>
-        </div>
-        <button class="red-rect-btn" style="width:100%;" onclick="openModal('modalVoiceConfig')">⚙ LOOP / ADSR / VOICES</button>
-      </div>
+        <div class="eq-footer"><span>LOW</span><span>PARAMETRIC 5-BAND</span><span>HIGH</span></div>
+      </section>
     </div>
 
     <!-- COLUMNA 2: SOUND BANK -->
@@ -59,6 +68,53 @@
           <button class="mod-led-btn on"></button>
           <span>SOUND BANK</span>
           <span>NPNO / NSMP4</span>
+        </div>
+
+        <div class="piano-mixer" aria-label="Mezclador de tres capas de piano">
+          <div class="piano-mixer-head">
+            <button type="button" class="mod-led-btn on" id="led_pianoEnabled" onclick="toggleEffect('pianoEnabled')" title="Encender / apagar piano" aria-label="Encender o apagar módulo piano"></button>
+            <strong>PIANO · 3 LAYERS</strong>
+            <div class="knob-cell" data-id="pianoVolume" data-min="0" data-max="1.5" data-val="1" data-log="0" data-unit="%" data-label="MASTER" data-small="1"></div>
+          </div>
+          <div class="piano-layer-list">
+            <div class="piano-layer-row" id="pianoLayerRow0">
+              <div class="piano-layer-top">
+                <button type="button" class="piano-layer-selector" id="pianoLayerSelect0" onclick="selectPianoLayer(0)" aria-label="Seleccionar capa de piano 1">L1</button>
+                <button type="button" class="mod-led-btn on" id="pianoLayerLed0" onclick="togglePianoLayer(0)" aria-label="Activar o desactivar capa 1"></button>
+                <span class="piano-layer-name" id="pianoLayerName0" title="Sin sonido">Cargando…</span>
+                <button type="button" class="piano-layer-clear" onclick="clearPianoLayer(0)" title="Descargar muestra capa 1" aria-label="Vaciar capa 1">×</button>
+              </div>
+              <div class="piano-layer-volume">
+                <input type="range" id="pianoLayerSlider0" min="0" max="1.5" step="0.01" value="1" oninput="changePianoLayerVolume(0,this.value)" aria-label="Volumen capa 1">
+                <output id="pianoLayerVal0">100%</output>
+              </div>
+            </div>
+            <div class="piano-layer-row" id="pianoLayerRow1">
+              <div class="piano-layer-top">
+                <button type="button" class="piano-layer-selector" id="pianoLayerSelect1" onclick="selectPianoLayer(1)" aria-label="Seleccionar capa de piano 2">L2</button>
+                <button type="button" class="mod-led-btn " id="pianoLayerLed1" onclick="togglePianoLayer(1)" aria-label="Activar o desactivar capa 2"></button>
+                <span class="piano-layer-name" id="pianoLayerName1" title="Sin sonido">VACÍA</span>
+                <button type="button" class="piano-layer-clear" onclick="clearPianoLayer(1)" title="Descargar muestra capa 2" aria-label="Vaciar capa 2">×</button>
+              </div>
+              <div class="piano-layer-volume">
+                <input type="range" id="pianoLayerSlider1" min="0" max="1.5" step="0.01" value="0.75" oninput="changePianoLayerVolume(1,this.value)" aria-label="Volumen capa 2">
+                <output id="pianoLayerVal1">75%</output>
+              </div>
+            </div>
+            <div class="piano-layer-row" id="pianoLayerRow2">
+              <div class="piano-layer-top">
+                <button type="button" class="piano-layer-selector" id="pianoLayerSelect2" onclick="selectPianoLayer(2)" aria-label="Seleccionar capa de piano 3">L3</button>
+                <button type="button" class="mod-led-btn " id="pianoLayerLed2" onclick="togglePianoLayer(2)" aria-label="Activar o desactivar capa 3"></button>
+                <span class="piano-layer-name" id="pianoLayerName2" title="Sin sonido">VACÍA</span>
+                <button type="button" class="piano-layer-clear" onclick="clearPianoLayer(2)" title="Descargar muestra capa 3" aria-label="Vaciar capa 3">×</button>
+              </div>
+              <div class="piano-layer-volume">
+                <input type="range" id="pianoLayerSlider2" min="0" max="1.5" step="0.01" value="0.75" oninput="changePianoLayerVolume(2,this.value)" aria-label="Volumen capa 3">
+                <output id="pianoLayerVal2">75%</output>
+              </div>
+            </div>
+          </div>
+          <div class="piano-mixer-hint" id="pianoLayerHint">BROWSER → cargar en L1</div>
         </div>
 
         <select class="quick-cat-select" id="quickCatSelect" onchange="onQuickCategoryChange(this.value)">
@@ -265,6 +321,7 @@
 <script src="/js/library.js"></script>
 <script src="/js/synth.js"></script>
 <script src="/js/organ.js"></script>
+<script src="/js/piano.js"></script>
 <script src="/js/keyboard.js"></script>
 <script src="/js/sync.js"></script>
 <script src="/js/polling.js"></script>

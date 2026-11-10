@@ -89,7 +89,8 @@ function renderBrowserList() {
   }
   state.filteredList.forEach((it, idx) => {
     const row = document.createElement('div');
-    row.className = 'lib-item-row' + (it.path === state.currentSourcePath ? ' active' : '');
+    const selectedPath = state.pianoLayerSources?.[state.activePianoLayer||0]?.sourcePath ?? state.currentSourcePath;
+    row.className = 'lib-item-row' + (it.path === selectedPath ? ' active' : '');
 
     const starBtn = document.createElement('button');
     starBtn.className = 'fav-star-btn' + (it.favorite ? ' fav' : '');
@@ -143,24 +144,32 @@ function saveSampleTag(name, group, favorite) {
 function stepLibrary(dir) {
   rebuildFilteredList();
   if (!state.filteredList.length) return;
-  let curIdx = state.filteredList.findIndex(x => x.path === state.currentSourcePath);
+  let curIdx = state.filteredList.findIndex(x => x.path === (state.pianoLayerSources?.[state.activePianoLayer||0]?.sourcePath||state.currentSourcePath));
   if (curIdx < 0) curIdx = 0;
   curIdx = (curIdx + dir + state.filteredList.length) % state.filteredList.length;
   setText('modelIndexNum', curIdx + 1);
   loadInstrument(state.filteredList[curIdx].path);
 }
 function loadInstrument(path) {
-  state.currentSourcePath = path;
-  setText('lcdSampleName', "LOADING...");
-  fetch('/api/load', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ path })
-  }).then(r => r.json()).then(res => {
-    state.currentInstId = res.instrumentId || state.currentInstId;
-    state.currentSourcePath = res.sourcePath || path;
-    setText('lcdSampleName', res.instrumentName || "No Sound Loaded");
-    setText('zoneCountNum', res.zoneCount || 0);
-    setText('ramTopText', (res.memoryMB || 0).toFixed(1) + " MB");
-    if (res.params) syncFromServerParams(res.params);
-  }).catch(() => {});
+  const layer=state.activePianoLayer||0;
+  if(layer===0)state.currentSourcePath=path;
+  setText('pianoLayerName'+layer,'Cargando…');
+  fetch('/api/load',{
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({path,layer})
+  }).then(r=>r.json()).then(res=>{
+    if(!res.ok)throw new Error(res.message||'Error al cargar sample');
+    if(layer===0){
+      state.currentInstId=res.instrumentId||state.currentInstId;
+      state.currentSourcePath=res.sourcePath||path;
+      setText('lcdSampleName',res.instrumentName||'No Sound Loaded');
+      setText('zoneCountNum',res.zoneCount||0);
+      setText('ramTopText',(res.memoryMB||0).toFixed(1)+' MB');
+    }
+    if(res.params)syncFromServerParams(res.params);
+    if(res.pianoLayers && typeof updatePianoLayerSources==='function')updatePianoLayerSources(res.pianoLayers);
+  }).catch(e=>{
+    console.error('[loadInstrument]',e);
+    setText('pianoLayerName'+layer,'ERROR');
+  });
 }

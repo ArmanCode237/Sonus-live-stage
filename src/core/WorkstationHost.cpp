@@ -14,6 +14,13 @@ WorkstationHost::WorkstationHost() : NordPianoEngine() {
 
 void WorkstationHost::registerAllParameters() {
     registry_.registerParam("pianoEnabled", 0.0f, 1.0f, [this](float v) { setPianoEnabled(v >= 0.5f); });
+    registry_.registerParam("pianoVolume", 0.0f, 1.5f, [this](float v) { setPianoVolume(v); });
+    for (int layer = 0; layer < 3; ++layer) {
+        registry_.registerParam("pianoLayerEnabled" + std::to_string(layer), 0.0f, 1.0f,
+            [this, layer](float v) { setPianoLayerEnabled(layer, v >= 0.5f); });
+        registry_.registerParam("pianoLayerVol" + std::to_string(layer), 0.0f, 1.5f,
+            [this, layer](float v) { setPianoLayerVolume(layer, v); });
+    }
     registry_.registerParam("maxVoices", 16.0f, 256.0f, [this](float v) { setMaxVoices(static_cast<int>(v)); });
     registry_.registerParam("transpose", -12.0f, 12.0f, [this](float v) { setTranspose(static_cast<int>(v)); });
     registry_.registerParam("octave", -2.0f, 2.0f, [this](float v) { setOctaveShift(static_cast<int>(v)); });

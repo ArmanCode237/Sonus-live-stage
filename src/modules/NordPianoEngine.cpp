@@ -40,12 +40,19 @@ void NordPianoEngine::setSampleRate(double sr) {
 }
 
 void NordPianoEngine::setInstrument(std::shared_ptr<const PianoInstrument> inst) {
+    setLayerInstrument(0, std::move(inst));
+}
+
+void NordPianoEngine::setLayerInstrument(int layer, std::shared_ptr<const PianoInstrument> inst) {
+    if (layer < 0 || layer >= 3) return;
     {
         std::lock_guard<std::mutex> lock(instPtrMutex_);
-        instrument_ = std::move(inst);
+        if (layer == 0) instrument_ = std::move(inst);
+        else extraPianoInstruments_[layer - 1] = std::move(inst);
     }
+    // No se cortan las colas de piano ni las notas de synth/organ al cambiar banco.
+    // Cada voz retiene su sampleBank hasta terminar su release.
     lastTriggeredStrokeIdx_.store(0);
-    pushMidiEvent(4, 0, 0);
 }
 
 void NordPianoEngine::setInstrument(const PianoInstrument* inst) {
@@ -53,17 +60,33 @@ void NordPianoEngine::setInstrument(const PianoInstrument* inst) {
         setInstrument(std::shared_ptr<const PianoInstrument>(nullptr));
         return;
     }
+    // Legacy caller-owned pointer (must outlive use). New layer API uses owning pointers.
     std::shared_ptr<const PianoInstrument> aliasPtr(inst, [](const PianoInstrument*) {});
     setInstrument(std::move(aliasPtr));
 }
 
 std::shared_ptr<const PianoInstrument> NordPianoEngine::getInstrument() const {
+    return getLayerInstrument(0);
+}
+
+std::shared_ptr<const PianoInstrument> NordPianoEngine::getLayerInstrument(int layer) const {
+    if (layer < 0 || layer >= 3) return {};
     std::lock_guard<std::mutex> lock(instPtrMutex_);
-    return instrument_;
+    return layer == 0 ? instrument_ : extraPianoInstruments_[layer - 1];
+}
+
+std::array<std::shared_ptr<const PianoInstrument>, 3> NordPianoEngine::getPianoInstruments() const {
+    std::lock_guard<std::mutex> lock(instPtrMutex_);
+    return {instrument_, extraPianoInstruments_[0], extraPianoInstruments_[1]};
 }
 
 void NordPianoEngine::applyPreset(const SynthPresetParams& p) {
     setPianoEnabled(p.pianoEnabled);
+    setPianoVolume(p.pianoVolume);
+    for (int i = 0; i < 3; ++i) {
+        setPianoLayerEnabled(i, p.pianoLayerEnabled[i]);
+        setPianoLayerVolume(i, p.pianoLayerVolume[i]);
+    }
     setMaxVoices(p.maxVoices);
     setTranspose(p.transposeSemis);
     setOctaveShift(p.octaveShift);
@@ -210,6 +233,11 @@ void NordPianoEngine::setEqBandQ(int bandIdx, float q) {
 SynthPresetParams NordPianoEngine::getCurrentParams() const {
     SynthPresetParams p;
     p.pianoEnabled = pianoEnabled_.load();
+    p.pianoVolume = pianoVolume_.load();
+    for (int i = 0; i < 3; ++i) {
+        p.pianoLayerEnabled[i] = pianoLayerEnabled_[i].load();
+        p.pianoLayerVolume[i] = pianoLayerVolume_[i].load();
+    }
     p.maxVoices = maxVoicesLimit_.load();
     p.transposeSemis = transposeSemis_.load();
     p.octaveShift = octaveShift_.load();
@@ -421,15 +449,24 @@ const StrokeSample* NordPianoEngine::selectStrokeFor(const PianoInstrument& inst
     return pick ? pick : &inst.strokes[0];
 }
 
-void NordPianoEngine::handleNoteOnInternal(const PianoInstrument* inst, int rawMidiKey, int velocity) {
+void NordPianoEngine::handleNoteOnInternal(
+    const std::array<std::shared_ptr<const PianoInstrument>, 3>& instruments,
+    int rawMidiKey, int velocity) {
     int midiKey = std::clamp(rawMidiKey + transposeSemis_.load() + octaveShift_.load() * 12, 0, 127);
 
     // Siempre propagar NoteOn a Synth y Órgano aunque no haya piano cargado o el piano esté desactivado
     multiSynth_.noteOn(rawMidiKey, midiKey, velocity);
     organModule_.noteOn(rawMidiKey, midiKey, velocity);
 
-    if (!pianoEnabled_.load() || !inst || inst->strokes.empty()) return;
+    if (!pianoEnabled_.load()) return;
+    for (int layer = 0; layer < 3; ++layer) {
+        if (!pianoLayerEnabled_[layer].load() || !instruments[layer] || instruments[layer]->strokes.empty()) continue;
+        startPianoVoice(instruments[layer], layer, rawMidiKey, midiKey, velocity);
+    }
+}
 
+void NordPianoEngine::startPianoVoice(const std::shared_ptr<const PianoInstrument>& inst,
+                                     int layer, int rawMidiKey, int midiKey, int velocity) {
     const StrokeSample* stroke = selectStrokeFor(*inst, midiKey, velocity);
     if (!stroke || stroke->frames < 4) return;
 
@@ -446,7 +483,7 @@ void NordPianoEngine::handleNoteOnInternal(const PianoInstrument* inst, int rawM
     int sameKeyCount = 0;
     for (size_t i = 0; i < maxAllowed; ++i) {
         auto& v = voices_[i];
-        if (v.active && v.midiKey == rawMidiKey && v.stage != EnvStage::FastStealFade) {
+        if (v.active && v.midiKey == rawMidiKey && v.pianoLayer == layer && v.stage != EnvStage::FastStealFade) {
             sameKeyCount++;
             if (!sustainPedalDown_) {
                 v.keyHeld = false;
@@ -505,6 +542,8 @@ void NordPianoEngine::handleNoteOnInternal(const PianoInstrument* inst, int rawM
     float baseLoopDecay = std::pow(safeDecayCoef, static_cast<float>(NSP_ENVELOPE_RATE / hostSampleRate_));
     double srcRate = (stroke->sampleRate > 0) ? static_cast<double>(stroke->sampleRate) : NSP_SAMPLE_RATE;
 
+    target->sampleBank = inst;
+    target->pianoLayer = layer;
     target->active = true;
     target->midiKey = rawMidiKey;
     target->playedMidiKey = midiKey;
@@ -568,7 +607,7 @@ void NordPianoEngine::handleSustainInternal(bool down) {
 void NordPianoEngine::render(float* outInterleavedStereo, unsigned int numFrames) {
     std::fill(outInterleavedStereo, outInterleavedStereo + numFrames * 2, 0.0f);
 
-    std::shared_ptr<const PianoInstrument> inst = getInstrument();
+    const auto pianoInstruments = getPianoInstruments();
     const float sr = static_cast<float>(hostSampleRate_);
 
     size_t r = midiReadIdx_.load(std::memory_order_relaxed);
@@ -576,7 +615,7 @@ void NordPianoEngine::render(float* outInterleavedStereo, unsigned int numFrames
     while (r != w) {
         const QueuedMidiEvent ev = midiQueue_[r];
         r = (r + 1) % MIDI_QUEUE_SIZE;
-        if (ev.type == 1) handleNoteOnInternal(inst.get(), ev.data1, ev.data2);
+        if (ev.type == 1) handleNoteOnInternal(pianoInstruments, ev.data1, ev.data2);
         else if (ev.type == 2) handleNoteOffInternal(ev.data1);
         else if (ev.type == 3) handleSustainInternal(ev.data1 != 0);
         else if (ev.type == 4) {
@@ -663,10 +702,14 @@ void NordPianoEngine::render(float* outInterleavedStereo, unsigned int numFrames
         }
     }
 
-    if (pianoEnabled_.load() && inst && !inst->strokes.empty()) {
+    // Advance existing voices even if a layer has been muted; mute only its output.
+    {
         for (size_t vIdx = 0; vIdx < maxAllowed; ++vIdx) {
             auto& v = voices_[vIdx];
-            if (!v.active || !v.sample) continue;
+            if (!v.active || !v.sample || !v.sampleBank) continue;
+            const PianoInstrument& voiceInst = *v.sampleBank;
+            const bool voiceAudible = pianoEnabled_.load() && pianoLayerEnabled_[v.pianoLayer].load();
+            const float layerGain = pianoVolume_.load() * pianoLayerVolume_[v.pianoLayer].load();
             activeCount++;
 
             if (v.midiKey >= 0 && v.midiKey < 128) {
@@ -684,7 +727,7 @@ void NordPianoEngine::render(float* outInterleavedStereo, unsigned int numFrames
             const double loopEndD = useLoop ? static_cast<double>(loopStart + loopLen) : 1e18;
 
             float damperSec = softRel ? s.softDamperT60Seconds : s.damperT60Seconds;
-            if (v.playedMidiKey >= inst->undampedFromKey) {
+            if (v.playedMidiKey >= voiceInst.undampedFromKey) {
                 damperSec = std::max(damperSec, 0.85f);
             }
             float effectiveRelSec = std::max(0.02f, damperSec * (userRelSec / 0.35f));
@@ -767,7 +810,7 @@ void NordPianoEngine::render(float* outInterleavedStereo, unsigned int numFrames
                 float xm1R = s.audioR[km1], x0R = s.audioR[k0], x1R = s.audioR[k1], x2R = s.audioR[k2];
                 float valR = x0R + 0.5f * t * (x1R - xm1R + t * (2.0f * xm1R - 5.0f * x0R + 4.0f * x1R - x2R + t * (3.0f * (x0R - x1R) + x2R - xm1R)));
 
-                float voiceGain = v.velocityGain * v.sampleEnv * v.adsrLevel;
+                float voiceGain = voiceAudible ? v.velocityGain * v.sampleEnv * v.adsrLevel * layerGain : 0.0f;
                 outInterleavedStereo[n * 2]     += valL * voiceGain;
                 outInterleavedStereo[n * 2 + 1] += valR * voiceGain;
 

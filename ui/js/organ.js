@@ -5,28 +5,32 @@
 // ============================================================================
 
 const DRAWBAR_NAMES = ["16'", "5⅓'", "8'", "4'", "2⅔'", "2'", "1⅗'", "1⅓'", "1'"];
-const DRAWBAR_LEDS  = 16;
+// Hammond-style color families: brown (pedal/sub), ivory and black harmonic tabs.
+const DRAWBAR_TONES = ['brown','brown','ivory','ivory','black','ivory','black','black','ivory'];
 const ORGAN_MODELS  = ['B3 TONEWHEEL', 'VOX CONTINENTAL', 'FARFISA', 'PIPE ORGAN'];
 const ORGAN_VIBRATO = ['OFF', 'V1', 'V2', 'V3', 'C1', 'C2', 'C3'];
 
 function buildOrganDrawbarsPage() {
-  const deck = $('organDrawbarsDeck');
-  if (!deck) return;
-  deck.innerHTML = '';
-  for (let i = 0; i < 9; i++) {
-    const col = document.createElement('div');
-    col.className = 'drawbar-column';
-    col.innerHTML = `
+  const deck=$('organDrawbarsDeck');
+  if(!deck)return;
+  deck.innerHTML='';
+  for(let i=0;i<9;i++){
+    const col=document.createElement('div');
+    col.className='drawbar-column';
+    col.dataset.tone=DRAWBAR_TONES[i];
+    col.innerHTML=`
       <div class="drawbar-label">${DRAWBAR_NAMES[i]}</div>
-      <div class="drawbar-track-wrap" id="dbTrack_${i}">
-        <div class="drawbar-led-strip" id="dbLedStrip_${i}">
-          ${'<div class="drawbar-led"></div>'.repeat(DRAWBAR_LEDS)}
-        </div>
-        <input type="range" class="drawbar-input-range" id="dbRange_${i}" min="0" max="1" step="0.01" value="${state[`drawbar${i}`]}" oninput="onDrawbarSlider(${i}, this.value)">
+      <div class="drawbar-track-wrap">
+        <div class="drawbar-guide"></div>
+        <div class="drawbar-scale">${Array.from({length:9},(_,n)=>`<span>${n}</span>`).join('')}</div>
+        <div class="drawbar-handle" id="dbHandle_${i}" aria-hidden="true"></div>
+        <input type="range" class="drawbar-input-range" id="dbRange_${i}"
+          aria-label="Drawbar ${DRAWBAR_NAMES[i]}" min="0" max="8" step="1"
+          value="${Math.round((state['drawbar'+i]||0)*8)}" oninput="onDrawbarSlider(${i},this.value)">
       </div>
-      <div class="drawbar-val-badge" id="dbValBadge_${i}">0</div>`;
+      <output class="drawbar-val-badge" id="dbValBadge_${i}">0</output>`;
     deck.appendChild(col);
-    updateDrawbarVisual(i, state[`drawbar${i}`]);
+    updateDrawbarVisual(i,state['drawbar'+i]||0);
   }
 }
 
@@ -45,20 +49,22 @@ function buildOrganOptions() {
 }
 
 function onDrawbarSlider(idx, valStr) {
-  const val = parseFloat(valStr);
-  state[`drawbar${idx}`] = val;
-  updateDrawbarVisual(idx, val);
-  sendParam(`drawbar${idx}`, val);
+  // Hardware pull steps 0..8; DSP still receives normalized 0..1.
+  const step=Math.min(8,Math.max(0,parseInt(valStr,10)||0));
+  const val=step/8;
+  state['drawbar'+idx]=val;
+  updateDrawbarVisual(idx,val);
+  sendParam('drawbar'+idx,val);
 }
 
 function updateDrawbarVisual(idx, normVal) {
-  const strip = $(`dbLedStrip_${idx}`);
-  if (!strip) return;
-  const lit = Math.round(normVal * DRAWBAR_LEDS);
-  strip.querySelectorAll('.drawbar-led').forEach((led, k) => led.classList.toggle('lit', k < lit));
-  setText(`dbValBadge_${idx}`, Math.round(normVal * 8));
-  const range = $(`dbRange_${idx}`);
-  if (range && document.activeElement !== range) range.value = normVal;
+  const v=Math.min(1,Math.max(0,Number(normVal)||0));
+  const step=Math.round(v*8);
+  const handle=$('dbHandle_'+idx);
+  if(handle)handle.style.top=(16+step/8*68)+'%';
+  setText('dbValBadge_'+idx,step);
+  const slider=$('dbRange_'+idx);
+  if(slider && document.activeElement!==slider)slider.value=String(step);
 }
 
 function setOrganModel(m)   { state.organModel = m;        updateOrganControlsVisual(); sendParam('organModel', m); }
