@@ -93,4 +93,16 @@ elseif(APPLE)
         "-framework CoreFoundation"
         "-framework AudioToolbox"
     )
+elseif(UNIX)
+    # Linux (sin probar): RtAudio/RtMidi vía ALSA
+    find_package(Threads REQUIRED)
+    find_package(ALSA REQUIRED)
+    target_compile_definitions(NordVirtualStage PRIVATE __LINUX_ALSA__)
+    target_link_libraries(NordVirtualStage PRIVATE
+        rtaudio
+        rtmidi
+        nlohmann_json::nlohmann_json
+        ALSA::ALSA
+        Threads::Threads
+    )
 endif()

@@ -13,6 +13,7 @@ WorkstationHost::WorkstationHost() : NordPianoEngine() {
 }
 
 void WorkstationHost::registerAllParameters() {
+    registry_.registerParam("pianoEnabled", 0.0f, 1.0f, [this](float v) { setPianoEnabled(v >= 0.5f); });
     registry_.registerParam("maxVoices", 16.0f, 256.0f, [this](float v) { setMaxVoices(static_cast<int>(v)); });
     registry_.registerParam("transpose", -12.0f, 12.0f, [this](float v) { setTranspose(static_cast<int>(v)); });
     registry_.registerParam("octave", -2.0f, 2.0f, [this](float v) { setOctaveShift(static_cast<int>(v)); });
@@ -78,9 +79,7 @@ void WorkstationHost::registerAllParameters() {
     registry_.registerParam("shimmerReverbMode", 0.0f, 3.0f, [this](float v) { setShimmerReverbMode(static_cast<int>(v)); });
     registry_.registerParam("shimmerColorMode", 0.0f, 1.0f, [this](float v) { setShimmerColorMode(static_cast<int>(v)); });
 
-    // ============================================================
-    // Módulo 2: Synth 3-Layers (con parámetros Vital-style)
-    // ============================================================
+    // Módulo 2: Synth 3-Layers
     registry_.registerParam("synthEnabled", 0.0f, 1.0f, [this](float v) { multiSynth_.synthEnabled = (v >= 0.5f); });
     registry_.registerParam("synthPresetId", 1.0f, 8.0f, [this](float v) { multiSynth_.loadBuiltInSynthPreset(static_cast<int>(v)); });
     registry_.registerParam("synthMasterVol", 0.0f, 1.5f, [this](float v) { multiSynth_.synthMasterVol = v; });
@@ -89,7 +88,7 @@ void WorkstationHost::registerAllParameters() {
     for (int l = 0; l < 3; ++l) {
         std::string p = "L" + std::to_string(l + 1) + "_";
         registry_.registerParam(p + "en",     0.0f, 1.0f,    [this, l](float v) { multiSynth_.layers[l].cfg.enabled = (v >= 0.5f); });
-        registry_.registerParam(p + "wave",   0.0f, 7.0f,    [this, l](float v) { multiSynth_.layers[l].cfg.waveType = std::clamp(static_cast<int>(v), 0, 7); });
+        registry_.registerParam(p + "wave",   0.0f, 9.0f,    [this, l](float v) { multiSynth_.layers[l].cfg.waveType = std::clamp(static_cast<int>(v), 0, 9); });
         registry_.registerParam(p + "vol",    0.0f, 1.5f,    [this, l](float v) { multiSynth_.layers[l].cfg.volume = v; });
         registry_.registerParam(p + "pan",   -1.0f, 1.0f,    [this, l](float v) { multiSynth_.layers[l].cfg.pan = v; });
         registry_.registerParam(p + "oct",   -2.0f, 2.0f,    [this, l](float v) { multiSynth_.layers[l].cfg.octave = std::clamp(static_cast<int>(v), -2, 2); });
@@ -102,8 +101,7 @@ void WorkstationHost::registerAllParameters() {
         registry_.registerParam(p + "sus",    0.0f, 1.0f,    [this, l](float v) { multiSynth_.layers[l].cfg.sustainLevel = v; });
         registry_.registerParam(p + "rel",    0.02f, 6.0f,   [this, l](float v) { multiSynth_.layers[l].cfg.releaseSec = v; });
 
-        // --- NUEVOS VITAL-STYLE ---
-        registry_.registerParam(p + "unison",   1.0f, 16.0f, [this, l](float v) { multiSynth_.layers[l].cfg.unisonVoices = std::clamp(static_cast<int>(v), 1, 16); });
+        registry_.registerParam(p + "unison",   1.0f, 8.0f, [this, l](float v) { multiSynth_.layers[l].cfg.unisonVoices = std::clamp(static_cast<int>(v), 1, 8); });
         registry_.registerParam(p + "uniDet",   0.0f, 50.0f, [this, l](float v) { multiSynth_.layers[l].cfg.unisonDetune = v; });
         registry_.registerParam(p + "uniSprd",  0.0f, 1.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.unisonSpread = v; });
         registry_.registerParam(p + "phase",    0.0f, 1.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.phaseOffset = v; });
@@ -111,18 +109,29 @@ void WorkstationHost::registerAllParameters() {
         registry_.registerParam(p + "velCut",   0.0f, 1.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.velToCutoff = v; });
         registry_.registerParam(p + "velAmp",   0.0f, 2.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.velToAmp = v; });
         registry_.registerParam(p + "wtIdx",    0.0f, 63.0f, [this, l](float v) { multiSynth_.layers[l].cfg.wavetableIdx = std::clamp(static_cast<int>(v), 0, 63); });
-        registry_.registerParam(p + "filtType", 0.0f, 5.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.filterType = std::clamp(static_cast<int>(v), 0, 5); });
+        registry_.registerParam(p + "filtType", 0.0f, 2.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.filterType = std::clamp(static_cast<int>(v), 0, 2); });
         registry_.registerParam(p + "filtEnv", -1.0f, 1.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.filterEnvAmt = v; });
         registry_.registerParam(p + "filtKT",   0.0f, 1.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.filterKeyTrack = v; });
         registry_.registerParam(p + "fAtk",     0.001f, 4.0f,[this, l](float v) { multiSynth_.layers[l].cfg.filtAttackSec = v; });
         registry_.registerParam(p + "fDec",     0.005f, 10.0f,[this, l](float v) { multiSynth_.layers[l].cfg.filtDecaySec = v; });
         registry_.registerParam(p + "fSus",     0.0f, 1.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.filtSustainLvl = v; });
         registry_.registerParam(p + "fRel",     0.005f, 10.0f,[this, l](float v) { multiSynth_.layers[l].cfg.filtReleaseSec = v; });
+        registry_.registerParam(p + "saw", 0.0f, 1.0f, [this, l](float v) { multiSynth_.layers[l].cfg.sawLevel = v; });
+        registry_.registerParam(p + "pulse", 0.0f, 1.0f, [this, l](float v) { multiSynth_.layers[l].cfg.pulseLevel = v; });
+        registry_.registerParam(p + "pw", 0.05f, 0.95f, [this, l](float v) { multiSynth_.layers[l].cfg.pulseWidth = v; });
+        registry_.registerParam(p + "pwmDepth", 0.0f, 0.45f, [this, l](float v) { multiSynth_.layers[l].cfg.pwmDepth = v; });
+        registry_.registerParam(p + "pwmRate", 0.05f, 12.0f, [this, l](float v) { multiSynth_.layers[l].cfg.pwmRateHz = v; });
+        registry_.registerParam(p + "sub", 0.0f, 1.0f, [this, l](float v) { multiSynth_.layers[l].cfg.subLevel = v; });
+        registry_.registerParam(p + "noise", 0.0f, 1.0f, [this, l](float v) { multiSynth_.layers[l].cfg.noiseLevel = v; });
+        registry_.registerParam(p + "osc2", 0.0f, 1.0f, [this, l](float v) { multiSynth_.layers[l].cfg.osc2Level = v; });
+        registry_.registerParam(p + "osc2Det", -50.0f, 50.0f, [this, l](float v) { multiSynth_.layers[l].cfg.osc2Detune = v; });
+        registry_.registerParam(p + "osc2Semi", -12.0f, 12.0f, [this, l](float v) { multiSynth_.layers[l].cfg.osc2Semitones = std::clamp(static_cast<int>(v), -12, 12); });
+        registry_.registerParam(p + "osc2Wave", 0.0f, 2.0f, [this, l](float v) { multiSynth_.layers[l].cfg.osc2Wave = std::clamp(static_cast<int>(v), 0, 2); });
+        registry_.registerParam(p + "hpf", 20.0f, 6000.0f, [this, l](float v) { multiSynth_.layers[l].cfg.highpassHz = v; });
+        registry_.registerParam(p + "drive", 0.0f, 1.0f, [this, l](float v) { multiSynth_.layers[l].cfg.drive = v; });
     }
 
-    // ============================================================
     // Módulo 3: Órgano
-    // ============================================================
     registry_.registerParam("organEnabled", 0.0f, 1.0f, [this](float v) { organModule_.organEnabled = (v >= 0.5f); });
     registry_.registerParam("organVolume", 0.0f, 1.5f, [this](float v) { organModule_.organVolume = v; });
     registry_.registerParam("organRotaryFast", 0.0f, 1.0f, [this](float v) { organModule_.organRotaryFast = (v >= 0.5f); });
@@ -133,7 +142,6 @@ void WorkstationHost::registerAllParameters() {
         });
     }
 
-    // Controles Globales del Panel Avanzado de Synth (aplican a las 3 capas o al LFO 1)
     registry_.registerParam("synth-unison-voices", 1.0f, 8.0f, [this](float v) {
         int u = std::clamp(static_cast<int>(v), 1, 8);
         for (auto& l : multiSynth_.layers) l.cfg.unisonVoices = u;
@@ -171,22 +179,21 @@ void WorkstationHost::registerAllParameters() {
     registry_.registerParam("synth-filt-rel", 0.005f, 10.0f, [this](float v) {
         for (auto& l : multiSynth_.layers) l.cfg.filtReleaseSec = v;
     });
-    registry_.registerParam("synth-lfo1-en", 0.0f, 1.0f, [this](float v) { multiSynth_.lfos[0].enabled = (v >= 0.5f); });
-    registry_.registerParam("synth-lfo1-rate", 0.05f, 30.0f, [this](float v) { multiSynth_.lfos[0].rateHz = v; });
-    registry_.registerParam("synth-lfo1-depth", 0.0f, 1.0f, [this](float v) { multiSynth_.lfos[0].depth = v; });
-    registry_.registerParam("synth-lfo1-cutoff", 0.0f, 5000.0f, [this](float v) { multiSynth_.lfos[0].destCutoff = static_cast<int>(v); });
+    registry_.registerParam("synthLfoEnabled", 0.0f, 1.0f, [this](float v) { multiSynth_.lfos[0].enabled = (v >= 0.5f); });
+    registry_.registerParam("synthLfoRate", 0.05f, 30.0f, [this](float v) { multiSynth_.lfos[0].rateHz = v; });
+    registry_.registerParam("synthLfoDepth", 0.0f, 1.0f, [this](float v) { multiSynth_.lfos[0].depth = v; });
+    registry_.registerParam("synthLfoCutoff", -5000.0f, 5000.0f, [this](float v) { multiSynth_.lfos[0].destCutoff = static_cast<int>(v); });
+    registry_.registerParam("synthLfoPitch", 0.0f, 200.0f, [this](float v) { multiSynth_.lfos[0].destPitch = static_cast<int>(v); });
+    registry_.registerParam("synthLfoWave", 0.0f, 3.0f, [this](float v) { multiSynth_.lfos[0].waveType = std::clamp(static_cast<int>(v), 0, 3); });
 
-    // Parámetros adicionales del Órgano (Modelo, Vibrato/Chorus, Percusión)
     registry_.registerParam("organModel", 0.0f, 3.0f, [this](float v) { organModule_.organModel = std::clamp(static_cast<int>(v), 0, 3); });
     registry_.registerParam("organVibratoMode", 0.0f, 6.0f, [this](float v) { organModule_.vibratoMode = std::clamp(static_cast<int>(v), 0, 6); });
     registry_.registerParam("organPercEnabled", 0.0f, 1.0f, [this](float v) { organModule_.percussionEnabled = (v >= 0.5f); });
     registry_.registerParam("organPercHarmonic", 2.0f, 3.0f, [this](float v) { organModule_.percussionHarmonic = (v >= 2.5f) ? 3 : 2; });
     registry_.registerParam("organPercDecaySec", 0.1f, 1.2f, [this](float v) { organModule_.percussionDecaySec = v; });
+    registry_.registerParam("organPercLevel", 0.0f, 1.0f, [this](float v) { organModule_.percussionLevel = std::clamp(v, 0.0f, 1.0f); });
 }
 
-// ============================================================
-// MÉTODOS HELPER PARA PRESETS
-// ============================================================
 bool WorkstationHost::getSynthEnabled() const { return multiSynth_.synthEnabled; }
 float WorkstationHost::getSynthMasterVol() const { return multiSynth_.synthMasterVol; }
 float WorkstationHost::getSynthMacroCutoff() const { return multiSynth_.synthMacroCutoff; }
@@ -208,7 +215,8 @@ json WorkstationHost::getSynthLayersJson() const {
             {"filterType", c.filterType}, {"filterEnvAmt", c.filterEnvAmt},
             {"filterKeyTrack", c.filterKeyTrack},
             {"filtAttackSec", c.filtAttackSec}, {"filtDecaySec", c.filtDecaySec},
-            {"filtSustainLvl", c.filtSustainLvl}, {"filtReleaseSec", c.filtReleaseSec}
+            {"filtSustainLvl", c.filtSustainLvl}, {"filtReleaseSec", c.filtReleaseSec},
+            {"sawLevel", c.sawLevel}, {"pulseLevel", c.pulseLevel}, {"pulseWidth", c.pulseWidth}, {"pwmDepth", c.pwmDepth}, {"pwmRateHz", c.pwmRateHz}, {"subLevel", c.subLevel}, {"noiseLevel", c.noiseLevel}, {"osc2Level", c.osc2Level}, {"osc2Detune", c.osc2Detune}, {"osc2Semitones", c.osc2Semitones}, {"osc2Wave", c.osc2Wave}, {"highpassHz", c.highpassHz}, {"drive", c.drive}
         });
     }
     return arr;
@@ -222,7 +230,8 @@ json WorkstationHost::getSynthLFOsJson() const {
             {"enabled", l.enabled}, {"waveType", l.waveType}, {"rateHz", l.rateHz},
             {"depth", l.depth}, {"delaySec", l.delaySec}, {"fadeSec", l.fadeSec},
             {"destPitch", l.destPitch}, {"destCutoff", l.destCutoff},
-            {"destVolume", l.destVolume}, {"destPan", l.destPan}
+            {"destVolume", l.destVolume}, {"destPan", l.destPan},
+            {"destPhase", l.destPhase}
         });
     }
     return arr;
@@ -292,6 +301,19 @@ void WorkstationHost::applySynthPresetJson(const json& p) {
             c.filtDecaySec = lp.value("filtDecaySec", c.filtDecaySec);
             c.filtSustainLvl = lp.value("filtSustainLvl", c.filtSustainLvl);
             c.filtReleaseSec = lp.value("filtReleaseSec", c.filtReleaseSec);
+            c.sawLevel = lp.value("sawLevel", c.sawLevel);
+            c.pulseLevel = lp.value("pulseLevel", c.pulseLevel);
+            c.pulseWidth = lp.value("pulseWidth", c.pulseWidth);
+            c.pwmDepth = lp.value("pwmDepth", c.pwmDepth);
+            c.pwmRateHz = lp.value("pwmRateHz", c.pwmRateHz);
+            c.subLevel = lp.value("subLevel", c.subLevel);
+            c.noiseLevel = lp.value("noiseLevel", c.noiseLevel);
+            c.osc2Level = lp.value("osc2Level", c.osc2Level);
+            c.osc2Detune = lp.value("osc2Detune", c.osc2Detune);
+            c.osc2Semitones = lp.value("osc2Semitones", c.osc2Semitones);
+            c.osc2Wave = lp.value("osc2Wave", c.osc2Wave);
+            c.highpassHz = lp.value("highpassHz", c.highpassHz);
+            c.drive = lp.value("drive", c.drive);
         }
     }
     if (p.contains("lfos") && p["lfos"].is_array()) {
@@ -308,6 +330,19 @@ void WorkstationHost::applySynthPresetJson(const json& p) {
             l.destCutoff = lp.value("destCutoff", l.destCutoff);
             l.destVolume = lp.value("destVolume", l.destVolume);
             l.destPan = lp.value("destPan", l.destPan);
+            l.destPhase = lp.value("destPhase", l.destPhase);
+        }
+    }
+    if (p.contains("envelopes") && p["envelopes"].is_array()) {
+        for (size_t i = 0; i < std::min<size_t>(SYNTH_NUM_ENVS, p["envelopes"].size()); ++i) {
+            const auto& v = p["envelopes"][i];
+            auto& e = multiSynth_.envelopes[i];
+            e.delaySec = v.value("delaySec", e.delaySec);
+            e.attackSec = v.value("attackSec", e.attackSec);
+            e.holdSec = v.value("holdSec", e.holdSec);
+            e.decaySec = v.value("decaySec", e.decaySec);
+            e.sustainLevel = v.value("sustainLevel", e.sustainLevel);
+            e.releaseSec = v.value("releaseSec", e.releaseSec);
         }
     }
 }
@@ -345,6 +380,5 @@ const std::vector<Wavetable>& WorkstationHost::getWavetableBank() const {
 bool WorkstationHost::applyParamById(const std::string& id, float val, bool normalized) {
     return registry_.setParamValue(id, val, normalized);
 }
-
 
 } // namespace NordDSP

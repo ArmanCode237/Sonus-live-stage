@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="nord">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NORD VIRTUAL STAGE — Synth 3 capas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Silkscreen:wght@400;700&family=VT323&display=swap" rel="stylesheet">
+<!-- CSS: el orden importa (base primero) -->
+<link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/css/layout.css">
+<link rel="stylesheet" href="/css/topbar.css">
+<link rel="stylesheet" href="/css/components.css">
+<link rel="stylesheet" href="/css/console.css">
+<link rel="stylesheet" href="/css/drawbars.css">
+<link rel="stylesheet" href="/css/keyboard.css">
+<link rel="stylesheet" href="/css/modals.css">
+<link rel="stylesheet" href="/css/synth.css">
+</head>
+<body data-page="synth">
+
+<div class="nord-unit">
+  <div data-include="/partials/topbar.html"></div>
+  <div data-include="/partials/nav.html"></div>
+
+  <!-- ===================== CONTENIDO PROPIO DE ESTA PÁGINA ===================== -->
+  <div id="pageView_synth" class="page-panel">
+    <div class="page-toolbar">
+      <div style="display:flex; align-items:center; gap:12px;">
+        <button class="mod-led-btn" id="ledPage_synthEnabled" onclick="toggleEffect('synthEnabled')"></button>
+        <strong style="font-size:14px; letter-spacing:1px;">NORD 3-LAYER ANALOG SYNTHESIZER · JUNO / JUPITER ENGINE</strong>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <span style="font-size:11px; color:#9ba3af;">PRESETS:</span>
+        <!-- Botones 1..8 generados por synth.js (buildSynthPresetButtons) -->
+        <span id="synthPresetButtons" style="display:flex; gap:6px; flex-wrap:wrap;"></span>
+        <a class="wrench-btn" href="/">⬅ Volver a Main</a>
+      </div>
+    </div>
+
+    <div class="synth-patch-toolbar fx-module-black">
+      <span class="synth-patch-caption">USER SYNTH PRESETS <small>Independientes de los 8 programas globales</small></span>
+      <select id="synthUserPresetSelect" class="quick-cat-select" aria-label="Preset de sintetizador guardado"></select>
+      <button type="button" class="red-rect-btn" onclick="saveSynthUserPreset()">GUARDAR SONIDO</button>
+      <button type="button" class="expand-btn" onclick="loadSynthUserPreset()">CARGAR</button>
+      <button type="button" class="expand-btn" onclick="deleteSynthUserPreset()">ELIMINAR</button>
+      <span id="synthPatchStatus" class="synth-patch-status" aria-live="polite"></span>
+    </div>
+    <div class="fx-module-black synth-global-rack" id="synthGlobalControls"></div>
+    <div class="synth-layers-grid" id="synth3LayersContainer"><!-- generado por synth.js --></div>
+  </div>
+
+  <div data-include="/partials/keyboard.html"></div>
+</div>
+
+<!-- Modales compartidos -->
+<div data-include="/partials/modal-voice.html"></div>
+<div data-include="/partials/modal-browser.html"></div>
+
+<!-- JS: módulos compartidos (el orden importa: core primero, app al final) -->
+<script src="/js/core.js"></script>
+<script src="/js/include.js"></script>
+<script src="/js/knobs.js"></script>
+<script src="/js/eq.js"></script>
+<script src="/js/fx.js"></script>
+<script src="/js/programs.js"></script>
+<script src="/js/library.js"></script>
+<script src="/js/synth.js"></script>
+<script src="/js/organ.js"></script>
+<script src="/js/keyboard.js"></script>
+<script src="/js/sync.js"></script>
+<script src="/js/polling.js"></script>
+<script src="/js/app.js"></script>
+</body>
+</html>

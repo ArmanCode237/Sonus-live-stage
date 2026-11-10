@@ -1,6 +1,6 @@
 #pragma once
-#include "NordTypes.h"
-#include "NordDspEffects.h"
+#include "../core/Nordtypes.h"
+#include "../dsp/NordDspEffects.h"
 #include <array>
 #include <atomic>
 #include <mutex>
@@ -60,6 +60,9 @@ public:
     void allNotesOff();
     void triggerTestTone();
 
+    void setPianoEnabled(bool en) { pianoEnabled_.store(en); }
+    bool isPianoEnabled() const { return pianoEnabled_.load(); }
+
     void setMaxVoices(int maxV) { maxVoicesLimit_.store(std::clamp(maxV, 16, static_cast<int>(MAX_VOICES))); }
     int getMaxVoices() const { return maxVoicesLimit_.load(); }
     void setTranspose(int semis) { transposeSemis_.store(std::clamp(semis, -12, 12)); }
@@ -106,7 +109,6 @@ public:
     void setDelayMix(float m) { delayMix_.store(std::clamp(m, 0.0f, 1.0f)); }
     void setDelayPingPong(bool pp) { delayPingPong_.store(pp); }
 
-    // Reverb Clásica y ShimmerReverbEngine
     void setReverbEnabled(bool en) { reverbEnabled_.store(en); }
     void setReverbType(int t) { reverbType_.store(std::clamp(t, 0, 3)); shimmerDirty_.store(true); }
     void setReverbMix(float m) { reverbMix_.store(std::clamp(m, 0.0f, 1.0f)); shimmerDirty_.store(true); }
@@ -115,7 +117,6 @@ public:
     void setReverbPreDelayMs(float ms) { reverbPreDelayMs_.store(std::clamp(ms, 0.0f, 240.0f)); shimmerDirty_.store(true); }
     void setReverbShimmer(float s) { reverbShimmer_.store(std::clamp(s, 0.0f, 1.0f)); }
 
-    // Controles específicos de ShimmerReverbEngine
     void setShimmerShiftSt(float st) { shimmerShiftSt_.store(std::clamp(st, -12.0f, 12.0f)); shimmerDirty_.store(true); }
     void setShimmerFeedback(float fb) { shimmerFeedback_.store(std::clamp(fb, 0.0f, 0.985f)); shimmerDirty_.store(true); }
     void setShimmerDiffusion(float df) { shimmerDiffusion_.store(std::clamp(df, 0.0f, 0.98f)); shimmerDirty_.store(true); }
@@ -149,7 +150,7 @@ public:
 
 private:
     void pushMidiEvent(uint8_t type, int d1, int d2);
-    void handleNoteOnInternal(const PianoInstrument& inst, int rawMidiKey, int velocity);
+    void handleNoteOnInternal(const PianoInstrument* inst, int rawMidiKey, int velocity);
     void handleNoteOffInternal(int rawMidiKey);
     void handleSustainInternal(bool down);
 
@@ -171,6 +172,7 @@ private:
     std::atomic<uint32_t> testToneFramesRemaining_{0};
     double testTonePhase_ = 0.0;
 
+    std::atomic<bool> pianoEnabled_{true};
     std::atomic<int> maxVoicesLimit_{128};
     std::atomic<int> transposeSemis_{0};
     std::atomic<int> octaveShift_{0};
@@ -223,7 +225,6 @@ private:
     std::atomic<float> reverbPreDelayMs_{18.0f};
     std::atomic<float> reverbShimmer_{0.45f};
 
-    // Estado atómico de ShimmerReverbEngine
     std::atomic<float> shimmerShiftSt_{12.0f};
     std::atomic<float> shimmerFeedback_{0.60f};
     std::atomic<float> shimmerDiffusion_{0.88f};

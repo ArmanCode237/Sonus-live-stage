@@ -13,6 +13,8 @@ NordPianoEngine::NordPianoEngine() {
         eqGainDb_[i].store(0.0f);
     }
     for (auto& ks : keyStates_) ks.store(0);
+    multiSynth_.init(48000.0f);
+    organModule_.init(48000.0f);
     modRack_.init(48000.0f);
     delayFx_.init(48000.0f);
     reverbFx_.init(48000.0f);
@@ -61,6 +63,7 @@ std::shared_ptr<const PianoInstrument> NordPianoEngine::getInstrument() const {
 }
 
 void NordPianoEngine::applyPreset(const SynthPresetParams& p) {
+    setPianoEnabled(p.pianoEnabled);
     setMaxVoices(p.maxVoices);
     setTranspose(p.transposeSemis);
     setOctaveShift(p.octaveShift);
@@ -128,7 +131,6 @@ void NordPianoEngine::applyPreset(const SynthPresetParams& p) {
     setShimmerReverbMode(p.shimmerReverbMode);
     setShimmerColorMode(p.shimmerColorMode);
 
-    // Al final de NordPianoEngine::applyPreset(const SynthPresetParams& p):
     multiSynth_.synthEnabled = p.synthEnabled;
     multiSynth_.synthPresetId = p.synthPresetId;
     multiSynth_.synthMasterVol = p.synthMasterVol;
@@ -136,12 +138,49 @@ void NordPianoEngine::applyPreset(const SynthPresetParams& p) {
     for (int i = 0; i < 3; ++i) {
         multiSynth_.layers[i].cfg = p.synthLayers[i];
     }
+    for (int i = 0; i < SYNTH_NUM_LFOS; ++i) {
+        const auto& src = p.synthLfos[i];
+        auto& dst = multiSynth_.lfos[i];
+        dst.enabled = src.enabled;
+        dst.waveType = src.waveType;
+        dst.rateHz = src.rateHz;
+        dst.depth = src.depth;
+        dst.delaySec = src.delaySec;
+        dst.fadeSec = src.fadeSec;
+        dst.destPitch = src.destPitch;
+        dst.destCutoff = src.destCutoff;
+        dst.destVolume = src.destVolume;
+        dst.destPan = src.destPan;
+        dst.destPhase = src.destPhase;
+    }
+    for (int i = 0; i < SYNTH_NUM_ENVS; ++i) {
+        const auto& src = p.synthEnvelopes[i];
+        auto& dst = multiSynth_.envelopes[i];
+        dst.delaySec = src.delaySec;
+        dst.attackSec = src.attackSec;
+        dst.holdSec = src.holdSec;
+        dst.decaySec = src.decaySec;
+        dst.sustainLevel = src.sustainLevel;
+        dst.releaseSec = src.releaseSec;
+    }
+    // Explicit UI alias remains authoritative for LFO #1 and legacy program files.
+    multiSynth_.lfos[0].enabled = p.synthLfoEnabled;
+    multiSynth_.lfos[0].waveType = p.synthLfoWave;
+    multiSynth_.lfos[0].rateHz = p.synthLfoRate;
+    multiSynth_.lfos[0].depth = p.synthLfoDepth;
+    multiSynth_.lfos[0].destPitch = p.synthLfoPitch;
+    multiSynth_.lfos[0].destCutoff = p.synthLfoCutoff;
 
     organModule_.organEnabled = p.organEnabled;
     organModule_.organModel = p.organModel;
     organModule_.organVolume = p.organVolume;
     organModule_.organRotaryFast = p.organRotaryFast;
     organModule_.organDrive = p.organDrive;
+    organModule_.vibratoMode = p.organVibratoMode;
+    organModule_.percussionEnabled = p.organPercEnabled;
+    organModule_.percussionHarmonic = p.organPercHarmonic;
+    organModule_.percussionDecaySec = p.organPercDecaySec;
+    organModule_.percussionLevel = p.organPercLevel;
     for (int d = 0; d < 9; ++d) {
         organModule_.drawbars[d] = p.drawbars[d];
     }
@@ -170,6 +209,7 @@ void NordPianoEngine::setEqBandQ(int bandIdx, float q) {
 
 SynthPresetParams NordPianoEngine::getCurrentParams() const {
     SynthPresetParams p;
+    p.pianoEnabled = pianoEnabled_.load();
     p.maxVoices = maxVoicesLimit_.load();
     p.transposeSemis = transposeSemis_.load();
     p.octaveShift = octaveShift_.load();
@@ -237,7 +277,6 @@ SynthPresetParams NordPianoEngine::getCurrentParams() const {
     p.shimmerReverbMode = shimmerReverbMode_.load();
     p.shimmerColorMode = shimmerColorMode_.load();
 
-    // Al final de NordPianoEngine::getCurrentParams() const (antes de return p;):
     p.synthEnabled = multiSynth_.synthEnabled;
     p.synthPresetId = multiSynth_.synthPresetId;
     p.synthMasterVol = multiSynth_.synthMasterVol;
@@ -245,17 +284,52 @@ SynthPresetParams NordPianoEngine::getCurrentParams() const {
     for (int i = 0; i < 3; ++i) {
         p.synthLayers[i] = multiSynth_.layers[i].cfg;
     }
+    for (int i = 0; i < SYNTH_NUM_LFOS; ++i) {
+        const auto& src = multiSynth_.lfos[i];
+        auto& dst = p.synthLfos[i];
+        dst.enabled = src.enabled;
+        dst.waveType = src.waveType;
+        dst.rateHz = src.rateHz;
+        dst.depth = src.depth;
+        dst.delaySec = src.delaySec;
+        dst.fadeSec = src.fadeSec;
+        dst.destPitch = src.destPitch;
+        dst.destCutoff = src.destCutoff;
+        dst.destVolume = src.destVolume;
+        dst.destPan = src.destPan;
+        dst.destPhase = src.destPhase;
+    }
+    for (int i = 0; i < SYNTH_NUM_ENVS; ++i) {
+        const auto& src = multiSynth_.envelopes[i];
+        auto& dst = p.synthEnvelopes[i];
+        dst.delaySec = src.delaySec;
+        dst.attackSec = src.attackSec;
+        dst.holdSec = src.holdSec;
+        dst.decaySec = src.decaySec;
+        dst.sustainLevel = src.sustainLevel;
+        dst.releaseSec = src.releaseSec;
+    }
+    p.synthLfoEnabled = multiSynth_.lfos[0].enabled;
+    p.synthLfoWave = multiSynth_.lfos[0].waveType;
+    p.synthLfoRate = multiSynth_.lfos[0].rateHz;
+    p.synthLfoDepth = multiSynth_.lfos[0].depth;
+    p.synthLfoPitch = multiSynth_.lfos[0].destPitch;
+    p.synthLfoCutoff = multiSynth_.lfos[0].destCutoff;
 
     p.organEnabled = organModule_.organEnabled;
     p.organModel = organModule_.organModel;
     p.organVolume = organModule_.organVolume;
     p.organRotaryFast = organModule_.organRotaryFast;
     p.organDrive = organModule_.organDrive;
+    p.organVibratoMode = organModule_.vibratoMode;
+    p.organPercEnabled = organModule_.percussionEnabled;
+    p.organPercHarmonic = organModule_.percussionHarmonic;
+    p.organPercDecaySec = organModule_.percussionDecaySec;
+    p.organPercLevel = organModule_.percussionLevel;
     for (int d = 0; d < 9; ++d) {
         p.drawbars[d] = organModule_.drawbars[d];
     }
 
-    
     return p;
 }
 
@@ -347,18 +421,20 @@ const StrokeSample* NordPianoEngine::selectStrokeFor(const PianoInstrument& inst
     return pick ? pick : &inst.strokes[0];
 }
 
-void NordPianoEngine::handleNoteOnInternal(const PianoInstrument& inst, int rawMidiKey, int velocity) {
+void NordPianoEngine::handleNoteOnInternal(const PianoInstrument* inst, int rawMidiKey, int velocity) {
     int midiKey = std::clamp(rawMidiKey + transposeSemis_.load() + octaveShift_.load() * 12, 0, 127);
 
+    // Siempre propagar NoteOn a Synth y Órgano aunque no haya piano cargado o el piano esté desactivado
     multiSynth_.noteOn(rawMidiKey, midiKey, velocity);
     organModule_.noteOn(rawMidiKey, midiKey, velocity);
 
+    if (!pianoEnabled_.load() || !inst || inst->strokes.empty()) return;
 
-    const StrokeSample* stroke = selectStrokeFor(inst, midiKey, velocity);
+    const StrokeSample* stroke = selectStrokeFor(*inst, midiKey, velocity);
     if (!stroke || stroke->frames < 4) return;
 
-    for (size_t idx = 0; idx < inst.strokes.size(); ++idx) {
-        if (&inst.strokes[idx] == stroke) {
+    for (size_t idx = 0; idx < inst->strokes.size(); ++idx) {
+        if (&inst->strokes[idx] == stroke) {
             lastTriggeredStrokeIdx_.store(static_cast<int>(idx), std::memory_order_relaxed);
             break;
         }
@@ -434,7 +510,6 @@ void NordPianoEngine::handleNoteOnInternal(const PianoInstrument& inst, int rawM
     target->playedMidiKey = midiKey;
     target->velocity = velocity;
     target->keyHeld = true;
-    // CORRECCIÓN: sustainedByPedal depende SOLO de si el pedal físico está presionado
     target->sustainedByPedal = sustainPedalDown_;
     target->stage = EnvStage::Attack;
     target->ageOrder = ++voiceCounter_;
@@ -449,7 +524,6 @@ void NordPianoEngine::handleNoteOnInternal(const PianoInstrument& inst, int rawM
 }
 
 void NordPianoEngine::handleNoteOffInternal(int rawMidiKey) {
-    // Propagar Note Off a los submódulos de sintetizador y órgano
     multiSynth_.noteOff(rawMidiKey, sustainPedalDown_);
     organModule_.noteOff(rawMidiKey, sustainPedalDown_);
 
@@ -470,7 +544,6 @@ void NordPianoEngine::handleSustainInternal(bool down) {
     if (sustainPedalDown_ == down) return;
     sustainPedalDown_ = down;
 
-    // Propagar el estado del pedal de sostenido a los submódulos
     multiSynth_.setSustain(down);
     organModule_.setSustain(down);
 
@@ -503,7 +576,7 @@ void NordPianoEngine::render(float* outInterleavedStereo, unsigned int numFrames
     while (r != w) {
         const QueuedMidiEvent ev = midiQueue_[r];
         r = (r + 1) % MIDI_QUEUE_SIZE;
-        if (ev.type == 1 && inst) handleNoteOnInternal(*inst, ev.data1, ev.data2);
+        if (ev.type == 1) handleNoteOnInternal(inst.get(), ev.data1, ev.data2);
         else if (ev.type == 2) handleNoteOffInternal(ev.data1);
         else if (ev.type == 3) handleSustainInternal(ev.data1 != 0);
         else if (ev.type == 4) {
@@ -543,7 +616,7 @@ void NordPianoEngine::render(float* outInterleavedStereo, unsigned int numFrames
             static_cast<ShimmerReverbEngine::ReverbMode>(shimmerReverbMode_.load()),
             static_cast<ShimmerReverbEngine::ColorMode>(shimmerColorMode_.load())
         );
-    }    
+    }
 
     const float attackSec = std::max(0.001f, attackSec_.load());
     const float decaySec = std::max(0.005f, decaySec_.load());
@@ -565,16 +638,41 @@ void NordPianoEngine::render(float* outInterleavedStereo, unsigned int numFrames
     multiSynth_.render(outInterleavedStereo, numFrames);
     organModule_.render(outInterleavedStereo, numFrames);
 
-    if (inst && !inst->strokes.empty()) {
+    // Contabilizar voces y teclas activas en Synth y Órgano para el visualizador de 88 teclas
+    if (multiSynth_.synthEnabled) {
+        for (const auto& layer : multiSynth_.layers) {
+            if (!layer.cfg.enabled) continue;
+            for (const auto& sv : layer.voices) {
+                if (!sv.active) continue;
+                activeCount++;
+                if (sv.rawKey >= 0 && sv.rawKey < 128) {
+                    if (sv.keyHeld) localKeyMap[sv.rawKey] = 1;
+                    else if (sv.sustained && localKeyMap[sv.rawKey] == 0) localKeyMap[sv.rawKey] = 2;
+                }
+            }
+        }
+    }
+    if (organModule_.organEnabled) {
+        for (const auto& ov : organModule_.organVoices) {
+            if (!ov.active) continue;
+            activeCount++;
+            if (ov.rawKey >= 0 && ov.rawKey < 128) {
+                if (ov.keyHeld) localKeyMap[ov.rawKey] = 1;
+                else if (ov.sustained && localKeyMap[ov.rawKey] == 0) localKeyMap[ov.rawKey] = 2;
+            }
+        }
+    }
+
+    if (pianoEnabled_.load() && inst && !inst->strokes.empty()) {
         for (size_t vIdx = 0; vIdx < maxAllowed; ++vIdx) {
             auto& v = voices_[vIdx];
             if (!v.active || !v.sample) continue;
             activeCount++;
 
             if (v.midiKey >= 0 && v.midiKey < 128) {
-                if (v.keyHeld) localKeyMap[v.midiKey] = 1; // 1 = presionada con el dedo
+                if (v.keyHeld) localKeyMap[v.midiKey] = 1;
                 else if (v.sustainedByPedal && localKeyMap[v.midiKey] == 0 && (v.adsrLevel * v.sampleEnv) > 0.02f) {
-                    localKeyMap[v.midiKey] = 2; // 2 = sostenida por pedal
+                    localKeyMap[v.midiKey] = 2;
                 }
             }
 
@@ -587,7 +685,7 @@ void NordPianoEngine::render(float* outInterleavedStereo, unsigned int numFrames
 
             float damperSec = softRel ? s.softDamperT60Seconds : s.damperT60Seconds;
             if (v.playedMidiKey >= inst->undampedFromKey) {
-                damperSec = std::max(damperSec, 0.85f); // Resonancia natural de cuerdas agudas al soltar la tecla
+                damperSec = std::max(damperSec, 0.85f);
             }
             float effectiveRelSec = std::max(0.02f, damperSec * (userRelSec / 0.35f));
             const float releaseCoef = std::exp(-6.907755f / (effectiveRelSec * sr));

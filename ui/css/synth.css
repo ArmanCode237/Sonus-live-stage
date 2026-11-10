@@ -1,0 +1,41 @@
+/* Analog synthesis extension. Keeps the existing black/red Nord-inspired palette. */
+.synth-layers-grid {align-items: start;}
+.synth-layer-card {gap: 9px; min-width: 0; justify-content: flex-start; align-items: stretch;
+  padding: 12px; border: 1px solid #353941;}
+.synth-layer-card .mod-pill-header {gap: 8px;}
+.synth-layer-card .mod-pill-header span:last-child {font-size: 8px; opacity: .75;}
+.synth-layer-card .mode-pills-row {justify-content: flex-start;}
+.synth-layer-card .mini-mode-pill {font-size: 9px; padding: 5px 6px;}
+.synth-control-grid {display: grid; grid-template-columns: repeat(4,minmax(0,1fr));
+  width: 100%; gap: 9px 3px; padding: 7px 0;}
+.synth-control-grid .knob-cell {min-width: 0;}
+.synth-control-grid .knob-readout {min-width: 0; width: 100%; white-space: nowrap;
+  overflow: hidden; padding: 3px 2px; font-size: 9px;}
+.synth-subtitle {font: 800 9px Consolas,monospace; letter-spacing: 1.2px; color: #b4beca;
+  border-left: 2px solid #e02a34; padding: 3px 0 3px 9px; margin-top: 8px;}
+.synth-section {width: 100%; border: 1px solid #323740; border-radius: 7px;
+  background: #12161b; padding: 0 8px;}
+.synth-section summary {color: #d4dbe4; font-size: 10px; font-weight: 800;
+  letter-spacing: .8px; cursor: pointer; padding: 9px 3px; user-select: none;}
+.synth-section[open] summary {color: #ff6870; border-bottom: 1px solid #333943;}
+.synth-section .mode-pills-row {padding-top: 8px;}
+.synth-patch-toolbar {padding: 12px; display: flex; flex-direction: row; gap: 9px;
+  justify-content: flex-start; align-items: center; flex-wrap: wrap;}
+.synth-patch-toolbar .quick-cat-select {max-width: 240px; width: min(240px,100%);}
+.synth-patch-caption {font-size: 10px; font-weight: 800; color: #f1f5f9; letter-spacing: .6px;}
+.synth-patch-caption small {display: block; color: #9ca3af; font-size: 9px; font-weight: 500; margin-top: 3px;}
+.synth-patch-status {font-size: 10px; color: #94e2a2; flex: 1 1 180px;}
+.synth-patch-status.error {color: #ff7f86;}
+.synth-global-rack {padding: 13px; gap: 9px; align-items: stretch; justify-content: flex-start;}
+.synth-global-heading {display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  font-size: 11px; letter-spacing: 1px; color: #f2f5f8; border-bottom: 1px solid #363e49; padding-bottom: 8px;}
+.synth-global-heading span {font-size: 10px; color: #9ca3af; letter-spacing: normal;}
+.synth-global-controls {display: grid; grid-template-columns: repeat(6,minmax(64px,1fr)) minmax(175px,2fr);
+  gap: 8px; align-items: center; justify-items: center;}
+.synth-global-lfo {display: flex; flex-direction: column; align-items: center; gap: 7px;}
+.synth-global-lfo .mini-mode-pill {padding: 5px 7px;}
+@media(max-width: 1200px){.synth-global-controls {grid-template-columns: repeat(4,minmax(70px,1fr));}
+  .synth-global-lfo {grid-column: span 2;}}
+@media(max-width: 640px){.synth-control-grid {grid-template-columns: repeat(3,minmax(0,1fr));}
+  .synth-global-controls {grid-template-columns: repeat(3,minmax(0,1fr));}
+  .synth-global-lfo {grid-column: span 3;}}

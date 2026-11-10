@@ -73,7 +73,7 @@ struct EqBandParams {
     float gainDb = 0.0f;
 };
 
-// Configuración completa de cada capa del Sintetizador (29 campos alineados)
+// 29 parámetros originales + extensiones analógicas compatibles con presets antiguos
 struct SynthLayerConfig {
     bool enabled = false;
     int waveType = 0;           // 0=Saw, 1=Square, 2=Triangle, 3=Sine, 4=SuperSaw, 5=Noise, 6=Wavetable, 7=Sample
@@ -106,6 +106,45 @@ struct SynthLayerConfig {
     float filtDecaySec = 0.40f;
     float filtSustainLvl = 0.50f;
     float filtReleaseSec = 0.40f;
+
+    // DCO analog-style voice additions; defaults keep legacy patches sounding familiar.
+    float sawLevel = 0.85f;       // DCO saw oscillator 0..1
+    float pulseLevel = 0.40f;     // DCO pulse oscillator 0..1
+    float pulseWidth = 0.50f;     // Pulse duty 0.05..0.95
+    float pwmDepth = 0.00f;       // LFO-to-pulse-width 0..0.45
+    float pwmRateHz = 0.55f;      // PWM LFO 0.05..12 Hz
+    float subLevel = 0.25f;       // Square oscillator, -1 octave
+    float noiseLevel = 0.02f;     // White noise mix
+    float osc2Level = 0.0f;       // Jupiter-inspired second DCO
+    float osc2Detune = 7.0f;     // cents
+    int osc2Semitones = 0;       // -12..12
+    int osc2Wave = 0;            // 0=saw,1=pulse,2=triangle
+    float highpassHz = 20.0f;    // Pre-VCF highpass
+    float drive = 0.0f;          // Mild VCF pre-drive 0..1
+};
+
+// Serializable modulation snapshots (runtime phase intentionally not persisted).
+struct SynthLfoPatch {
+    bool enabled = false;
+    int waveType = 0;
+    float rateHz = 2.0f;
+    float depth = 0.5f;
+    float delaySec = 0.0f;
+    float fadeSec = 0.0f;
+    int destPitch = 0;
+    int destCutoff = 0;
+    float destVolume = 0.0f;
+    float destPan = 0.0f;
+    float destPhase = 0.0f;
+};
+
+struct SynthEnvelopePatch {
+    float delaySec = 0.0f;
+    float attackSec = 0.01f;
+    float holdSec = 0.0f;
+    float decaySec = 0.2f;
+    float sustainLevel = 0.8f;
+    float releaseSec = 0.3f;
 };
 
 struct SynthPresetParams {
@@ -134,6 +173,15 @@ struct SynthPresetParams {
     float synthMasterVol = 0.80f;
     float synthMacroCutoff = 1.0f;
     SynthLayerConfig synthLayers[3];
+    SynthLfoPatch synthLfos[4];
+    SynthEnvelopePatch synthEnvelopes[3];
+    // Persist main analog LFO with the eight GLOBAL programs (not just synth presets).
+    bool synthLfoEnabled = false;
+    int synthLfoWave = 0;
+    float synthLfoRate = 4.5f;
+    float synthLfoDepth = 0.0f;
+    int synthLfoPitch = 0;       // cents at full depth
+    int synthLfoCutoff = 0;      // Hz at full depth
 
     // Módulo 3: Órgano Nord C2D (B3 / Vox / Farfisa / Pipe)
     bool organEnabled = false;

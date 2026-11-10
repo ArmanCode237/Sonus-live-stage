@@ -1,5 +1,5 @@
 #pragma once
-#include "NordTypes.h"
+#include "Nordtypes.h"
 #include <string>
 #include <vector>
 

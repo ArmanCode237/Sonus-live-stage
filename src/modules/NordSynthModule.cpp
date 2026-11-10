@@ -52,12 +52,16 @@ void SingleSynthLayer::init(float sr) {
 
 void SingleSynthLayer::reset() {
     filter.reset();
+    pwmPhase_ = 0.0;
     for (auto& v : voices) {
         v.active = false;
         v.env = 0.0f;
         v.filtEnv = 0.0f;
         v.stage = 0;
         v.noiseFilterState = 0.0f;
+        v.filterIc1 = v.filterIc2 = v.highpassState = 0.0f;
+        v.filterA1 = 1.0f; v.filterA2 = v.filterA3 = 0.0f;
+        v.cutoffSmooth = std::clamp(cfg.cutoffHz, 40.0f, 18000.0f);
     }
     smoothedCutoff_ = std::clamp(cfg.cutoffHz, 40.0f, 20000.0f);
     smoothedQ_ = std::clamp(cfg.resonanceQ, 0.5f, 12.0f);
@@ -117,6 +121,11 @@ void SingleSynthLayer::noteOn(int rawKey, int playedKey, int velocity) {
         target->velNorm = vNorm;
         target->unisonScale = unisonNorm;
         target->noiseFilterState = 0.0f;
+        target->noiseSeed = (static_cast<uint32_t>(rawKey + 1) * 1664525u) ^
+                            (static_cast<uint32_t>(velocity + 1) * 1013904223u) ^ (u + 17u);
+        target->filterIc1 = target->filterIc2 = target->highpassState = 0.0f;
+        target->filterA1 = 1.0f; target->filterA2 = target->filterA3 = 0.0f;
+        target->cutoffSmooth = std::clamp(cfg.cutoffHz, 40.0f, 18000.0f);
         target->freq = baseFreq;
 
         if (unison > 1) {
@@ -137,6 +146,7 @@ void SingleSynthLayer::noteOn(int rawKey, int playedKey, int velocity) {
         target->phase1 = basePhase - std::floor(basePhase);
         target->phase2 = (lcgNext(seed) & 0xFFFF) / 65536.0;
         target->phase3 = (lcgNext(seed) & 0xFFFF) / 65536.0;
+        target->phaseSub = target->phase1;
     }
 }
 
@@ -165,159 +175,184 @@ void SingleSynthLayer::renderLayer(float* mixL, float* mixR, unsigned int numFra
                                    float macroCutoff, const std::vector<Wavetable>& wtBank,
                                    const SynthLFO* lfos, const SynthEnvelope* /*envs*/) {
     if (!cfg.enabled || cfg.volume <= 0.001f) return;
-    sr_ = sr;
     wtBank_ = &wtBank;
-
-    float targetCutoff = std::clamp(cfg.cutoffHz * macroCutoff, 40.0f, 20000.0f);
-    float targetQ = std::clamp(cfg.resonanceQ, 0.5f, 12.0f);
-    float smoothCoef = std::exp(-1.0f / (0.003f * sr));
-
-    const float atkSec = std::max(0.001f, cfg.attackSec);
-    const float decSec = std::max(0.005f, cfg.decaySec);
-    const float relSec = std::max(0.005f, cfg.releaseSec);
-    const float atkCoef = 1.0f - std::exp(-1.0f / (atkSec * sr));
-    const float decCoef = std::exp(-5.0f / (decSec * sr));
-    const float relCoef = std::exp(-6.0f / (relSec * sr));
-    const float susLvl = std::clamp(cfg.sustainLevel, 0.0f, 1.0f);
-
-    const float fAtkSec = std::max(0.001f, cfg.filtAttackSec);
-    const float fDecSec = std::max(0.005f, cfg.filtDecaySec);
-    const float fRelSec = std::max(0.005f, cfg.filtReleaseSec);
-    const float fAtkCoef = 1.0f - std::exp(-1.0f / (fAtkSec * sr));
-    const float fDecCoef = std::exp(-5.0f / (fDecSec * sr));
-    const float fRelCoef = std::exp(-6.0f / (fRelSec * sr));
-    const float fSusLvl = std::clamp(cfg.filtSustainLvl, 0.0f, 1.0f);
-
-    const float layerGain = cfg.volume * 0.25f;
-
-    // Modulación de Pitch por LFO
-    float lfoPitchRatio = 1.0f;
-    if (lfos && lfos[0].enabled && lfos[0].destPitch != 0) {
-        lfoPitchRatio = std::pow(2.0f, (lfos[0].currentVal * lfos[0].destPitch) / 1200.0f);
+    const float smooth = std::exp(-16.0f / (0.008f * sr));
+    const float atkCoef = 1.0f - std::exp(-1.0f / (std::max(0.001f, cfg.attackSec) * sr));
+    const float decCoef = std::exp(-5.0f / (std::max(0.005f, cfg.decaySec) * sr));
+    const float relCoef = std::exp(-6.0f / (std::max(0.005f, cfg.releaseSec) * sr));
+    const float sus = std::clamp(cfg.sustainLevel, 0.0f, 1.0f);
+    const float fAtk = 1.0f - std::exp(-1.0f / (std::max(0.001f, cfg.filtAttackSec) * sr));
+    const float fDec = std::exp(-5.0f / (std::max(0.005f, cfg.filtDecaySec) * sr));
+    const float fRel = std::exp(-6.0f / (std::max(0.005f, cfg.filtReleaseSec) * sr));
+    const float fSus = std::clamp(cfg.filtSustainLvl, 0.0f, 1.0f);
+    const float mainCutoff = std::clamp(cfg.cutoffHz * macroCutoff, 40.0f, 20000.0f);
+    const float resonanceK = 1.0f / std::clamp(cfg.resonanceQ, 0.5f, 12.0f);
+    const float hpCut = std::clamp(cfg.highpassHz, 20.0f, sr * 0.40f);
+    const float hpAlpha = std::exp(-2.0f * PI_F * hpCut / sr);
+    const float osc2Ratio = std::pow(2.0f, (cfg.osc2Semitones + cfg.osc2Detune / 100.0f) / 12.0f);
+    const float layerGain = cfg.volume * 0.20f;
+    const float basePW = std::clamp(cfg.pulseWidth, 0.05f, 0.95f);
+    const float pwmDepth = std::clamp(cfg.pwmDepth, 0.0f, 0.45f);
+    const float sawLevel = std::clamp(cfg.sawLevel, 0.0f, 1.0f);
+    const float pulseLevel = std::clamp(cfg.pulseLevel, 0.0f, 1.0f);
+    const float subLevel = std::clamp(cfg.subLevel, 0.0f, 1.0f);
+    const float noiseLevel = std::clamp(cfg.noiseLevel, 0.0f, 1.0f);
+    const float osc2Level = std::clamp(cfg.osc2Level, 0.0f, 1.0f);
+    const float analogNorm = 1.0f / std::max(1.0f, sawLevel + pulseLevel + subLevel + noiseLevel + osc2Level);
+    const float driveAmount = std::clamp(cfg.drive, 0.0f, 1.0f);
+    const float pitchLfo = (lfos && lfos[0].enabled) ?
+        std::pow(2.0f, lfos[0].currentVal * lfos[0].destPitch / 1200.0f) : 1.0f;
+    const float filterLfo = (lfos && lfos[0].enabled) ?
+        lfos[0].currentVal * lfos[0].destCutoff : 0.0f;
+    const float maxCutoff = std::min(20000.0f, sr * 0.44f);
+    // Calculate stereo panning once per render block, not for every voice sample.
+    for (auto& v : voices) {
+        if (!v.active) continue;
+        const float pan = std::clamp(cfg.pan + v.panOffset, -1.0f, 1.0f);
+        const float angle = (pan + 1.0f) * (PI_F * 0.25f);
+        v.panGainL = std::cos(angle);
+        v.panGainR = std::sin(angle);
     }
 
     for (unsigned int n = 0; n < numFrames; ++n) {
-        smoothedCutoff_ = targetCutoff + smoothCoef * (smoothedCutoff_ - targetCutoff);
-        smoothedQ_ = targetQ + smoothCoef * (smoothedQ_ - targetQ);
-
+        pwmPhase_ += std::clamp(cfg.pwmRateHz, 0.05f, 12.0f) / sr;
+        if (pwmPhase_ >= 1.0) pwmPhase_ -= 1.0;
+        const float pw = std::clamp(basePW + pwmDepth *
+            std::sin(2.0f * PI_F * static_cast<float>(pwmPhase_)), 0.05f, 0.95f);
         float sumL = 0.0f, sumR = 0.0f;
-        float avgFiltEnv = 0.0f;
-        float avgVel = 0.0f;
-        int activeVoiceCnt = 0;
 
         for (auto& v : voices) {
             if (!v.active) continue;
-
             switch (v.stage) {
                 case 1:
                     v.env += (1.0f - v.env) * atkCoef;
-                    v.filtEnv += (1.0f - v.filtEnv) * fAtkCoef;
+                    v.filtEnv += (1.0f - v.filtEnv) * fAtk;
                     if (v.env >= 0.998f) { v.env = 1.0f; v.stage = 2; }
                     break;
                 case 2:
-                    v.env = susLvl + (v.env - susLvl) * decCoef;
-                    v.filtEnv = fSusLvl + (v.filtEnv - fSusLvl) * fDecCoef;
-                    if (std::abs(v.env - susLvl) < 1e-4f) { v.env = susLvl; v.stage = 3; }
+                    v.env = sus + (v.env - sus) * decCoef;
+                    v.filtEnv = fSus + (v.filtEnv - fSus) * fDec;
+                    if (std::abs(v.env - sus) < 1e-4f) { v.env = sus; v.stage = 3; }
                     break;
                 case 3:
-                    v.env = susLvl;
-                    v.filtEnv = fSusLvl + (v.filtEnv - fSusLvl) * fDecCoef;
+                    v.env = sus;
+                    v.filtEnv = fSus + (v.filtEnv - fSus) * fDec;
                     break;
                 case 4:
                     v.env *= relCoef;
-                    v.filtEnv *= fRelCoef;
+                    v.filtEnv *= fRel;
                     if (v.env < 1e-4f) { v.env = 0.0f; v.active = false; }
                     break;
+                default: break;
             }
             if (!v.active) continue;
 
-            avgFiltEnv += v.filtEnv;
-            avgVel += v.velNorm;
-            activeVoiceCnt++;
-
-            double inc = (v.freq / sr) * v.detuneMult * lfoPitchRatio;
+            const double inc = std::clamp(v.freq * v.detuneMult * pitchLfo / sr,
+                                          0.0000001, 0.45);
+            const double inc2 = std::clamp(inc * osc2Ratio, 0.0000001, 0.45);
+            auto saw = [this](double phase, double step) -> float {
+                return naiveSaw(phase) - polyBLEP(phase, step);
+            };
+            auto pulse = [this](double phase, double step, float width) -> float {
+                // Both discontinuities are band-limited. Center around zero for arbitrary duty.
+                const double shifted = std::fmod(phase + 1.0 - width, 1.0);
+                return (phase < width ? 1.0f : -1.0f) +
+                    polyBLEP(phase, step) - polyBLEP(shifted, step) - (2.0f * width - 1.0f);
+            };
             float osc = 0.0f;
-
             switch (cfg.waveType) {
-                case 0: // Sawtooth con PolyBLEP
-                    osc = naiveSaw(v.phase1) - polyBLEP(v.phase1, inc);
-                    break;
-                case 1: // Square con PolyBLEP
-                    osc = naiveSquare(v.phase1) + polyBLEP(v.phase1, inc) - polyBLEP(std::fmod(v.phase1 + 0.5, 1.0), inc);
-                    osc *= 0.85f;
-                    break;
-                case 2: // Triangle limpio libre de DC y sin estado compartido
-                    osc = static_cast<float>(1.0 - 4.0 * std::abs(v.phase1 - 0.5));
-                    break;
-                case 3: // Sine
-                    osc = std::sin(2.0f * PI_F * static_cast<float>(v.phase1));
-                    break;
-                case 4: { // SuperSaw (3 osciladores con PolyBLEP)
-                    float s1 = naiveSaw(v.phase1) - polyBLEP(v.phase1, inc);
-                    float s2 = naiveSaw(v.phase2) - polyBLEP(v.phase2, inc * 1.0065);
-                    float s3 = naiveSaw(v.phase3) - polyBLEP(v.phase3, inc * 0.9935);
-                    osc = (s1 + s2 * 0.82f + s3 * 0.82f) * 0.44f;
-                    v.phase2 += inc * 1.0065; if (v.phase2 >= 1.0) v.phase2 -= 1.0;
-                    v.phase3 += inc * 0.9935; if (v.phase3 >= 1.0) v.phase3 -= 1.0;
+                case 0: osc = saw(v.phase1, inc); break;
+                case 1: osc = pulse(v.phase1, inc, pw) * 0.85f; break;
+                case 2: osc = static_cast<float>(1.0 - 4.0 * std::abs(v.phase1 - 0.5)); break;
+                case 3: osc = std::sin(2.0f * PI_F * static_cast<float>(v.phase1)); break;
+                case 4: {
+                    const float s1 = saw(v.phase1, inc);
+                    const float s2 = saw(v.phase2, std::min(0.45, inc * 1.0065));
+                    const float s3 = saw(v.phase3, inc * 0.9935);
+                    osc = (s1 + 0.82f * (s2 + s3)) * 0.44f;
+                    v.phase2 += inc * 1.0065;
+                    v.phase3 += inc * 0.9935;
+                    v.phase2 -= std::floor(v.phase2);
+                    v.phase3 -= std::floor(v.phase3);
                     break;
                 }
-                case 5: { // Analog Warm Noise (con estado individual por voz)
-                    uint32_t seed = static_cast<uint32_t>(v.rawKey) * 2654435761u + n * 1664525u;
-                    float white = lcgFloat(seed);
-                    v.noiseFilterState += 0.35f * (white - v.noiseFilterState);
-                    osc = v.noiseFilterState * 0.6f;
+                case 5:
+                    osc = lcgFloat(v.noiseSeed) * 0.55f;
                     break;
-                }
-                case 6: // Wavetable
+                case 6:
                     osc = readWavetable(cfg.wavetableIdx, v.phase1);
                     break;
-                default:
-                    osc = std::sin(2.0f * PI_F * static_cast<float>(v.phase1));
+                case 8: { // Juno style: simultaneously mix saw, PWM pulse, sub and noise
+                    const float sub = pulse(v.phaseSub, inc * 0.5, 0.50f);
+                    osc = analogNorm * (sawLevel * saw(v.phase1, inc) +
+                        pulseLevel * pulse(v.phase1, inc, pw) +
+                        subLevel * sub + noiseLevel * lcgFloat(v.noiseSeed));
                     break;
-            }
-
-            v.phase1 += inc;
-            if (v.phase1 >= 1.0) v.phase1 -= 1.0;
-
-            float amp = osc * v.env * v.velGain * v.unisonScale;
-            float voicePan = std::clamp(cfg.pan + v.panOffset, -1.0f, 1.0f);
-            float pAng = (voicePan + 1.0f) * (PI_F * 0.25f);
-            sumL += amp * std::cos(pAng);
-            sumR += amp * std::sin(pAng);
-        }
-
-        if (activeVoiceCnt == 0) continue;
-
-        float invCnt = 1.0f / static_cast<float>(activeVoiceCnt);
-        avgFiltEnv *= invCnt;
-        avgVel *= invCnt;
-
-        float filtModCutoff = smoothedCutoff_;
-        if (std::abs(cfg.filterEnvAmt) > 0.001f) {
-            filtModCutoff *= std::pow(2.0f, cfg.filterEnvAmt * 4.5f * avgFiltEnv);
-        }
-        if (cfg.velToCutoff > 0.001f) {
-            filtModCutoff *= (1.0f + cfg.velToCutoff * avgVel * 2.0f);
-        }
-        if (lfos) {
-            for (int li = 0; li < SYNTH_NUM_LFOS; ++li) {
-                if (lfos[li].enabled && lfos[li].destCutoff != 0) {
-                    filtModCutoff += lfos[li].currentVal * lfos[li].destCutoff;
                 }
+                case 9: { // Jupiter style: same DCO + independently tunable second oscillator
+                    float oscB = saw(v.phase2, inc2);
+                    if (cfg.osc2Wave == 1) oscB = pulse(v.phase2, inc2, pw);
+                    if (cfg.osc2Wave == 2)
+                        oscB = static_cast<float>(1.0 - 4.0 * std::abs(v.phase2 - 0.5));
+                    osc = analogNorm * (sawLevel * saw(v.phase1, inc) +
+                        pulseLevel * pulse(v.phase1, inc, pw) +
+                        subLevel * pulse(v.phaseSub, inc * 0.5, 0.50f) +
+                        noiseLevel * lcgFloat(v.noiseSeed) + osc2Level * oscB);
+                    v.phase2 += inc2;
+                    v.phase2 -= std::floor(v.phase2);
+                    break;
+                }
+                default: osc = std::sin(2.0f * PI_F * static_cast<float>(v.phase1)); break;
             }
+            v.phase1 += inc;
+            v.phase1 -= std::floor(v.phase1);
+            v.phaseSub += inc * 0.5;
+            v.phaseSub -= std::floor(v.phaseSub);
+
+            // Per-note filter: recalculate expensive frequency coefficients at 1/16th
+            // audio rate; run the actual state-variable filter at full sample rate.
+            // This is crucial when playing multiple notes across all three layers live.
+            if ((n & 15u) == 0u) {
+                const float keyRatio = std::exp2((v.playedKey - 60) *
+                    (cfg.filterKeyTrack / 12.0f));
+                const float envRatio = std::exp2(std::clamp(cfg.filterEnvAmt,
+                    -1.0f, 1.0f) * 5.0f * v.filtEnv);
+                const float velRatio = 1.0f + cfg.velToCutoff * v.velNorm * 2.0f;
+                const float cutoff = std::clamp((mainCutoff + filterLfo) *
+                    envRatio * velRatio * keyRatio, 30.0f, maxCutoff);
+                v.cutoffSmooth = std::clamp(cutoff + smooth * (v.cutoffSmooth - cutoff), 30.0f, maxCutoff);
+                const float g = std::tan(PI_F * v.cutoffSmooth / sr);
+                v.filterA1 = 1.0f / (1.0f + g * (g + resonanceK));
+                v.filterA2 = g * v.filterA1;
+                v.filterA3 = g * v.filterA2;
+            }
+
+            // One-pole high-pass (pre-VCF) + topology-preserving state-variable filter.
+            v.highpassState = (1.0f - hpAlpha) * osc + hpAlpha * v.highpassState;
+            float input = osc - v.highpassState;
+            if (driveAmount > 0.001f) {
+                const float gain = 1.0f + driveAmount * 3.0f;
+                input = std::tanh(input * gain) / std::tanh(gain);
+            }
+            const float a1 = v.filterA1;
+            const float a2 = v.filterA2;
+            const float a3 = v.filterA3;
+            const float v3 = input - v.filterIc2;
+            const float bp = a1 * v.filterIc1 + a2 * v3;
+            const float lp = v.filterIc2 + a2 * v.filterIc1 + a3 * v3;
+            v.filterIc1 = 2.0f * bp - v.filterIc1;
+            v.filterIc2 = 2.0f * lp - v.filterIc2;
+            float filtered = lp;
+            if (cfg.filterType == 1) filtered = input - resonanceK * bp - lp;
+            if (cfg.filterType == 2) filtered = bp;
+            const float amp = filtered * v.env * v.velGain * v.unisonScale * layerGain;
+            sumL += amp * v.panGainL;
+            sumR += amp * v.panGainR;
         }
-        filtModCutoff = std::clamp(filtModCutoff, 40.0f, 20000.0f);
-        filter.setParams(sr, filtModCutoff, smoothedQ_);
-
-        float fL = sumL * layerGain;
-        float fR = sumR * layerGain;
-        filter.processStereo(fL, fR);
-
-        mixL[n] += fL;
-        mixR[n] += fR;
+        mixL[n] += sumL;
+        mixR[n] += sumR;
     }
 }
-
 void NordSynthModule::init(float sr) {
     sr_ = (sr > 8000.0f) ? sr : 48000.0f;
     for (auto& l : layers) l.init(sr_);
@@ -399,17 +434,19 @@ void NordSynthModule::setEnvelope(int idx, const SynthEnvelope& env) {
 void NordSynthModule::updateLFOsAndEnvs(unsigned int numFrames, float sr) {
     for (auto& lfo : lfos) {
         if (!lfo.enabled) { lfo.currentVal = 0.0f; continue; }
-        double inc = lfo.rateHz / sr;
-        lfo.phaseAccum += inc * numFrames;
-        if (lfo.phaseAccum >= 1.0) lfo.phaseAccum -= std::floor(lfo.phaseAccum);
-        float val = std::sin(2.0f * PI_F * static_cast<float>(lfo.phaseAccum));
-        lfo.currentVal = val * lfo.depth;
+        lfo.phaseAccum += (std::clamp(lfo.rateHz, 0.05f, 30.0f) / sr) * numFrames;
+        lfo.phaseAccum -= std::floor(lfo.phaseAccum);
+        const float p = static_cast<float>(lfo.phaseAccum);
+        float val = std::sin(2.0f * PI_F * p);
+        if (lfo.waveType == 1) val = 1.0f - 4.0f * std::abs(p - 0.5f);
+        if (lfo.waveType == 2) val = 2.0f * p - 1.0f;
+        if (lfo.waveType == 3) val = p < 0.5f ? 1.0f : -1.0f;
+        lfo.currentVal = val * std::clamp(lfo.depth, 0.0f, 1.0f);
     }
 }
 
 void NordSynthModule::loadBuiltInSynthPreset(int presetId) {
     synthPresetId = std::clamp(presetId, 1, 8);
-    for (auto& l : layers) l.reset();
 
     if (synthPresetId == 1) { // 1: Warm Pad
         layers[0].cfg = {true, 4, 0.80f, -0.20f, 0, 0, -6.0f, 4800.0f, 0.8f, 0.18f, 2.2f, 0.85f, 0.95f,
@@ -447,6 +484,61 @@ void NordSynthModule::loadBuiltInSynthPreset(int presetId) {
         layers[2].cfg = {true, 3, 0.60f, 0.00f, -1, 0, 0.0f, 3200.0f, 0.7f, 0.20f, 2.5f, 0.95f, 1.10f,
                          1, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0, "", 0, 0.0f, 0.5f, 0.15f, 1.0f, 0.7f, 1.0f};
     }
+
+    // Analog-inspired factory bank. Three independent layers are always retained.
+    // Factory sounds are interpretations, not circuit/component emulations.
+    if (synthPresetId == 1) { // Juno Warm Pad
+        layers[0].cfg.waveType = 8; layers[0].cfg.pwmDepth = 0.18f;
+        layers[0].cfg.pwmRateHz = 0.24f; layers[0].cfg.subLevel = 0.17f;
+        layers[1].cfg.waveType = 8; layers[1].cfg.pwmDepth = 0.24f;
+        layers[1].cfg.pwmRateHz = 0.31f; layers[1].cfg.sawLevel = 0.40f;
+    } else if (synthPresetId == 2) { // Jupiter Brass
+        for (auto& l : layers) { l.cfg.waveType = 9; l.cfg.osc2Level = 0.70f;
+            l.cfg.osc2Detune = 8.0f; l.cfg.filterEnvAmt = 0.75f;
+            l.cfg.filtAttackSec = 0.01f; l.cfg.filtDecaySec = 0.30f;
+            l.cfg.filtSustainLvl = 0.20f; l.cfg.sawLevel = 0.85f; }
+    } else if (synthPresetId == 3) { // Jupiter Unison Lead
+        layers[0].cfg.waveType = 9; layers[0].cfg.osc2Level = 0.90f;
+        layers[0].cfg.osc2Detune = 13.0f;
+        layers[1].cfg.waveType = 9; layers[1].cfg.osc2Semitones = 12;
+        layers[1].cfg.osc2Level = 0.25f;
+    } else if (synthPresetId == 4) { // Crystal Pluck; legacy wavetable sound preserved
+        layers[0].cfg.filterEnvAmt = 0.45f;
+        layers[1].cfg.filterEnvAmt = 0.30f;
+    } else if (synthPresetId == 5) { // Juno Strings
+        layers[0].cfg.waveType = 8; layers[0].cfg.pulseLevel = 0.80f;
+        layers[0].cfg.pwmDepth = 0.28f; layers[0].cfg.pwmRateHz = 0.18f;
+        layers[1].cfg.waveType = 8; layers[1].cfg.pwmDepth = 0.30f;
+        layers[1].cfg.pwmRateHz = 0.26f;
+    } else if (synthPresetId == 6) { // Deep Analog Bass
+        layers[0].cfg = SynthLayerConfig{};
+        layers[0].cfg.enabled = true; layers[0].cfg.waveType = 8;
+        layers[0].cfg.volume = 0.90f; layers[0].cfg.cutoffHz = 800.0f;
+        layers[0].cfg.filterEnvAmt = 0.75f; layers[0].cfg.resonanceQ = 1.7f;
+        layers[0].cfg.filtDecaySec = 0.27f; layers[0].cfg.filtSustainLvl = 0.06f;
+        layers[0].cfg.attackSec = 0.002f; layers[0].cfg.decaySec = 0.48f;
+        layers[0].cfg.sustainLevel = 0.70f; layers[0].cfg.releaseSec = 0.14f;
+        layers[0].cfg.sawLevel = 0.65f; layers[0].cfg.pulseLevel = 0.35f;
+        layers[0].cfg.subLevel = 0.85f; layers[0].cfg.drive = 0.23f;
+        layers[1].cfg = SynthLayerConfig{}; layers[1].cfg.enabled = false;
+        layers[2].cfg = SynthLayerConfig{}; layers[2].cfg.enabled = false;
+    } else if (synthPresetId == 7) { // PWM Motion
+        layers[0].cfg.waveType = 8; layers[0].cfg.sawLevel = 0.0f;
+        layers[0].cfg.pulseLevel = 1.0f; layers[0].cfg.pwmDepth = 0.42f;
+        layers[0].cfg.pwmRateHz = 1.1f; layers[0].cfg.filterEnvAmt = 0.35f;
+        layers[1].cfg.waveType = 9; layers[1].cfg.osc2Level = 0.55f;
+        layers[1].cfg.osc2Wave = 1; layers[1].cfg.pwmDepth = 0.36f;
+        layers[1].cfg.pwmRateHz = 0.63f;
+        layers[2].cfg.enabled = false;
+    } else if (synthPresetId == 8) { // Jupiter Poly Synth
+        layers[0].cfg.waveType = 9; layers[0].cfg.osc2Level = 0.75f;
+        layers[0].cfg.osc2Detune = 11.0f; layers[0].cfg.pulseLevel = 0.30f;
+        layers[1].cfg.waveType = 9; layers[1].cfg.osc2Level = 0.50f;
+        layers[1].cfg.osc2Semitones = 7; layers[1].cfg.osc2Wave = 2;
+        layers[2].cfg.waveType = 8; layers[2].cfg.subLevel = 0.35f;
+        layers[2].cfg.pwmDepth = 0.15f;
+    }
+    for (auto& l : layers) l.reset();
 }
 
 void NordSynthModule::noteOn(int rawKey, int playedKey, int velocity) {

@@ -1,0 +1,65 @@
+/* ui/css/components.css — Componentes reutilizables: módulos, LEDs, displays, botones, perillas, pills */
+
+.mod-pill-header {
+  width: 100%; min-height: 30px; padding: 5px 8px; border-radius: 7px;
+  background: #262a30; border: 1px solid #3a3f47;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 10px; font-weight: 800; letter-spacing: 1px; color: #fff; text-transform: uppercase;
+}
+.mod-pill-header.red-pill { background: linear-gradient(180deg,#c91b24,#8f0e15); border-color: #df3b42; }
+.mod-led-btn {
+  width: 12px; height: 12px; border-radius: 50%; background: #3a1212;
+  border: 1.5px solid #090a0c; cursor: pointer; padding: 0; flex-shrink: 0;
+}
+.mod-led-btn.on { background: var(--led-red); box-shadow: 0 0 8px var(--led-red); }
+.expand-btn {
+  background: #101216; color: #fff; border: 1px solid #4b515a;
+  border-radius: 6px; font-size: 9.5px; padding: 4px 7px; cursor: pointer; font-weight: 800;
+}
+.expand-btn:hover { background: #c91b24; border-color: #fff; }
+
+.seven-seg-box {
+  width: 96px; height: 48px; background: #190406; border: 2px solid #090a0c;
+  border-radius: 5px; display: flex; flex-direction: column; align-items: center;
+  justify-content: space-between; padding: 4px; box-shadow: inset 0 0 10px rgba(0,0,0,0.9);
+}
+.seven-seg-num {
+  font-family: 'Silkscreen', Consolas, monospace; font-size: 20px; font-weight: 700;
+  color: #ff2a2a; line-height: 1; text-shadow: 0 0 8px rgba(255,42,42,0.7);
+}
+.seven-seg-label {
+  font-size: 8.5px; font-weight: 800; background: #e2e8f0; color: #111;
+  width: 100%; text-align: center; border-radius: 2px;
+}
+.quick-cat-select, .voices-select {
+  width: 100%; background: #14181f; color: #f8fafc; border: 1px solid #2b3543;
+  border-radius: 6px; padding: 4px 6px; font-size: 10.5px; font-weight: 700; cursor: pointer;
+}
+
+
+/* PERILLAS Y FADERS */
+.knob-cell { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+.knob-svg { width: 56px; height: 56px; cursor: ns-resize; overflow: visible; filter: drop-shadow(0 4px 5px rgba(0,0,0,.36)); }
+.knob-svg.large { width: 70px; height: 70px; }
+.knob-svg.small { width: 44px; height: 44px; }
+.nord-tick-major { stroke: rgba(248,250,252,0.92); stroke-width: 1.9; stroke-linecap: round; }
+.nord-tick-minor { stroke: rgba(226,232,240,0.55); stroke-width: 1.25; stroke-linecap: round; }
+.knob-cap { fill: #14171c; stroke: #090b0e; stroke-width: 3.2; }
+.knob-pointer { stroke: #ffffff; stroke-width: 3; stroke-linecap: round; }
+.knob-title { font-size: 8.5px; font-weight: 800; color: #aeb7c2; letter-spacing: .8px; text-transform: uppercase; text-align: center; }
+.knob-readout {
+  font-family: Consolas, monospace; font-size: 9px; color: #e9edf2;
+  min-width: 56px; padding: 2px 5px; border: 1px solid #2e333a;
+  border-radius: 4px; background: #090b0d; text-align: center;
+}
+
+.mode-pills-row { display: flex; gap: 4px; width: 100%; justify-content: center; flex-wrap: wrap; }
+.mini-mode-pill {
+  background: #22262c; color: #9ca3af; border: 1px solid #374151;
+  border-radius: 4px; padding: 3px 7px; font-size: 8.5px; font-weight: 800;
+  cursor: pointer; text-transform: uppercase;
+}
+.mini-mode-pill.active { background: #b5121b; color: #fff; border-color: #f87171; }
+
+/* Enlaces de navegación con aspecto de botón */
+a.wrench-btn { text-decoration: none; }

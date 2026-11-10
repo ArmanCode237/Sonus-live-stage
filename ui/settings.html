@@ -3,49 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <title>Configuración de Audio & MIDI — Nord Virtual Stage</title>
-<style>
-  :root {
-    --nord-red: #b5121b; --nord-red-bright: #e01b24;
-    --bg-dark: #121316; --card-bg: #1c1d21;
-    --text: #eceae4; --amber: #ff9d00; --green: #22ee55; --danger: #ff4757;
-  }
-  * { box-sizing: border-box; user-select: none; }
-  body { margin: 0; padding: 18px; background: var(--bg-dark); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; }
-  .header-bar { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--nord-red-bright); padding-bottom: 10px; margin-bottom: 16px; }
-  .header-bar h2 { margin: 0; font-size: 17px; letter-spacing: 1.2px; text-transform: uppercase; }
-  .card { background: var(--card-bg); border: 1px solid #353740; border-radius: 8px; padding: 14px 16px; margin-bottom: 14px; }
-  .card-title { font-size: 12px; font-weight: 800; color: var(--amber); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
-  .form-grid { display: grid; grid-template-columns: 190px 1fr; gap: 10px 14px; align-items: center; }
-  label { font-size: 12px; font-weight: 600; color: #ccc; }
-  select { width: 100%; background: #0e0f12; color: #fff; border: 1px solid #4a4d57; border-radius: 4px; padding: 7px 10px; font-size: 13px; }
-  .btn-row { display: flex; gap: 10px; margin-top: 14px; justify-content: flex-end; }
-  .btn { background: #2e3038; color: #fff; border: 1px solid #666; border-radius: 4px; padding: 8px 14px; font-size: 12px; font-weight: 700; cursor: pointer; text-transform: uppercase; }
-  .btn:hover { background: #3e414c; }
-  .btn.primary { background: var(--nord-red); border-color: #ff6666; }
-  .status-box { margin-top: 12px; padding: 8px 12px; background: #0b0c0e; border-left: 3px solid var(--amber); font-family: Consolas, monospace; font-size: 12px; color: var(--amber); }
-  .alert-banner {
-    display: none; margin-bottom: 12px; padding: 9px 12px; border-radius: 6px;
-    background: rgba(255, 71, 87, 0.16); border: 1px solid var(--danger);
-    color: #ffdadb; font-size: 12px; font-weight: 600;
-  }
-  .midi-ports-box { max-height: 210px; overflow-y: auto; background: #0e0f12; border: 1px solid #333; border-radius: 4px; padding: 8px; }
-  .midi-item {
-    display: flex; align-items: center; justify-content: space-between; gap: 10px;
-    padding: 7px 8px; border-bottom: 1px solid #1a1b20; font-size: 13px; border-radius: 4px;
-  }
-  .midi-item.disconnected { background: rgba(255, 71, 87, 0.08); color: #94a3b8; }
-  .conn-badge {
-    font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 4px;
-    font-family: Consolas, monospace; text-transform: uppercase;
-  }
-  .conn-badge.ok { background: #144622; color: #66ff99; }
-  .conn-badge.missing { background: #7f1d1d; color: #fca5a5; }
-  .forget-btn {
-    background: transparent; color: #f87171; border: 1px solid #7f1d1d;
-    border-radius: 4px; padding: 2px 7px; font-size: 10px; cursor: pointer;
-  }
-  .forget-btn:hover { background: #7f1d1d; color: #fff; }
-</style>
+<link rel="stylesheet" href="/css/settings.css">
+</head>
 </head>
 <body>
 
@@ -58,7 +17,7 @@
 
 <div class="card">
   <div class="card-title">
-    <span>1. Selección de Motor de Audio (ASIO / WASAPI), Dispositivo y Sample Rate</span>
+    <span>1. Selección de Motor de Audio (ASIO / WASAPI / CoreAudio), Dispositivo y Sample Rate</span>
     <button class="btn" style="padding:3px 8px; font-size:10px;" onclick="rescanAudio()">Re-escanear Hardware</button>
   </div>
 
@@ -95,144 +54,12 @@
 
 <div class="card">
   <div class="card-title">
-    <span>2. Entradas MIDI (Desmarcadas por defecto — Selecciona tu controlador)</span>
+    <span>2. Entradas MIDI (Selecciona tus controladores activos)</span>
     <button class="btn" style="padding:3px 8px; font-size:10px;" onclick="refreshMidi()">Refrescar MIDI</button>
   </div>
   <div class="midi-ports-box" id="midiList"></div>
 </div>
 
-<script>
-let hwData = null;
-
-function loadHardware() {
-  fetch('/api/hardware')
-    .then(r => r.json())
-    .then(hw => {
-      hwData = hw;
-      document.getElementById('bufSelect').value = hw.bufferSize || 128;
-
-      const apiSel = document.getElementById('apiSelect');
-      apiSel.innerHTML = '';
-      (hw.availableApis || ['WASAPI', 'ASIO']).forEach(api => {
-        const opt = document.createElement('option');
-        opt.value = api;
-        opt.text = `Windows ${api}`;
-        if (api === hw.activeApi) opt.selected = true;
-        apiSel.appendChild(opt);
-      });
-
-      onApiFilterChange(hw.activeAudioUid, hw.sampleRate);
-      renderMidi(hw.midiPorts);
-      document.getElementById('audioStatusBox').innerText =
-        `ACTIVO: [${hw.activeApi}] ${hw.activeAudioDeviceName} @ ${hw.sampleRate} Hz (${hw.bufferSize} samples — ${hw.latencyMs.toFixed(2)} ms)`;
-    });
-}
-
-function onApiFilterChange(preferredUid = null, preferredSr = null) {
-  if (!hwData) return;
-  const chosenApi = document.getElementById('apiSelect').value;
-  const devSel = document.getElementById('deviceSelect');
-  devSel.innerHTML = '';
-
-  hwData.audioDevices.filter(d => d.api === chosenApi).forEach(d => {
-    const opt = document.createElement('option');
-    opt.value = d.uid;
-    opt.text = `${d.name} (${d.channels} ch)`;
-    if (preferredUid !== null && d.uid === preferredUid) opt.selected = true;
-    devSel.appendChild(opt);
-  });
-
-  onDeviceSelectionChange(preferredSr);
-}
-
-function onDeviceSelectionChange(preferredSr = null) {
-  if (!hwData) return;
-  const uid = parseInt(document.getElementById('deviceSelect').value);
-  const dev = hwData.audioDevices.find(d => d.uid === uid);
-  const srSel = document.getElementById('srSelect');
-  srSel.innerHTML = '';
-
-  const rates = (dev && dev.sampleRates && dev.sampleRates.length) ? dev.sampleRates : [44100, 48000, 88200, 96000];
-  const targetSr = preferredSr || (dev ? dev.preferredSr : 48000);
-
-  rates.forEach(r => {
-    const opt = document.createElement('option');
-    opt.value = r;
-    opt.text = `${r} Hz`;
-    if (r === targetSr) opt.selected = true;
-    srSel.appendChild(opt);
-  });
-  updateLatencyPreview();
-}
-
-function updateLatencyPreview() {
-  const sr = parseInt(document.getElementById('srSelect').value) || 48000;
-  const buf = parseInt(document.getElementById('bufSelect').value) || 128;
-  document.getElementById('latencyPreview').innerText = `${((buf / sr) * 1000).toFixed(2)} ms (${buf} smp @ ${sr} Hz)`;
-}
-
-function applyAudioSettings() {
-  const uid = parseInt(document.getElementById('deviceSelect').value);
-  const sr = parseInt(document.getElementById('srSelect').value);
-  const buf = parseInt(document.getElementById('bufSelect').value);
-
-  document.getElementById('audioStatusBox').innerText = "Aplicando configuración...";
-  fetch('/api/hardware/audio', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ uid, sampleRate: sr, bufferSize: buf })
-  })
-  .then(r => r.json())
-  .then(hw => {
-    hwData = hw;
-    document.getElementById('audioStatusBox').innerText = hw.message;
-    onApiFilterChange(hw.activeAudioUid, hw.sampleRate);
-  });
-}
-
-function rescanAudio() {
-  fetch('/api/hardware/rescan', { method: 'POST' }).then(() => loadHardware());
-}
-
-function testTone() { fetch('/api/testtone', { method: 'POST' }); }
-
-function renderMidi(ports) {
-  const box = document.getElementById('midiList');
-  box.innerHTML = '';
-  if (!ports || !ports.length) {
-    box.innerHTML = '<div style="color:#888;">No se detectaron entradas MIDI USB.</div>';
-    return;
-  }
-  ports.forEach(p => {
-    const div = document.createElement('div');
-    div.className = 'midi-item';
-    div.innerHTML = `
-      <input type="checkbox" id="m_${p.index}" ${p.enabled ? 'checked' : ''} onchange="toggleMidi(${p.index}, this.checked)">
-      <label for="m_${p.index}" style="cursor:pointer; flex:1;">Puerto [${p.index}]: ${p.name}</label>
-    `;
-    box.appendChild(div);
-  });
-}
-
-function toggleMidi(index, enabled) {
-  fetch('/api/hardware/midi', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ index, enabled })
-  });
-}
-
-function refreshMidi() {
-  fetch('/api/hardware/midi', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ refresh: true })
-  })
-  .then(r => r.json())
-  .then(hw => renderMidi(hw.midiPorts));
-}
-
-loadHardware();
-</script>
+<script src="/js/settings.js"></script>
 </body>
 </html>

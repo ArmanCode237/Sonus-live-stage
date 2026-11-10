@@ -1,0 +1,81 @@
+/* ui/css/drawbars.css — Órgano: deck de drawbars con LEDs */
+
+/* ============ NORD C2D AUTHENTIC DRAWBAR FADERS (LED VERDE VERTICAL) ============ */
+.drawbar-deck {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 20px;
+  background: linear-gradient(180deg, #121418 0%, #07080a 100%);
+  border: 2px solid #282c34;
+  border-radius: 10px;
+  box-shadow: inset 0 2px 5px rgba(0,0,0,0.9);
+}
+.drawbar-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: #090b0e;
+  border: 1px solid #222730;
+  border-radius: 6px;
+  padding: 10px 6px;
+}
+.drawbar-label {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #f8fafc;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.drawbar-track-wrap {
+  position: relative;
+  width: 22px;
+  height: 160px;
+  background: #030406;
+  border: 1px solid #1a1e25;
+  border-radius: 4px;
+  display: flex;
+  justify-content: center;
+  padding: 4px 0;
+}
+.drawbar-led-strip {
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: space-between;
+  height: 100%;
+  width: 6px;
+  gap: 1.5px;
+  z-index: 1;
+}
+.drawbar-led {
+  flex: 1;
+  background: #111e14;
+  border-radius: 1px;
+}
+.drawbar-led.lit {
+  background: #00ff55;
+  box-shadow: 0 0 5px #00ff55, 0 0 10px #00ff5555;
+}
+.drawbar-input-range {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: ns-resize;
+  z-index: 3;
+  writing-mode: vertical-lr;
+  direction: rtl;
+}
+.drawbar-val-badge {
+  font-family: Consolas, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: #7ec8ff;
+  background: #040810;
+  padding: 2px 4px;
+  border-radius: 3px;
+  border: 1px solid #1e2630;
+}

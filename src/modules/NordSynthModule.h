@@ -61,12 +61,23 @@ struct SynthPolyVoice {
     float velGain = 1.0f;
     float velNorm = 0.8f;
     float unisonScale = 1.0f;
-    float noiseFilterState = 0.0f; // Estado individual por voz (evita distorsión entre voces)
+    float noiseFilterState = 0.0f;
+    uint32_t noiseSeed = 1u;
+    float filterIc1 = 0.0f;
+    float filterIc2 = 0.0f;
+    float highpassState = 0.0f;
+    float cutoffSmooth = 8500.0f;
+    float filterA1 = 1.0f;
+    float filterA2 = 0.0f;
+    float filterA3 = 0.0f;
     double freq = 440.0;
     double phase1 = 0.0;
     double phase2 = 0.0;
     double phase3 = 0.0;
+    double phaseSub = 0.0;
     float panOffset = 0.0f;
+    float panGainL = 0.7071f;
+    float panGainR = 0.7071f;
     float detuneMult = 1.0f;
     float phaseInit = 0.0f;
     int   sampleFrame = 0;
@@ -96,6 +107,7 @@ private:
     StateVariableFilter filter;
     float smoothedCutoff_ = 8500.0f;
     float smoothedQ_ = 0.85f;
+    double pwmPhase_ = 0.0;
     const std::vector<Wavetable>* wtBank_ = nullptr;
 
     inline float polyBLEP(double t, double dt);

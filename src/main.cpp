@@ -24,7 +24,7 @@ namespace fs = std::filesystem;
 
 int audioCallback(void* outputBuffer, void* /*inputBuffer*/, unsigned int nBufferFrames,
                   double /*streamTime*/, RtAudioStreamStatus /*status*/, void* userData) {
-    auto* engine = static_cast<NordPianoEngine*>(userData);
+    auto* engine = static_cast<WorkstationHost*>(userData);
     auto* out = static_cast<float*>(outputBuffer);
     engine->render(out, nBufferFrames);
     return 0;
@@ -32,34 +32,32 @@ int audioCallback(void* outputBuffer, void* /*inputBuffer*/, unsigned int nBuffe
 
 void midiCallback(double /*deltatime*/, std::vector<unsigned char>* message, void* userData) {
     if (!message || message->size() < 2) return;
-    auto* engine = static_cast<NordPianoEngine*>(userData);
+    auto* host = static_cast<WorkstationHost*>(userData);
 
     unsigned char status = (*message)[0] & 0xF0;
     unsigned char data1  = (*message)[1] & 0x7F;
     unsigned char data2  = (message->size() > 2) ? ((*message)[2] & 0x7F) : 0;
 
     if (status == 0x90 && data2 > 0) {
-        engine->noteOn(data1, data2);
+        host->noteOn(data1, data2);
     } else if (status == 0x80 || (status == 0x90 && data2 == 0)) {
-        engine->noteOff(data1);
+        host->noteOff(data1);
     } else if (status == 0xB0) {
-        auto* host = static_cast<WorkstationHost*>(userData);
         if (host->getRegistry().handleMidiCC(data1, data2)) return;
-        if (data1 == 64) engine->setSustainPedal(data2 >= 64);
-        else if (data1 == 7) engine->setMasterGain(static_cast<float>(data2) / 100.0f);
-        else if (data1 == 10) engine->setPan((static_cast<float>(data2) - 64.0f) / 63.0f);
+        if (data1 == 64) host->setSustainPedal(data2 >= 64);
+        else if (data1 == 7) host->setMasterGain(static_cast<float>(data2) / 100.0f);
+        else if (data1 == 10) host->setPan((static_cast<float>(data2) - 64.0f) / 63.0f);
         else if (data1 == 74) {
             float norm = static_cast<float>(data2) / 127.0f;
-            engine->setCutoffHz(20.0f * std::pow(1000.0f, norm));
+            host->setCutoffHz(20.0f * std::pow(1000.0f, norm));
         } else if (data1 == 71) {
-            engine->setResonanceQ(0.5f + (static_cast<float>(data2) / 127.0f) * 11.5f);
+            host->setResonanceQ(0.5f + (static_cast<float>(data2) / 127.0f) * 11.5f);
         } else if (data1 == 120 || data1 == 123) {
-            engine->allNotesOff();
+            host->allNotesOff();
         }
     }
 }
 
-// Normaliza el nombre del puerto MIDI en Windows (quita el sufijo numérico que añade WinMM al cambiar de puerto USB)
 std::string normalizeMidiPortName(const std::string& rawName) {
     std::string s = rawName;
     while (!s.empty() && s.back() == ' ') s.pop_back();
@@ -77,11 +75,11 @@ std::string normalizeMidiPortName(const std::string& rawName) {
 }
 
 struct MidiPortSlot {
-    int portIndex = -1;         // -1 si está desconectado físicamente
+    int portIndex = -1;
     std::string rawName;
     std::string cleanName;
-    bool connected = false;     // true si está conectado actualmente al equipo
-    bool enabled = false;       // true si el usuario lo seleccionó
+    bool connected = false;
+    bool enabled = false;
     std::unique_ptr<RtMidiIn> handle;
 };
 
@@ -99,7 +97,7 @@ struct AudioDeviceSpec {
 
 class HardwareManager {
 public:
-    explicit HardwareManager(NordPianoEngine& eng) : engine_(eng) {
+    explicit HardwareManager(WorkstationHost& eng) : engine_(eng) {
         loadSavedConfig();
         scanAllAudioDevices();
         restoreOrInitAudio();
@@ -229,7 +227,6 @@ public:
         stopAudioInternal();
     }
 
-    // Detecta conexiones y desconexiones MIDI en caliente sin bloquear ni perder la lista de teclados guardados
     void refreshMidiPorts() {
         std::lock_guard<std::mutex> lock(hwMutex_);
 
@@ -242,7 +239,6 @@ public:
             }
         } catch (...) {}
 
-        // 1. Marcar como desconectados los puertos que ya no están presentes físicamente
         for (auto& slot : midiSlots_) {
             bool stillThere = false;
             for (const auto& [hwIdx, hwRawName] : currentHwPorts) {
@@ -257,13 +253,12 @@ public:
                 if (slot.connected) {
                     std::cout << "[MIDI] Alerta: Teclado desconectado -> " << slot.cleanName << "\n";
                 }
-                slot.handle.reset(); // Cerrar puerto de forma segura
+                slot.handle.reset();
                 slot.connected = false;
                 slot.portIndex = -1;
             }
         }
 
-        // 2. Incorporar puertos conectados actuales y reconectar si estaban habilitados por el usuario
         for (const auto& [hwIdx, hwRawName] : currentHwPorts) {
             std::string clean = normalizeMidiPortName(hwRawName);
             auto it = std::find_if(midiSlots_.begin(), midiSlots_.end(),
@@ -312,7 +307,6 @@ public:
             }
         }
 
-        // 3. Asegurar que cualquier teclado guardado que hoy esté desconectado figure en la lista como "No conectado"
         for (const auto& savedClean : savedKnownMidiPorts_) {
             auto it = std::find_if(midiSlots_.begin(), midiSlots_.end(),
                                    [&](const MidiPortSlot& s) { return s.cleanName == savedClean; });
@@ -360,7 +354,23 @@ public:
         return false;
     }
 
-    // Remueve de la lista un dispositivo desconectado que el usuario ya no quiera conservar
+    bool setMidiPortEnabledByIndex(int portIdx, bool enable) {
+        std::string foundName;
+        {
+            std::lock_guard<std::mutex> lock(hwMutex_);
+            for (const auto& slot : midiSlots_) {
+                if (slot.portIndex == portIdx) {
+                    foundName = slot.cleanName;
+                    break;
+                }
+            }
+        }
+        if (!foundName.empty()) {
+            return setMidiPortEnabledByName(foundName, enable);
+        }
+        return false;
+    }
+
     void forgetDisconnectedMidiPort(const std::string& cleanName) {
         std::lock_guard<std::mutex> lock(hwMutex_);
         savedKnownMidiPorts_.erase(cleanName);
@@ -551,7 +561,7 @@ private:
         }
     }
 
-    NordPianoEngine& engine_;
+    WorkstationHost& engine_;
     std::unique_ptr<RtAudio> dac_;
     std::vector<std::string> availableApis_;
     std::vector<AudioDeviceSpec> devices_;
@@ -561,7 +571,6 @@ private:
     unsigned int activeSampleRate_ = 48000;
     unsigned int activeBufferSize_ = 128;
 
-    // Configuración persistente
     const std::string configFilePath_ = "hardware_config.json";
     std::string savedAudioApi_;
     std::string savedAudioDeviceName_;
@@ -576,12 +585,17 @@ private:
     std::mutex hwMutex_;
 };
 
-std::string findUiFile(const std::string& filename) {
-    for (const auto& prefix : {"ui/", "../ui/", "../../ui/"}) {
-        std::string candidate = std::string(prefix) + filename;
-        if (fs::exists(candidate)) return candidate;
+std::string findUiDir() {
+    for (const auto& candidate : {"ui", "../ui", "../../ui", "./ui"}) {
+        if (fs::exists(candidate) && fs::is_directory(candidate)) {
+            return candidate;
+        }
     }
-    return "ui/" + filename;
+    return "ui";
+}
+
+std::string findUiFile(const std::string& filename) {
+    return (fs::path(findUiDir()) / filename).generic_string();
 }
 
 json serializeParams(const SynthPresetParams& p) {
@@ -593,7 +607,71 @@ json serializeParams(const SynthPresetParams& p) {
             {"gainDb", p.eqBands[i].gainDb}
         });
     }
+
+    json synthLayersArr = json::array();
+    for (int i = 0; i < 3; ++i) {
+        const auto& c = p.synthLayers[i];
+        synthLayersArr.push_back({
+            {"enabled", c.enabled},
+            {"waveType", c.waveType},
+            {"volume", c.volume},
+            {"pan", c.pan},
+            {"octave", c.octave},
+            {"semitones", c.semitones},
+            {"detuneCents", c.detuneCents},
+            {"cutoffHz", c.cutoffHz},
+            {"resonanceQ", c.resonanceQ},
+            {"attackSec", c.attackSec},
+            {"decaySec", c.decaySec},
+            {"sustainLevel", c.sustainLevel},
+            {"releaseSec", c.releaseSec},
+            {"unisonVoices", c.unisonVoices},
+            {"unisonDetune", c.unisonDetune},
+            {"unisonSpread", c.unisonSpread},
+            {"phaseOffset", c.phaseOffset},
+            {"keyTrack", c.keyTrack},
+            {"velToCutoff", c.velToCutoff},
+            {"velToAmp", c.velToAmp},
+            {"wavetableIdx", c.wavetableIdx},
+            {"samplePath", c.samplePath},
+            {"filterType", c.filterType},
+            {"filterEnvAmt", c.filterEnvAmt},
+            {"filterKeyTrack", c.filterKeyTrack},
+            {"filtAttackSec", c.filtAttackSec},
+            {"filtDecaySec", c.filtDecaySec},
+            {"filtSustainLvl", c.filtSustainLvl},
+            {"filtReleaseSec", c.filtReleaseSec},
+            {"sawLevel", c.sawLevel}, {"pulseLevel", c.pulseLevel}, {"pulseWidth", c.pulseWidth}, {"pwmDepth", c.pwmDepth}, {"pwmRateHz", c.pwmRateHz}, {"subLevel", c.subLevel}, {"noiseLevel", c.noiseLevel}, {"osc2Level", c.osc2Level}, {"osc2Detune", c.osc2Detune}, {"osc2Semitones", c.osc2Semitones}, {"osc2Wave", c.osc2Wave}, {"highpassHz", c.highpassHz}, {"drive", c.drive}
+        });
+    }
+
+    json synthLfoArr = json::array();
+    for (const auto& l : p.synthLfos) {
+        synthLfoArr.push_back({
+            {"enabled", l.enabled}, {"waveType", l.waveType},
+            {"rateHz", l.rateHz}, {"depth", l.depth},
+            {"delaySec", l.delaySec}, {"fadeSec", l.fadeSec},
+            {"destPitch", l.destPitch}, {"destCutoff", l.destCutoff},
+            {"destVolume", l.destVolume}, {"destPan", l.destPan},
+            {"destPhase", l.destPhase}
+        });
+    }
+    json synthEnvArr = json::array();
+    for (const auto& e : p.synthEnvelopes) {
+        synthEnvArr.push_back({
+            {"delaySec", e.delaySec}, {"attackSec", e.attackSec},
+            {"holdSec", e.holdSec}, {"decaySec", e.decaySec},
+            {"sustainLevel", e.sustainLevel}, {"releaseSec", e.releaseSec}
+        });
+    }
+
+    json drawbarsArr = json::array();
+    for (int d = 0; d < 9; ++d) {
+        drawbarsArr.push_back(p.drawbars[d]);
+    }
+
     return {
+        {"pianoEnabled", p.pianoEnabled},
         {"maxVoices", p.maxVoices},
         {"transposeSemis", p.transposeSemis},
         {"octaveShift", p.octaveShift},
@@ -647,13 +725,40 @@ json serializeParams(const SynthPresetParams& p) {
         {"shimmerModDepth", p.shimmerModDepth},
         {"shimmerPitchMode", p.shimmerPitchMode},
         {"shimmerReverbMode", p.shimmerReverbMode},
-        {"shimmerColorMode", p.shimmerColorMode}
+        {"shimmerColorMode", p.shimmerColorMode},
+        // Módulo 2: Synth 3-Layer
+        {"synthEnabled", p.synthEnabled},
+        {"synthPresetId", p.synthPresetId},
+        {"synthMasterVol", p.synthMasterVol},
+        {"synthMacroCutoff", p.synthMacroCutoff},
+        {"synthLayers", synthLayersArr},
+        {"synthLfos", synthLfoArr},
+        {"synthEnvelopes", synthEnvArr},
+        {"synthLfoEnabled", p.synthLfoEnabled},
+        {"synthLfoWave", p.synthLfoWave},
+        {"synthLfoRate", p.synthLfoRate},
+        {"synthLfoDepth", p.synthLfoDepth},
+        {"synthLfoPitch", p.synthLfoPitch},
+        {"synthLfoCutoff", p.synthLfoCutoff},
+        // Módulo 3: Órgano
+        {"organEnabled", p.organEnabled},
+        {"organModel", p.organModel},
+        {"organVolume", p.organVolume},
+        {"organRotaryFast", p.organRotaryFast},
+        {"organDrive", p.organDrive},
+        {"drawbars", drawbarsArr},
+        {"organVibratoMode", p.organVibratoMode},
+        {"organPercEnabled", p.organPercEnabled},
+        {"organPercHarmonic", p.organPercHarmonic},
+        {"organPercDecaySec", p.organPercDecaySec},
+        {"organPercLevel", p.organPercLevel}
     };
 }
 
 SynthPresetParams deserializeParams(const json& j, const SynthPresetParams& fallback) {
     SynthPresetParams p = fallback;
     if (!j.is_object()) return p;
+    p.pianoEnabled     = j.value("pianoEnabled", p.pianoEnabled);
     p.maxVoices        = j.value("maxVoices", p.maxVoices);
     p.transposeSemis   = j.value("transposeSemis", p.transposeSemis);
     p.octaveShift      = j.value("octaveShift", p.octaveShift);
@@ -721,20 +826,133 @@ SynthPresetParams deserializeParams(const json& j, const SynthPresetParams& fall
     p.shimmerPitchMode  = j.value("shimmerPitchMode", p.shimmerPitchMode);
     p.shimmerReverbMode = j.value("shimmerReverbMode", p.shimmerReverbMode);
     p.shimmerColorMode  = j.value("shimmerColorMode", p.shimmerColorMode);
+
+    // Módulo 2: Synth 3-Layer
+    p.synthEnabled      = j.value("synthEnabled", p.synthEnabled);
+    p.synthPresetId     = j.value("synthPresetId", p.synthPresetId);
+    p.synthMasterVol    = j.value("synthMasterVol", p.synthMasterVol);
+    p.synthMacroCutoff  = j.value("synthMacroCutoff", p.synthMacroCutoff);
+    p.synthLfoEnabled = j.value("synthLfoEnabled", p.synthLfoEnabled);
+    p.synthLfoWave = j.value("synthLfoWave", p.synthLfoWave);
+    p.synthLfoRate = j.value("synthLfoRate", p.synthLfoRate);
+    p.synthLfoDepth = j.value("synthLfoDepth", p.synthLfoDepth);
+    p.synthLfoPitch = j.value("synthLfoPitch", p.synthLfoPitch);
+    p.synthLfoCutoff = j.value("synthLfoCutoff", p.synthLfoCutoff);
+    if (j.contains("synthLayers") && j["synthLayers"].is_array()) {
+        for (size_t i = 0; i < std::min<size_t>(3, j["synthLayers"].size()); ++i) {
+            const auto& lp = j["synthLayers"][i];
+            auto& c = p.synthLayers[i];
+            c.enabled        = lp.value("enabled", c.enabled);
+            c.waveType       = lp.value("waveType", c.waveType);
+            c.volume         = lp.value("volume", c.volume);
+            c.pan            = lp.value("pan", c.pan);
+            c.octave         = lp.value("octave", c.octave);
+            c.semitones      = lp.value("semitones", c.semitones);
+            c.detuneCents    = lp.value("detuneCents", c.detuneCents);
+            c.cutoffHz       = lp.value("cutoffHz", c.cutoffHz);
+            c.resonanceQ     = lp.value("resonanceQ", c.resonanceQ);
+            c.attackSec      = lp.value("attackSec", c.attackSec);
+            c.decaySec       = lp.value("decaySec", c.decaySec);
+            c.sustainLevel   = lp.value("sustainLevel", c.sustainLevel);
+            c.releaseSec     = lp.value("releaseSec", c.releaseSec);
+            c.unisonVoices   = lp.value("unisonVoices", c.unisonVoices);
+            c.unisonDetune   = lp.value("unisonDetune", c.unisonDetune);
+            c.unisonSpread   = lp.value("unisonSpread", c.unisonSpread);
+            c.phaseOffset    = lp.value("phaseOffset", c.phaseOffset);
+            c.keyTrack       = lp.value("keyTrack", c.keyTrack);
+            c.velToCutoff    = lp.value("velToCutoff", c.velToCutoff);
+            c.velToAmp       = lp.value("velToAmp", c.velToAmp);
+            c.wavetableIdx   = lp.value("wavetableIdx", c.wavetableIdx);
+            c.samplePath     = lp.value("samplePath", c.samplePath);
+            c.filterType     = lp.value("filterType", c.filterType);
+            c.filterEnvAmt   = lp.value("filterEnvAmt", c.filterEnvAmt);
+            c.filterKeyTrack = lp.value("filterKeyTrack", c.filterKeyTrack);
+            c.filtAttackSec  = lp.value("filtAttackSec", c.filtAttackSec);
+            c.filtDecaySec   = lp.value("filtDecaySec", c.filtDecaySec);
+            c.filtSustainLvl = lp.value("filtSustainLvl", c.filtSustainLvl);
+            c.filtReleaseSec = lp.value("filtReleaseSec", c.filtReleaseSec);
+            c.sawLevel = lp.value("sawLevel", c.sawLevel);
+            c.pulseLevel = lp.value("pulseLevel", c.pulseLevel);
+            c.pulseWidth = lp.value("pulseWidth", c.pulseWidth);
+            c.pwmDepth = lp.value("pwmDepth", c.pwmDepth);
+            c.pwmRateHz = lp.value("pwmRateHz", c.pwmRateHz);
+            c.subLevel = lp.value("subLevel", c.subLevel);
+            c.noiseLevel = lp.value("noiseLevel", c.noiseLevel);
+            c.osc2Level = lp.value("osc2Level", c.osc2Level);
+            c.osc2Detune = lp.value("osc2Detune", c.osc2Detune);
+            c.osc2Semitones = lp.value("osc2Semitones", c.osc2Semitones);
+            c.osc2Wave = lp.value("osc2Wave", c.osc2Wave);
+            c.highpassHz = lp.value("highpassHz", c.highpassHz);
+            c.drive = lp.value("drive", c.drive);
+        }
+    }
+
+    if (j.contains("synthLfos") && j["synthLfos"].is_array()) {
+        for (size_t i = 0; i < std::min<size_t>(4, j["synthLfos"].size()); ++i) {
+            const auto& v = j["synthLfos"][i];
+            auto& l = p.synthLfos[i];
+            l.enabled = v.value("enabled", l.enabled);
+            l.waveType = v.value("waveType", l.waveType);
+            l.rateHz = v.value("rateHz", l.rateHz);
+            l.depth = v.value("depth", l.depth);
+            l.delaySec = v.value("delaySec", l.delaySec);
+            l.fadeSec = v.value("fadeSec", l.fadeSec);
+            l.destPitch = v.value("destPitch", l.destPitch);
+            l.destCutoff = v.value("destCutoff", l.destCutoff);
+            l.destVolume = v.value("destVolume", l.destVolume);
+            l.destPan = v.value("destPan", l.destPan);
+            l.destPhase = v.value("destPhase", l.destPhase);
+        }
+        // Program bank's old scalar fields remain available for backward compatibility.
+        const auto& l = p.synthLfos[0];
+        p.synthLfoEnabled = l.enabled;
+        p.synthLfoWave = l.waveType;
+        p.synthLfoRate = l.rateHz;
+        p.synthLfoDepth = l.depth;
+        p.synthLfoPitch = l.destPitch;
+        p.synthLfoCutoff = l.destCutoff;
+    }
+    if (j.contains("synthEnvelopes") && j["synthEnvelopes"].is_array()) {
+        for (size_t i = 0; i < std::min<size_t>(3, j["synthEnvelopes"].size()); ++i) {
+            const auto& v = j["synthEnvelopes"][i];
+            auto& e = p.synthEnvelopes[i];
+            e.delaySec = v.value("delaySec", e.delaySec);
+            e.attackSec = v.value("attackSec", e.attackSec);
+            e.holdSec = v.value("holdSec", e.holdSec);
+            e.decaySec = v.value("decaySec", e.decaySec);
+            e.sustainLevel = v.value("sustainLevel", e.sustainLevel);
+            e.releaseSec = v.value("releaseSec", e.releaseSec);
+        }
+    }
+
+    // Módulo 3: Órgano
+    p.organEnabled      = j.value("organEnabled", p.organEnabled);
+    p.organModel        = j.value("organModel", p.organModel);
+    p.organVolume       = j.value("organVolume", p.organVolume);
+    p.organRotaryFast   = j.value("organRotaryFast", p.organRotaryFast);
+    p.organDrive        = j.value("organDrive", p.organDrive);
+    p.organVibratoMode  = j.value("organVibratoMode", p.organVibratoMode);
+    p.organPercEnabled  = j.value("organPercEnabled", p.organPercEnabled);
+    p.organPercHarmonic = j.value("organPercHarmonic", p.organPercHarmonic);
+    p.organPercDecaySec = j.value("organPercDecaySec", p.organPercDecaySec);
+    p.organPercLevel    = j.value("organPercLevel", p.organPercLevel);
+    if (j.contains("drawbars") && j["drawbars"].is_array()) {
+        for (size_t d = 0; d < std::min<size_t>(9, j["drawbars"].size()); ++d) {
+            p.drawbars[d] = j["drawbars"][d].get<float>();
+        }
+    }
+
     return p;
 }
 
 int main(int argc, char* argv[]) {
     std::cout << "=========================================================\n";
-    std::cout << "   NORD VIRTUAL STAGE 5.0 - STAGE WORKSTATION EDITION    \n";
+    std::cout << "   NORD VIRTUAL STAGE 5.1 - STAGE WORKSTATION EDITION    \n";
     std::cout << "=========================================================\n\n";
-
-    
 
     WorkstationHost engine;
     MidiOscMapper oscMapper(engine);
     oscMapper.startOscServer(9000);
-
 
     std::string libraryRootDir = (argc > 1) ? argv[1] : "./samples";
     if (!fs::exists(libraryRootDir)) libraryRootDir = ".";
@@ -742,8 +960,8 @@ int main(int argc, char* argv[]) {
     std::string statusMsg = "Listo.";
     std::mutex dataMutex;
     int activeProgramSlot = 0;
+    std::atomic<uint64_t> paramRevCounter{1};
 
-    // 1. Leer primero programs.json para iniciar directamente con el Programa 1 (Slot 0)
     const std::string programsFilePath = "programs.json";
     json userPrograms = json::array();
     if (fs::exists(programsFilePath)) {
@@ -778,7 +996,6 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // 2. Si es la primera vez que se abre la app (o no existía el archivo del Programa 1), cargar por defecto de ./samples
     if (!loadedFromProgram1) {
         auto initInst = std::make_shared<PianoInstrument>();
         if (BankLoader::loadAny(libraryRootDir, *initInst, statusMsg)) {
@@ -802,7 +1019,6 @@ int main(int argc, char* argv[]) {
             std::ofstream pf(programsFilePath);
             if (pf) pf << userPrograms.dump(2);
         } else if (userPrograms[0].contains("params")) {
-            // Aplicar los parámetros guardados del Programa 1 aunque haya usado el sample de respaldo
             SynthPresetParams p = deserializeParams(userPrograms[0]["params"], engine.getCurrentParams());
             engine.applyPreset(p);
         }
@@ -822,25 +1038,26 @@ int main(int argc, char* argv[]) {
 
     httplib::Server svr;
 
-    svr.Get("/", [](const httplib::Request&, httplib::Response& res) {
-        std::ifstream f(findUiFile("index.html"));
-        if (!f) {
-            res.set_content("<h1>Error: No se encontro ui/index.html</h1>", "text/html");
-            return;
-        }
-        std::string content((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
-        res.set_content(content, "text/html; charset=utf-8");
-    });
+    // Montar carpeta ui/ para servir CSS (/css/styles.css), JS (/js/core.js) y páginas HTML
+    std::string uiRootDir = findUiDir();
+    svr.set_mount_point("/", uiRootDir);
+    svr.set_mount_point("/ui", uiRootDir);
 
-    svr.Get("/settings", [](const httplib::Request&, httplib::Response& res) {
-        std::ifstream f(findUiFile("settings.html"));
+    auto serveHtmlPage = [](const std::string& file, httplib::Response& res) {
+        std::ifstream f(findUiFile(file), std::ios::binary);
         if (!f) {
-            res.set_content("<h1>Error: No se encontro ui/settings.html</h1>", "text/html");
+            res.status = 404;
+            res.set_content("<h1>Error: No se encontro " + file + "</h1>", "text/html; charset=utf-8");
             return;
         }
         std::string content((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
         res.set_content(content, "text/html; charset=utf-8");
-    });
+    };
+
+    svr.Get("/", [&](const httplib::Request&, httplib::Response& res) { serveHtmlPage("index.html", res); });
+    svr.Get("/synth", [&](const httplib::Request&, httplib::Response& res) { serveHtmlPage("synth.html", res); });
+    svr.Get("/organ", [&](const httplib::Request&, httplib::Response& res) { serveHtmlPage("organ.html", res); });
+    svr.Get("/settings", [&](const httplib::Request&, httplib::Response& res) { serveHtmlPage("settings.html", res); });
 
     svr.Get("/api/state", [&](const httplib::Request&, httplib::Response& res) {
         hw.pollHotPlugIfNeeded();
@@ -860,8 +1077,9 @@ int main(int argc, char* argv[]) {
 
         json j = {
             {"activeProgramSlot", activeProgramSlot},
+            {"paramRev", paramRevCounter.load()},
             {"instrumentId", inst ? inst->id : 0},
-            {"instrumentName", inst ? inst->name : "No Sound Loaded"},
+            {"instrumentName", inst ? inst->name : "Synth / Organ Stage"},
             {"sourcePath", inst ? fs::path(inst->sourcePath).generic_string() : ""},
             {"formatType", inst ? inst->formatType : "NONE"},
             {"sampleCount", inst ? inst->strokes.size() : 0},
@@ -950,9 +1168,9 @@ int main(int argc, char* argv[]) {
             SynthPresetParams p = deserializeParams(prog["params"], engine.getCurrentParams());
             engine.applyPreset(p);
         } else {
-            // Incrementar el contador de revisión de parámetros forzando sincronización en UI
             engine.applyPreset(engine.getCurrentParams());
         }
+        paramRevCounter.fetch_add(1);
 
         auto activeInst = engine.getInstrument();
         res.set_content(json({
@@ -1063,6 +1281,8 @@ int main(int argc, char* argv[]) {
             bool enabled = body.value("enabled", false);
             if (!portName.empty()) {
                 hw.setMidiPortEnabledByName(portName, enabled);
+            } else if (body.contains("index")) {
+                hw.setMidiPortEnabledByIndex(body.value("index", -1), enabled);
             }
         }
         res.set_content(hw.getHardwareStatusJson().dump(), "application/json");
@@ -1090,6 +1310,7 @@ int main(int argc, char* argv[]) {
                 engine.setMaxVoices(keepParams.maxVoices);
             }
         }
+        paramRevCounter.fetch_add(1);
 
         auto activeInst = engine.getInstrument();
         res.set_content(json({
@@ -1111,73 +1332,17 @@ int main(int argc, char* argv[]) {
         std::string id = b.value("id", "");
         float val = b.value("value", 0.0f);
 
-        if (id == "maxVoices") engine.setMaxVoices(static_cast<int>(val));
-        else if (id == "transpose") engine.setTranspose(static_cast<int>(val));
-        else if (id == "octave") engine.setOctaveShift(static_cast<int>(val));
-        else if (id == "tune") engine.setMasterTuneCents(val);
-        else if (id == "cutoff") engine.setCutoffHz(val);
-        else if (id == "resonance") engine.setResonanceQ(val);
-        else if (id == "attack") engine.setAttackSec(val);
-        else if (id == "decay") engine.setDecaySec(val);
-        else if (id == "sustain") engine.setSustainLevel(val);
-        else if (id == "release") engine.setReleaseSec(val);
-        else if (id == "loopHold") engine.setLoopHold(val);
-        else if (id == "volume") engine.setMasterGain(val);
-        else if (id == "pan") engine.setPan(val);
-        else if (id == "softRelease") engine.setSoftRelease(val >= 0.5f);
-        else if (id == "touch") engine.setKbdTouch(static_cast<KbdTouch>(static_cast<int>(val)));
+        bool applied = engine.applyParamById(id, val, false);
+        paramRevCounter.fetch_add(1);
 
-        else if (id == "eqEnabled") engine.setEqEnabled(val >= 0.5f);
-        else if (id == "lowCut") engine.setLowCutHz(val);
-        else if (id == "highCut") engine.setHighCutHz(val);
-        else if (id.rfind("eqGain", 0) == 0) engine.setEqBandGainDb(std::stoi(id.substr(6)), val);
-        else if (id.rfind("eqFreq", 0) == 0) engine.setEqBandFreqHz(std::stoi(id.substr(6)), val);
-        else if (id.rfind("eqQ", 0) == 0)    engine.setEqBandQ(std::stoi(id.substr(3)), val);
-
-        else if (id == "chorusEnabled") engine.setChorusEnabled(val >= 0.5f);
-        else if (id == "chorusRate")    engine.setChorusRate(val);
-        else if (id == "chorusDepth")   engine.setChorusDepth(val);
-        else if (id == "chorusMix")     engine.setChorusMix(val);
-
-        else if (id == "phaserEnabled")  engine.setPhaserEnabled(val >= 0.5f);
-        else if (id == "phaserRate")     engine.setPhaserRate(val);
-        else if (id == "phaserDepth")    engine.setPhaserDepth(val);
-        else if (id == "phaserFeedback") engine.setPhaserFeedback(val);
-        else if (id == "phaserMix")      engine.setPhaserMix(val);
-
-        else if (id == "tremoloEnabled") engine.setTremoloEnabled(val >= 0.5f);
-        else if (id == "tremoloRate")    engine.setTremoloRate(val);
-        else if (id == "tremoloDepth")   engine.setTremoloDepth(val);
-
-        else if (id == "delayEnabled")  engine.setDelayEnabled(val >= 0.5f);
-        else if (id == "delayTimeMs")   engine.setDelayTimeMs(val);
-        else if (id == "delayFeedback") engine.setDelayFeedback(val);
-        else if (id == "delayDamping")  engine.setDelayDamping(val);
-        else if (id == "delayMix")      engine.setDelayMix(val);
-        else if (id == "delayPingPong") engine.setDelayPingPong(val >= 0.5f);
-
-        else if (id == "reverbEnabled")    engine.setReverbEnabled(val >= 0.5f);
-        else if (id == "reverbType")       engine.setReverbType(static_cast<int>(val));
-        else if (id == "reverbMix")        engine.setReverbMix(val);
-        else if (id == "reverbSize")       engine.setReverbSize(val);
-        else if (id == "reverbDamping")    engine.setReverbDamping(val);
-        else if (id == "reverbPreDelayMs") engine.setReverbPreDelayMs(val);
-        else if (id == "reverbShimmer")    engine.setReverbShimmer(val);
-
-        else if (id == "shimmerShiftSt")    engine.setShimmerShiftSt(val);
-        else if (id == "shimmerFeedback")   engine.setShimmerFeedback(val);
-        else if (id == "shimmerDiffusion")  engine.setShimmerDiffusion(val);
-        else if (id == "shimmerLowCutHz")   engine.setShimmerLowCutHz(val);
-        else if (id == "shimmerHighCutHz")  engine.setShimmerHighCutHz(val);
-        else if (id == "shimmerModRateHz")  engine.setShimmerModRateHz(val);
-        else if (id == "shimmerModDepth")   engine.setShimmerModDepth(val);
-        else if (id == "shimmerPitchMode")  engine.setShimmerPitchMode(static_cast<int>(val));
-        else if (id == "shimmerReverbMode") engine.setShimmerReverbMode(static_cast<int>(val));
-        else if (id == "shimmerColorMode")  engine.setShimmerColorMode(static_cast<int>(val));
-
-        engine.applyParamById(id, val, false);
-
-        res.set_content("{\"ok\":true}", "application/json");
+        if (id == "synthPresetId") {
+            res.set_content(json({
+                {"ok", applied},
+                {"params", serializeParams(engine.getCurrentParams())}
+            }).dump(), "application/json");
+            return;
+        }
+        res.set_content(json({{"ok", applied}}).dump(), "application/json");
     });
 
     svr.Post("/api/note", [&](const httplib::Request& req, httplib::Response& res) {
@@ -1195,159 +1360,172 @@ int main(int argc, char* argv[]) {
         res.set_content("{\"ok\":true}", "application/json");
     });
 
-    // ============================================================
-// PRESETS DE SINTETIZADOR Y ÓRGANO
-// ============================================================
-const std::string synthPresetsPath = "synth_presets.json";
-const std::string organPresetsPath = "organ_presets.json";
+    // Presets dedicados de Sintetizador y Órgano (unificados sin duplicidad)
+    const std::string synthPresetsPath = "synth_presets.json";
+    const std::string organPresetsPath = "organ_presets.json";
 
-auto loadPresetsFile = [](const std::string& path) {
-    json arr = json::array();
-    if (fs::exists(path)) {
-        try {
-            std::ifstream f(path);
-            arr = json::parse(f);
-        } catch (...) {}
-    }
-    return arr;
-};
-
-auto savePresetsFile = [](const std::string& path, const json& arr) {
-    std::ofstream f(path);
-    if (f) f << arr.dump(2);
-};
-
-// --- SYNTH PRESETS ---
-svr.Get("/api/synth/presets", [&](const httplib::Request&, httplib::Response& res) {
-    res.set_content(loadPresetsFile(synthPresetsPath).dump(), "application/json");
-});
-
-svr.Post("/api/synth/presets/save", [&](const httplib::Request& req, httplib::Response& res) {
-    auto body = json::parse(req.body, nullptr, false);
-    std::string name = body.value("name", "Untitled");
-    json presets = loadPresetsFile(synthPresetsPath);
-    json newPreset = {
-        {"name", name},
-        {"timestamp", std::chrono::system_clock::now().time_since_epoch().count()},
-        {"params", {
-            {"synthEnabled", engine.getSynthEnabled()},
-            {"synthMasterVol", engine.getSynthMasterVol()},
-            {"synthMacroCutoff", engine.getSynthMacroCutoff()},
-            {"layers", engine.getSynthLayersJson()},
-            {"lfos", engine.getSynthLFOsJson()},
-            {"envelopes", engine.getSynthEnvelopesJson()}
-        }}
-    };
-    // Reemplazar si existe, sino agregar
-    bool replaced = false;
-    for (auto& p : presets) {
-        if (p.value("name", "") == name) { p = newPreset; replaced = true; break; }
-    }
-    if (!replaced) presets.push_back(newPreset);
-    savePresetsFile(synthPresetsPath, presets);
-    res.set_content(json({{"ok", true}, {"presets", presets}}).dump(), "application/json");
-});
-
-svr.Post("/api/synth/presets/load", [&](const httplib::Request& req, httplib::Response& res) {
-    auto body = json::parse(req.body, nullptr, false);
-    std::string name = body.value("name", "");
-    json presets = loadPresetsFile(synthPresetsPath);
-    for (const auto& p : presets) {
-        if (p.value("name", "") == name) {
-            engine.applySynthPresetJson(p.value("params", json::object()));
-            res.set_content(json({{"ok", true}, {"preset", p}}).dump(), "application/json");
-            return;
+    auto loadPresetsFile = [](const std::string& path) {
+        json arr = json::array();
+        if (fs::exists(path)) {
+            try {
+                std::ifstream f(path);
+                arr = json::parse(f);
+            } catch (...) {}
         }
-    }
-    res.set_content("{\"ok\":false,\"error\":\"Preset no encontrado\"}", "application/json");
-});
-
-svr.Post("/api/synth/presets/delete", [&](const httplib::Request& req, httplib::Response& res) {
-    auto body = json::parse(req.body, nullptr, false);
-    std::string name = body.value("name", "");
-    json presets = loadPresetsFile(synthPresetsPath);
-    presets.erase(std::remove_if(presets.begin(), presets.end(),
-        [&](const json& p) { return p.value("name", "") == name; }), presets.end());
-    savePresetsFile(synthPresetsPath, presets);
-    res.set_content(json({{"ok", true}, {"presets", presets}}).dump(), "application/json");
-});
-
-// --- ORGAN PRESETS ---
-svr.Get("/api/organ/presets", [&](const httplib::Request&, httplib::Response& res) {
-    res.set_content(loadPresetsFile(organPresetsPath).dump(), "application/json");
-});
-
-svr.Post("/api/organ/presets/save", [&](const httplib::Request& req, httplib::Response& res) {
-    auto body = json::parse(req.body, nullptr, false);
-    std::string name = body.value("name", "Untitled");
-    json presets = loadPresetsFile(organPresetsPath);
-    json newPreset = {
-        {"name", name},
-        {"timestamp", std::chrono::system_clock::now().time_since_epoch().count()},
-        {"params", engine.getOrganParamsJson()}
+        return arr;
     };
-    bool replaced = false;
-    for (auto& p : presets) {
-        if (p.value("name", "") == name) { p = newPreset; replaced = true; break; }
-    }
-    if (!replaced) presets.push_back(newPreset);
-    savePresetsFile(organPresetsPath, presets);
-    res.set_content(json({{"ok", true}, {"presets", presets}}).dump(), "application/json");
-});
 
-svr.Post("/api/organ/presets/load", [&](const httplib::Request& req, httplib::Response& res) {
-    auto body = json::parse(req.body, nullptr, false);
-    std::string name = body.value("name", "");
-    json presets = loadPresetsFile(organPresetsPath);
-    for (const auto& p : presets) {
-        if (p.value("name", "") == name) {
-            engine.applyOrganPresetJson(p.value("params", json::object()));
-            res.set_content(json({{"ok", true}, {"preset", p}}).dump(), "application/json");
-            return;
+    auto savePresetsFile = [](const std::string& path, const json& arr) {
+        std::ofstream f(path);
+        if (f) f << arr.dump(2);
+    };
+
+    svr.Get("/api/synth/presets", [&](const httplib::Request&, httplib::Response& res) {
+        std::lock_guard<std::mutex> lock(dataMutex);
+        res.set_content(loadPresetsFile(synthPresetsPath).dump(), "application/json");
+    });
+
+    svr.Post("/api/synth/presets/save", [&](const httplib::Request& req, httplib::Response& res) {
+        std::lock_guard<std::mutex> lock(dataMutex);
+        auto body = json::parse(req.body, nullptr, false);
+        std::string name = body.value("name", "Untitled");
+        json presets = loadPresetsFile(synthPresetsPath);
+        json newPreset = {
+            {"name", name},
+            {"timestamp", std::chrono::system_clock::now().time_since_epoch().count()},
+            {"params", {
+                {"synthEnabled", engine.getSynthEnabled()},
+                {"synthMasterVol", engine.getSynthMasterVol()},
+                {"synthMacroCutoff", engine.getSynthMacroCutoff()},
+                {"layers", engine.getSynthLayersJson()},
+                {"lfos", engine.getSynthLFOsJson()},
+                {"envelopes", engine.getSynthEnvelopesJson()}
+            }}
+        };
+        bool replaced = false;
+        for (auto& p : presets) {
+            if (p.value("name", "") == name) { p = newPreset; replaced = true; break; }
         }
-    }
-    res.set_content("{\"ok\":false,\"error\":\"Preset no encontrado\"}", "application/json");
-});
+        if (!replaced) presets.push_back(newPreset);
+        savePresetsFile(synthPresetsPath, presets);
+        res.set_content(json({{"ok", true}, {"presets", presets}}).dump(), "application/json");
+    });
 
-svr.Post("/api/organ/presets/delete", [&](const httplib::Request& req, httplib::Response& res) {
-    auto body = json::parse(req.body, nullptr, false);
-    std::string name = body.value("name", "");
-    json presets = loadPresetsFile(organPresetsPath);
-    presets.erase(std::remove_if(presets.begin(), presets.end(),
-        [&](const json& p) { return p.value("name", "") == name; }), presets.end());
-    savePresetsFile(organPresetsPath, presets);
-    res.set_content(json({{"ok", true}, {"presets", presets}}).dump(), "application/json");
-});
+    svr.Post("/api/synth/presets/load", [&](const httplib::Request& req, httplib::Response& res) {
+        std::lock_guard<std::mutex> lock(dataMutex);
+        auto body = json::parse(req.body, nullptr, false);
+        std::string name = body.value("name", "");
+        json presets = loadPresetsFile(synthPresetsPath);
+        for (const auto& p : presets) {
+            if (p.value("name", "") == name) {
+                const json& pData = p.contains("params") ? p["params"] : p;
+                engine.applySynthPresetJson(pData);
+                paramRevCounter.fetch_add(1);
+                res.set_content(json({
+                    {"ok", true},
+                    {"preset", p},
+                    {"params", serializeParams(engine.getCurrentParams())}
+                }).dump(), "application/json");
+                return;
+            }
+        }
+        res.set_content("{\"ok\":false,\"error\":\"Preset no encontrado\"}", "application/json");
+    });
 
-// --- WAVETABLE BANK ---
-svr.Get("/api/synth/wavetables", [&](const httplib::Request&, httplib::Response& res) {
-    json arr = json::array();
-    for (const auto& wt : engine.getWavetableBank()) {
-        arr.push_back({{"name", wt.name}, {"custom", wt.custom}, {"size", SYNTH_WAVETABLE_SIZE}});
-    }
-    res.set_content(arr.dump(), "application/json");
-});
+    svr.Post("/api/synth/presets/delete", [&](const httplib::Request& req, httplib::Response& res) {
+        std::lock_guard<std::mutex> lock(dataMutex);
+        auto body = json::parse(req.body, nullptr, false);
+        std::string name = body.value("name", "");
+        json presets = loadPresetsFile(synthPresetsPath);
+        presets.erase(std::remove_if(presets.begin(), presets.end(),
+            [&](const json& p) { return p.value("name", "") == name; }), presets.end());
+        savePresetsFile(synthPresetsPath, presets);
+        res.set_content(json({{"ok", true}, {"presets", presets}}).dump(), "application/json");
+    });
 
-svr.Post("/api/synth/wavetables/create", [&](const httplib::Request& req, httplib::Response& res) {
-    auto body = json::parse(req.body, nullptr, false);
-    Wavetable wt;
-    wt.name = body.value("name", "Custom");
-    wt.custom = true;
-    if (body.contains("data") && body["data"].is_array()) {
-        for (size_t i = 0; i < SYNTH_WAVETABLE_SIZE && i < body["data"].size(); ++i)
-            wt.data[i] = std::clamp(body["data"][i].get<float>(), -1.0f, 1.0f);
-    }
-    engine.addWavetable(wt);
-    res.set_content("{\"ok\":true}", "application/json");
-});
+    svr.Get("/api/organ/presets", [&](const httplib::Request&, httplib::Response& res) {
+        std::lock_guard<std::mutex> lock(dataMutex);
+        res.set_content(loadPresetsFile(organPresetsPath).dump(), "application/json");
+    });
 
-// --- ORGAN SAMPLE LOADER ---
-svr.Post("/api/organ/loadsample", [&](const httplib::Request& req, httplib::Response& res) {
-    auto body = json::parse(req.body, nullptr, false);
-    std::string path = body.value("path", "");
-    bool ok = engine.loadOrganSample(path);
-    res.set_content(json({{"ok", ok}, {"path", path}}).dump(), "application/json");
-});
+    svr.Post("/api/organ/presets/save", [&](const httplib::Request& req, httplib::Response& res) {
+        std::lock_guard<std::mutex> lock(dataMutex);
+        auto body = json::parse(req.body, nullptr, false);
+        std::string name = body.value("name", "Untitled");
+        json presets = loadPresetsFile(organPresetsPath);
+        json newPreset = {
+            {"name", name},
+            {"timestamp", std::chrono::system_clock::now().time_since_epoch().count()},
+            {"params", engine.getOrganParamsJson()}
+        };
+        bool replaced = false;
+        for (auto& p : presets) {
+            if (p.value("name", "") == name) { p = newPreset; replaced = true; break; }
+        }
+        if (!replaced) presets.push_back(newPreset);
+        savePresetsFile(organPresetsPath, presets);
+        res.set_content(json({{"ok", true}, {"presets", presets}}).dump(), "application/json");
+    });
+
+    svr.Post("/api/organ/presets/load", [&](const httplib::Request& req, httplib::Response& res) {
+        std::lock_guard<std::mutex> lock(dataMutex);
+        auto body = json::parse(req.body, nullptr, false);
+        std::string name = body.value("name", "");
+        json presets = loadPresetsFile(organPresetsPath);
+        for (const auto& p : presets) {
+            if (p.value("name", "") == name) {
+                const json& pData = p.contains("params") ? p["params"] : p;
+                engine.applyOrganPresetJson(pData);
+                paramRevCounter.fetch_add(1);
+                res.set_content(json({
+                    {"ok", true},
+                    {"preset", p},
+                    {"params", serializeParams(engine.getCurrentParams())}
+                }).dump(), "application/json");
+                return;
+            }
+        }
+        res.set_content("{\"ok\":false,\"error\":\"Preset no encontrado\"}", "application/json");
+    });
+
+    svr.Post("/api/organ/presets/delete", [&](const httplib::Request& req, httplib::Response& res) {
+        std::lock_guard<std::mutex> lock(dataMutex);
+        auto body = json::parse(req.body, nullptr, false);
+        std::string name = body.value("name", "");
+        json presets = loadPresetsFile(organPresetsPath);
+        presets.erase(std::remove_if(presets.begin(), presets.end(),
+            [&](const json& p) { return p.value("name", "") == name; }), presets.end());
+        savePresetsFile(organPresetsPath, presets);
+        res.set_content(json({{"ok", true}, {"presets", presets}}).dump(), "application/json");
+    });
+
+    svr.Get("/api/synth/wavetables", [&](const httplib::Request&, httplib::Response& res) {
+        json arr = json::array();
+        for (const auto& wt : engine.getWavetableBank()) {
+            arr.push_back({{"name", wt.name}, {"custom", wt.custom}, {"size", SYNTH_WAVETABLE_SIZE}});
+        }
+        res.set_content(arr.dump(), "application/json");
+    });
+
+    svr.Post("/api/synth/wavetables/create", [&](const httplib::Request& req, httplib::Response& res) {
+        auto body = json::parse(req.body, nullptr, false);
+        Wavetable wt;
+        wt.name = body.value("name", "Custom");
+        wt.custom = true;
+        if (body.contains("data") && body["data"].is_array()) {
+            for (size_t i = 0; i < SYNTH_WAVETABLE_SIZE && i < body["data"].size(); ++i)
+                wt.data[i] = std::clamp(body["data"][i].get<float>(), -1.0f, 1.0f);
+        }
+        engine.addWavetable(wt);
+        res.set_content("{\"ok\":true}", "application/json");
+    });
+
+    svr.Post("/api/organ/loadsample", [&](const httplib::Request& req, httplib::Response& res) {
+        auto body = json::parse(req.body, nullptr, false);
+        std::string path = body.value("path", "");
+        bool ok = engine.loadOrganSample(path);
+        res.set_content(json({{"ok", ok}, {"path", path}}).dump(), "application/json");
+    });
 
     std::cout << "\n[GUI] Nord Virtual Stage: http://localhost:8080\n";
 #if defined(_WIN32)
@@ -1356,87 +1534,6 @@ svr.Post("/api/organ/loadsample", [&](const httplib::Request& req, httplib::Resp
     std::system("open http://localhost:8080");
 #endif
 
-// Endpoints de Presets Independientes para Sintetizador y Órgano
-    const std::string synthPresetsFile = "synth_presets.json";
-    const std::string organPresetsFile = "organ_presets.json";
-    json synthPresetsArr = json::array();
-    json organPresetsArr = json::array();
-    if (fs::exists(synthPresetsFile)) { try { std::ifstream f(synthPresetsFile); synthPresetsArr = json::parse(f); } catch (...) {} }
-    if (fs::exists(organPresetsFile)) { try { std::ifstream f(organPresetsFile); organPresetsArr = json::parse(f); } catch (...) {} }
-
-    svr.Get("/api/synth/presets", [&](const httplib::Request&, httplib::Response& res) {
-        std::lock_guard<std::mutex> lock(dataMutex);
-        res.set_content(synthPresetsArr.dump(), "application/json");
-    });
-    svr.Post("/api/synth/presets/save", [&](const httplib::Request& req, httplib::Response& res) {
-        std::lock_guard<std::mutex> lock(dataMutex);
-        auto b = json::parse(req.body, nullptr, false);
-        std::string name = b.value("name", "Synth Preset");
-        json entry = {
-            {"name", name},
-            {"synthEnabled", engine.getSynthEnabled()},
-            {"synthMasterVol", engine.getSynthMasterVol()},
-            {"synthMacroCutoff", engine.getSynthMacroCutoff()},
-            {"layers", engine.getSynthLayersJson()},
-            {"lfos", engine.getSynthLFOsJson()}
-        };
-        synthPresetsArr.push_back(entry);
-        std::ofstream f(synthPresetsFile); if (f) f << synthPresetsArr.dump(2);
-        res.set_content(json({{"ok", true}, {"presets", synthPresetsArr}}).dump(), "application/json");
-    });
-    svr.Post("/api/synth/presets/load", [&](const httplib::Request& req, httplib::Response& res) {
-        std::lock_guard<std::mutex> lock(dataMutex);
-        auto b = json::parse(req.body, nullptr, false);
-        std::string name = b.value("name", "");
-        for (const auto& p : synthPresetsArr) {
-            if (p.value("name", "") == name) { engine.applySynthPresetJson(p); break; }
-        }
-        res.set_content("{\"ok\":true}", "application/json");
-    });
-    svr.Post("/api/synth/presets/delete", [&](const httplib::Request& req, httplib::Response& res) {
-        std::lock_guard<std::mutex> lock(dataMutex);
-        auto b = json::parse(req.body, nullptr, false);
-        std::string name = b.value("name", "");
-        synthPresetsArr.erase(std::remove_if(synthPresetsArr.begin(), synthPresetsArr.end(),
-            [&](const json& x) { return x.value("name", "") == name; }), synthPresetsArr.end());
-        std::ofstream f(synthPresetsFile); if (f) f << synthPresetsArr.dump(2);
-        res.set_content(json({{"ok", true}, {"presets", synthPresetsArr}}).dump(), "application/json");
-    });
-
-    svr.Get("/api/organ/presets", [&](const httplib::Request&, httplib::Response& res) {
-        std::lock_guard<std::mutex> lock(dataMutex);
-        res.set_content(organPresetsArr.dump(), "application/json");
-    });
-    svr.Post("/api/organ/presets/save", [&](const httplib::Request& req, httplib::Response& res) {
-        std::lock_guard<std::mutex> lock(dataMutex);
-        auto b = json::parse(req.body, nullptr, false);
-        std::string name = b.value("name", "Organ Preset");
-        json entry = engine.getOrganParamsJson();
-        entry["name"] = name;
-        organPresetsArr.push_back(entry);
-        std::ofstream f(organPresetsFile); if (f) f << organPresetsArr.dump(2);
-        res.set_content(json({{"ok", true}, {"presets", organPresetsArr}}).dump(), "application/json");
-    });
-    svr.Post("/api/organ/presets/load", [&](const httplib::Request& req, httplib::Response& res) {
-        std::lock_guard<std::mutex> lock(dataMutex);
-        auto b = json::parse(req.body, nullptr, false);
-        std::string name = b.value("name", "");
-        for (const auto& p : organPresetsArr) {
-            if (p.value("name", "") == name) { engine.applyOrganPresetJson(p); break; }
-        }
-        res.set_content("{\"ok\":true}", "application/json");
-    });
-    svr.Post("/api/organ/presets/delete", [&](const httplib::Request& req, httplib::Response& res) {
-        std::lock_guard<std::mutex> lock(dataMutex);
-        auto b = json::parse(req.body, nullptr, false);
-        std::string name = b.value("name", "");
-        organPresetsArr.erase(std::remove_if(organPresetsArr.begin(), organPresetsArr.end(),
-            [&](const json& x) { return x.value("name", "") == name; }), organPresetsArr.end());
-        std::ofstream f(organPresetsFile); if (f) f << organPresetsArr.dump(2);
-        res.set_content(json({{"ok", true}, {"presets", organPresetsArr}}).dump(), "application/json");
-    });
-
-    
     svr.listen("0.0.0.0", 8080);
     return 0;
 }
