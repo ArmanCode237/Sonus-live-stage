@@ -157,12 +157,17 @@ public:
         chorusBufL_.assign(maxChorusSamples, 0.0f);
         chorusBufR_.assign(maxChorusSamples, 0.0f);
         writePos_ = 0;
+        chorusFbL_=chorusFbR_=chorusToneL_=chorusToneR_=0.0f;
+        chorusPhase_=0.0f;
     }
 
     void processStereo(float& L, float& R,
                        bool tremOn, float tremRate, float tremDepth,
                        bool phaserOn, float phaserRate, float phaserDepth, float phaserFb, float phaserMix,
-                       bool chorusOn, float chorusRate, float chorusDepth, float chorusMix) {
+                       bool chorusOn, float chorusRate, float chorusDepth, float chorusMix,
+                       int chorusVoices = 2, float chorusWidth = 0.85f,
+                       float chorusFeedback = 0.08f, float chorusToneHz = 9500.0f,
+                       float chorusDelayMs = 16.0f) {
         if (tremOn && tremDepth > 0.001f) {
             tremPhase_ += tremRate / sr_;
             if (tremPhase_ >= 1.0f) tremPhase_ -= 1.0f;
@@ -207,36 +212,56 @@ public:
             R = R * (1.0f - phaserMix * 0.5f) + yR * (phaserMix * 0.5f);
         }
 
-        if (chorusOn && chorusMix > 0.001f && !chorusBufL_.empty()) {
-            const size_t bufSize = chorusBufL_.size();
+        // Three independently phased delay taps per channel. The feedback path is
+        // bounded and filtered; no heap allocation is performed in processStereo.
+        if (!chorusBufL_.empty() && !chorusOn) {
             chorusBufL_[writePos_] = L;
             chorusBufR_[writePos_] = R;
-
-            chorusPhase_ += chorusRate / sr_;
+            writePos_ = (writePos_ + 1) % chorusBufL_.size();
+            chorusFbL_ *= 0.995f; chorusFbR_ *= 0.995f;
+            chorusToneL_ *= 0.995f; chorusToneR_ *= 0.995f;
+        } else if (!chorusBufL_.empty()) {
+            const size_t sz = chorusBufL_.size();
+            const float mix = std::clamp(chorusMix, 0.0f, 1.0f);
+            const float fb = std::clamp(chorusFeedback, -0.50f, 0.50f);
+            const float width = std::clamp(chorusWidth, 0.0f, 1.0f);
+            const int voices = std::clamp(chorusVoices, 1, 3);
+            const float tone = std::clamp(chorusToneHz, 500.0f, sr_ * 0.45f);
+            const float lp = 1.0f - std::exp(-2.0f * PI_F * tone / sr_);
+            const float inL = L, inR = R;
+            chorusBufL_[writePos_] = std::clamp(inL + chorusFbL_ * fb, -3.0f, 3.0f);
+            chorusBufR_[writePos_] = std::clamp(inR + chorusFbR_ * fb, -3.0f, 3.0f);
+            chorusPhase_ += std::clamp(chorusRate, 0.05f, 8.0f) / sr_;
             if (chorusPhase_ >= 1.0f) chorusPhase_ -= 1.0f;
-
-            float lfoL = std::sin(2.0f * PI_F * chorusPhase_);
-            float lfoR = std::cos(2.0f * PI_F * chorusPhase_);
-
-            float baseDelay = 0.014f * sr_;
-            float modSamples = 0.008f * chorusDepth * sr_;
-
-            auto readInterp = [&](const std::vector<float>& buf, float delaySamples) -> float {
-                float readPos = static_cast<float>(writePos_) - delaySamples;
-                while (readPos < 0.0f) readPos += static_cast<float>(bufSize);
-                size_t i0 = static_cast<size_t>(readPos) % bufSize;
-                size_t i1 = (i0 + 1) % bufSize;
-                float frac = readPos - std::floor(readPos);
-                return buf[i0] * (1.0f - frac) + buf[i1] * frac;
+            const float base = std::clamp(chorusDelayMs, 7.0f, 28.0f) * sr_ * 0.001f;
+            const float excursion = 0.0065f * std::clamp(chorusDepth, 0.0f, 1.0f) * sr_;
+            auto tap = [&](const std::vector<float>& buf, float delay) -> float {
+                float pos = static_cast<float>(writePos_) - std::clamp(delay, 2.0f, static_cast<float>(sz-4));
+                if (pos < 0.0f) pos += static_cast<float>(sz);
+                size_t i0 = static_cast<size_t>(pos) % sz;
+                const float frac = pos - std::floor(pos);
+                return buf[i0] + (buf[(i0+1)%sz] - buf[i0]) * frac;
             };
-
-            float wetL = readInterp(chorusBufL_, baseDelay + lfoL * modSamples);
-            float wetR = readInterp(chorusBufR_, baseDelay + lfoR * modSamples);
-
-            L = L * (1.0f - chorusMix * 0.5f) + wetL * chorusMix;
-            R = R * (1.0f - chorusMix * 0.5f) + wetR * chorusMix;
-
-            writePos_ = (writePos_ + 1) % bufSize;
+            float wetL = 0.0f, wetR = 0.0f;
+            for (int v=0; v<voices; ++v) {
+                const float phase = 2.0f * PI_F * (chorusPhase_ + static_cast<float>(v) / voices);
+                const float dl = base + excursion * std::sin(phase);
+                const float dr = base + excursion * std::sin(phase + width * PI_F * 0.83f);
+                wetL += tap(chorusBufL_, dl);
+                wetR += tap(chorusBufR_, dr);
+            }
+            wetL /= static_cast<float>(voices); wetR /= static_cast<float>(voices);
+            chorusToneL_ += lp * (wetL - chorusToneL_);
+            chorusToneR_ += lp * (wetR - chorusToneR_);
+            chorusFbL_ = chorusToneL_; chorusFbR_ = chorusToneR_;
+            if (chorusOn && mix > 0.0001f) {
+                // Mid/side wet width; no cancellation of the dry signal at zero mix.
+                float mid = (chorusToneL_ + chorusToneR_) * 0.5f;
+                float side = (chorusToneL_ - chorusToneR_) * 0.5f * (0.55f + width * 0.75f);
+                L = inL * (1.0f - mix * 0.15f) + (mid + side) * mix * 0.72f;
+                R = inR * (1.0f - mix * 0.15f) + (mid - side) * mix * 0.72f;
+            }
+            writePos_ = (writePos_ + 1) % sz;
         }
     }
 
@@ -249,6 +274,8 @@ private:
     float phaserLastL_ = 0.0f, phaserLastR_ = 0.0f;
     std::vector<float> chorusBufL_, chorusBufR_;
     size_t writePos_ = 0;
+    float chorusFbL_ = 0.0f, chorusFbR_ = 0.0f;
+    float chorusToneL_ = 0.0f, chorusToneR_ = 0.0f;
 };
 
 class StereoDelayEffect {
@@ -690,8 +717,9 @@ public:
 private:
     // Saturador suave sin pérdida de nivel en señales pequeñas (ganancia unitaria alrededor de 0)
     static inline float softSaturate(float x) {
-        if (std::abs(x) < 0.65f) return x;
-        return std::tanh(x * 0.85f) / 0.85f;
+        const float a = std::abs(x);
+        if (a <= 0.65f) return x;
+        return std::copysign(0.65f + 0.35f * std::tanh((a - 0.65f) / 0.35f), x);
     }
 
     float sr_ = 48000.0f;
@@ -750,193 +778,145 @@ private:
 class NordReverbEffect {
 public:
     void init(float sr) {
-        sr_ = (sr > 8000.0f) ? sr : 48000.0f;
-        float scale = sr_ / 44100.0f;
-
-        const int inApTimes[4] = {142, 107, 379, 277};
-        for (int i = 0; i < 4; ++i) {
-            inApL_[i].assign(static_cast<size_t>(inApTimes[i] * scale) + 8, 0.0f);
-            inApR_[i].assign(static_cast<size_t>((inApTimes[i] + 29) * scale) + 8, 0.0f);
-            inApPosL_[i] = inApPosR_[i] = 0;
+        sr_ = sr > 8000.0f ? sr : 48000.0f;
+        const float scale = sr_ / 44100.0f;
+        const int early[4] = {149, 223, 337, 521};
+        const int fdnL[8] = {1471, 1811, 2203, 2633, 3083, 3557, 4019, 4621};
+        const int fdnR[8] = {1523, 1907, 2287, 2689, 3167, 3631, 4211, 4783};
+        for(int i=0;i<4;i++){
+            preDiffL_[i].assign(static_cast<size_t>(early[i]*scale)+8,0.0f);
+            preDiffR_[i].assign(static_cast<size_t>((early[i]+37)*scale)+8,0.0f);
+            outDiffL_[i].assign(static_cast<size_t>((early[3-i]+149)*scale)+8,0.0f);
+            outDiffR_[i].assign(static_cast<size_t>((early[3-i]+193)*scale)+8,0.0f);
+            pdPosL_[i]=pdPosR_[i]=odPosL_[i]=odPosR_[i]=0;
         }
-
-        const int combBaseL[8] = {1557, 1617, 1491, 1422, 1277, 1356, 1188, 1116};
-        const int combBaseR[8] = {1637, 1709, 1571, 1499, 1361, 1439, 1259, 1193};
-        for (int i = 0; i < 8; ++i) {
-            baseCombDelayL_[i] = static_cast<float>(combBaseL[i]) * scale * 1.45f;
-            baseCombDelayR_[i] = static_cast<float>(combBaseR[i]) * scale * 1.45f;
-            combL_[i].assign(static_cast<size_t>(baseCombDelayL_[i]) + 64, 0.0f);
-            combR_[i].assign(static_cast<size_t>(baseCombDelayR_[i]) + 64, 0.0f);
-            combPosL_[i] = combPosR_[i] = 0;
-            combFltL_[i] = combFltR_[i] = 0.0f;
+        for(int i=0;i<8;i++){
+            baseL_[i]=fdnL[i]*scale; baseR_[i]=fdnR[i]*scale;
+            tankL_[i].assign(static_cast<size_t>(baseL_[i]*2.2f)+128,0.0f);
+            tankR_[i].assign(static_cast<size_t>(baseR_[i]*2.2f)+128,0.0f);
+            tankPosL_[i]=tankPosR_[i]=0; dampL_[i]=dampR_[i]=0.0f;
         }
-
-        const int outApBase[3] = {672, 556, 441};
-        for (int i = 0; i < 3; ++i) {
-            apL_[i].assign(static_cast<size_t>(outApBase[i] * scale * 1.3f) + 16, 0.0f);
-            apR_[i].assign(static_cast<size_t>((outApBase[i] + 37) * scale * 1.3f) + 16, 0.0f);
-            apPosL_[i] = apPosR_[i] = 0;
-        }
-
-        preDelayBuf_.assign(static_cast<size_t>(sr_ * 0.25f) + 16, 0.0f);
-        preWrite_ = 0;
-        lfoPhase_ = 0.0f;
-        dcX1L_ = dcY1L_ = dcX1R_ = dcY1R_ = 0.0f;
-
+        preL_.assign(static_cast<size_t>(sr_*0.26f)+16,0.0f);
+        preR_.assign(preL_.size(),0.0f);
+        prePos_=0; phase_=0.0f;
+        cachedType_=-1;cachedSize_=cachedDamp_=-1.0f;
+        dcXL_=dcYL_=dcXR_=dcYR_=0.0f;
         shimmerEngine_.init(sr_);
     }
 
-    inline void processStereo(float& L, float& R, bool enabled, int type, float mix, float size, float damp, float preDelayMs, float shimmerAmt) {
-        if (!enabled || mix <= 0.001f || combL_[0].empty()) return;
-
-        // Si está seleccionado el modo 3 (AMB / SHIMMER), procesamos con el motor atmosférico ShimmerReverbEngine
-        // en modo BigStereo + Dual Shimmer para lograr el decay más largo y amplio de todos los reverbs
-        if (type == 3) {
+    inline void processStereo(float& L,float& R,bool enabled,int type,float mix,float size,
+                              float damping,float preDelayMs,float shimmerAmt) {
+        if(!enabled || mix<0.0001f || preL_.empty()) return;
+        if(type==3) {
             shimmerEngine_.setPreDelayMs(preDelayMs);
-            float highCutHz = 11500.0f - std::clamp(damp, 0.0f, 1.0f) * 7500.0f; // 4 kHz a 11.5 kHz
-            float feedback  = std::clamp(0.45f + size * 0.52f, 0.45f, 0.975f);
-            auto pMode = (shimmerAmt <= 0.02f)
-                         ? ShimmerReverbEngine::PitchMode::Bypass
-                         : (shimmerAmt > 0.35f ? ShimmerReverbEngine::PitchMode::Dual : ShimmerReverbEngine::PitchMode::Single);
-
-            shimmerEngine_.setParams(
-                mix,
-                12.0f,                      // +12 semitonos (Octava Shimmer)
-                feedback,                   // Decay masivo controlado por Size
-                0.86f + shimmerAmt * 0.10f, // Alta difusión tipo nube
-                std::max(0.65f, size),      // Tamaño de catedral
-                135.0f,                     // Low Cut limpio en el feedback
-                highCutHz,                  // High Cut controlado por Damping
-                0.42f,                      // Mod Rate
-                0.26f + shimmerAmt * 0.22f, // Mod Depth coral
-                pMode,
-                ShimmerReverbEngine::ReverbMode::BigStereo,
-                (damp > 0.45f) ? ShimmerReverbEngine::ColorMode::Dark : ShimmerReverbEngine::ColorMode::Bright
-            );
-            shimmerEngine_.processStereo(L, R);
+            const float highCut=11500.0f-std::clamp(damping,0.0f,1.0f)*7500.0f;
+            const float feedback=std::clamp(0.45f+size*0.52f,0.45f,0.975f);
+            auto pm=(shimmerAmt<=0.02f) ? ShimmerReverbEngine::PitchMode::Bypass :
+               (shimmerAmt>0.35f ? ShimmerReverbEngine::PitchMode::Dual : ShimmerReverbEngine::PitchMode::Single);
+            shimmerEngine_.setParams(mix,12.0f,feedback,0.86f+shimmerAmt*0.10f,
+                std::max(0.65f,size),135.0f,highCut,0.42f,0.26f+shimmerAmt*0.22f,
+                pm,ShimmerReverbEngine::ReverbMode::BigStereo,
+                (damping>0.45f)?ShimmerReverbEngine::ColorMode::Dark:ShimmerReverbEngine::ColorMode::Bright);
+            shimmerEngine_.processStereo(L,R);
             return;
         }
-
-        // Modos acústicos clásicos: 0 = Room, 1 = Plate, 2 = Hall
-        float baseDecay = 0.68f;
-        float dampScale = 1.0f;
-        if (type == 0) { baseDecay = 0.62f; dampScale = 1.15f; }      // Room
-        else if (type == 1) { baseDecay = 0.78f; dampScale = 0.55f; } // Plate
-        else if (type == 2) { baseDecay = 0.84f; dampScale = 0.80f; } // Hall
-
-        float fb = std::clamp(baseDecay + size * 0.13f, 0.45f, 0.96f);
-        float d1 = std::clamp(damp * 0.52f * dampScale, 0.05f, 0.78f);
-        float d2 = 1.0f - d1;
-
-        float monoIn = (L + R) * 0.24f;
-        size_t preSamples = static_cast<size_t>(std::clamp(preDelayMs * 0.001f * sr_, 1.0f, static_cast<float>(preDelayBuf_.size() - 4)));
-        preDelayBuf_[preWrite_] = monoIn;
-        size_t preRead = (preWrite_ + preDelayBuf_.size() - preSamples) % preDelayBuf_.size();
-        preWrite_ = (preWrite_ + 1) % preDelayBuf_.size();
-        float revIn = preDelayBuf_[preRead];
-
-        float diffL = revIn, diffR = revIn;
-        for (int i = 0; i < 4; ++i) {
-            float bL = inApL_[i][inApPosL_[i]];
-            float inL = diffL;
-            diffL = -inL * 0.65f + bL;
-            inApL_[i][inApPosL_[i]] = inL + diffL * 0.65f;
-            if (++inApPosL_[i] >= inApL_[i].size()) inApPosL_[i] = 0;
-
-            float bR = inApR_[i][inApPosR_[i]];
-            float inR = diffR;
-            diffR = -inR * 0.65f + bR;
-            inApR_[i][inApPosR_[i]] = inR + diffR * 0.65f;
-            if (++inApPosR_[i] >= inApR_[i].size()) inApPosR_[i] = 0;
+        type=std::clamp(type,0,2);
+        mix=std::clamp(mix,0.0f,1.0f);
+        size=std::clamp(size,0.05f,1.0f);
+        damping=std::clamp(damping,0.0f,1.0f);
+        const float dryL=L,dryR=R;
+        const size_t sz=preL_.size();
+        preL_[prePos_]=dryL;preR_[prePos_]=dryR;
+        const size_t pred=static_cast<size_t>(std::clamp(preDelayMs*0.001f*sr_,0.0f,static_cast<float>(sz-8)));
+        const size_t read=(prePos_+sz-pred)%sz;
+        float inL=preL_[read],inR=preR_[read];
+        // Source stereo is preserved, while early reflections cross-feed softly.
+        const size_t er1=static_cast<size_t>(0.008f*sr_);
+        const size_t er2=static_cast<size_t>(0.018f*sr_);
+        float earlyL=0.30f*preL_[(read+sz-er1)%sz]+0.17f*preR_[(read+sz-er2)%sz];
+        float earlyR=0.30f*preR_[(read+sz-er1)%sz]+0.17f*preL_[(read+sz-er2)%sz];
+        prePos_=(prePos_+1)%sz;
+        const float difCoef=(type==1)?0.72f:0.62f;
+        for(int i=0;i<4;i++){
+            inL=allpass(inL,preDiffL_[i],pdPosL_[i],difCoef);
+            inR=allpass(inR,preDiffR_[i],pdPosR_[i],difCoef);
         }
-
-        lfoPhase_ += 0.45f / sr_;
-        if (lfoPhase_ >= 1.0f) lfoPhase_ -= 1.0f;
-        float lfoSin = std::sin(2.0f * PI_F * lfoPhase_);
-        float lfoCos = std::cos(2.0f * PI_F * lfoPhase_);
-
-        float outL = 0.0f, outR = 0.0f;
-        for (int i = 0; i < 8; ++i) {
-            const size_t szL = combL_[i].size();
-            const size_t szR = combR_[i].size();
-
-            float modOffsetL = ((i & 1) ? lfoSin : lfoCos) * 6.5f;
-            float modOffsetR = ((i & 1) ? lfoCos : -lfoSin) * 6.5f;
-
-            float dL = std::clamp(baseCombDelayL_[i] + modOffsetL, 16.0f, static_cast<float>(szL - 4));
-            float dR = std::clamp(baseCombDelayR_[i] + modOffsetR, 16.0f, static_cast<float>(szR - 4));
-
-            float rPosL = static_cast<float>(combPosL_[i]) - dL;
-            if (rPosL < 0.0f) rPosL += static_cast<float>(szL);
-            size_t idx0L = static_cast<size_t>(rPosL) % szL;
-            size_t idx1L = (idx0L + 1) % szL;
-            float fracL = rPosL - std::floor(rPosL);
-            float yL = combL_[i][idx0L] * (1.0f - fracL) + combL_[i][idx1L] * fracL;
-
-            float rPosR = static_cast<float>(combPosR_[i]) - dR;
-            if (rPosR < 0.0f) rPosR += static_cast<float>(szR);
-            size_t idx0R = static_cast<size_t>(rPosR) % szR;
-            size_t idx1R = (idx0R + 1) % szR;
-            float fracR = rPosR - std::floor(rPosR);
-            float yR = combR_[i][idx0R] * (1.0f - fracR) + combR_[i][idx1R] * fracR;
-
-            combFltL_[i] = yL * d2 + combFltL_[i] * d1;
-            combFltR_[i] = yR * d2 + combFltR_[i] * d1;
-
-            combL_[i][combPosL_[i]] = diffL + combFltL_[i] * fb;
-            combR_[i][combPosR_[i]] = diffR + combFltR_[i] * fb;
-
-            if (++combPosL_[i] >= szL) combPosL_[i] = 0;
-            if (++combPosR_[i] >= szR) combPosR_[i] = 0;
-
-            outL += yL;
-            outR += yR;
+        phase_+=0.31f/sr_; if(phase_>=1.0f)phase_-=1.0f;
+        // Update expensive coefficients only when a reverb parameter changes.
+        if (cachedType_!=type || cachedSize_!=size || cachedDamp_!=damping) {
+            cachedType_=type;cachedSize_=size;cachedDamp_=damping;
+            const float rt60=(type==0?0.5f+size*1.7f:(type==1?1.0f+size*3.5f:1.5f+size*5.5f));
+            cachedScale_=0.78f+size*0.87f;
+            const float cutoff=std::clamp(15000.0f*std::pow(0.24f,damping),1100.0f,17000.0f);
+            cachedLp_=1.0f-std::exp(-2.0f*PI_F*cutoff/sr_);
+            for(int i=0;i<8;i++) {
+                cachedFbL_[i]=std::pow(10.0f,-3.0f*(baseL_[i]*cachedScale_/sr_)/rt60);
+                cachedFbR_[i]=std::pow(10.0f,-3.0f*(baseR_[i]*cachedScale_/sr_)/rt60);
+            }
         }
-
-        outL *= 0.26f;
-        outR *= 0.26f;
-
-        for (int i = 0; i < 3; ++i) {
-            float bufOutL = apL_[i][apPosL_[i]];
-            float inL = outL;
-            outL = -inL * 0.6f + bufOutL;
-            apL_[i][apPosL_[i]] = inL + bufOutL * 0.6f;
-            if (++apPosL_[i] >= apL_[i].size()) apPosL_[i] = 0;
-
-            float bufOutR = apR_[i][apPosR_[i]];
-            float inR = outR;
-            outR = -inR * 0.6f + bufOutR;
-            apR_[i][apPosR_[i]] = inR + bufOutR * 0.6f;
-            if (++apPosR_[i] >= apR_[i].size()) apPosR_[i] = 0;
+        const float scale=cachedScale_,lp=cachedLp_;
+        float vL[8],vR[8]; float sumL=0.0f,sumR=0.0f;
+        for(int i=0;i<8;i++){
+            float ph=2.0f*PI_F*(phase_+i*0.125f);
+            float dl=baseL_[i]*scale+std::sin(ph)*sr_*0.00013f;
+            float dr=baseR_[i]*scale+std::cos(ph)*sr_*0.00013f;
+            vL[i]=readDelay(tankL_[i],tankPosL_[i],dl);
+            vR[i]=readDelay(tankR_[i],tankPosR_[i],dr);
+            dampL_[i]+=lp*(vL[i]-dampL_[i]);
+            dampR_[i]+=lp*(vR[i]-dampR_[i]);
+            sumL+=dampL_[i];sumR+=dampR_[i];
         }
-
-        float cleanL = outL - dcX1L_ + 0.995f * dcY1L_;
-        dcX1L_ = outL; dcY1L_ = cleanL;
-        float cleanR = outR - dcX1R_ + 0.995f * dcY1R_;
-        dcX1R_ = outR; dcY1R_ = cleanR;
-
-        L = L * (1.0f - mix * 0.28f) + cleanL * (mix * 0.55f);
-        R = R * (1.0f - mix * 0.28f) + cleanR * (mix * 0.55f);
+        // Householder 8x8 matrix, spectral radius 1; decay from RT60, not arbitrary FB.
+        const float hsL=sumL*0.25f,hsR=sumR*0.25f;
+        float wetL=0.0f,wetR=0.0f;
+        for(int i=0;i<8;i++){
+            const float fbL=cachedFbL_[i], fbR=cachedFbR_[i];
+            float vfbL=(dampL_[i]-hsL)*fbL;
+            float vfbR=(dampR_[i]-hsR)*fbR;
+            const float sign=(i&1)?-1.0f:1.0f;
+            tankL_[i][tankPosL_[i]]=std::clamp(inL*0.21f*sign+vfbL*0.96f+vfbR*0.04f,-6.0f,6.0f);
+            tankR_[i][tankPosR_[i]]=std::clamp(inR*0.21f*sign+vfbR*0.96f+vfbL*0.04f,-6.0f,6.0f);
+            tankPosL_[i]=(tankPosL_[i]+1)%tankL_[i].size();
+            tankPosR_[i]=(tankPosR_[i]+1)%tankR_[i].size();
+            wetL+=vL[i]*sign;
+            wetR+=vR[i]*((i&2)?1.0f:-1.0f);
+        }
+        wetL=wetL*0.19f+earlyL*0.24f;
+        wetR=wetR*0.19f+earlyR*0.24f;
+        for(int i=0;i<4;i++){
+            wetL=allpass(wetL,outDiffL_[i],odPosL_[i],0.55f);
+            wetR=allpass(wetR,outDiffR_[i],odPosR_[i],0.55f);
+        }
+        const float cleanL=wetL-dcXL_+0.995f*dcYL_;
+        const float cleanR=wetR-dcXR_+0.995f*dcYR_;
+        dcXL_=wetL;dcYL_=cleanL;dcXR_=wetR;dcYR_=cleanR;
+        // Keep legacy dry-gain contract used by wet-only AUX subtraction in NordPianoEngine.
+        L=dryL*(1.0f-mix*0.28f)+cleanL*(mix*0.72f);
+        R=dryR*(1.0f-mix*0.28f)+cleanR*(mix*0.72f);
     }
-
 private:
-    float sr_ = 48000.0f;
-    std::vector<float> inApL_[4], inApR_[4];
-    size_t inApPosL_[4] = {0}, inApPosR_[4] = {0};
-
-    std::vector<float> combL_[8], combR_[8];
-    float baseCombDelayL_[8] = {0.0f}, baseCombDelayR_[8] = {0.0f};
-    size_t combPosL_[8] = {0}, combPosR_[8] = {0};
-    float combFltL_[8] = {0.0f}, combFltR_[8] = {0.0f};
-
-    std::vector<float> apL_[3], apR_[3];
-    size_t apPosL_[3] = {0}, apPosR_[3] = {0};
-    std::vector<float> preDelayBuf_;
-    size_t preWrite_ = 0;
-
-    float lfoPhase_ = 0.0f;
-    float dcX1L_ = 0.0f, dcY1L_ = 0.0f, dcX1R_ = 0.0f, dcY1R_ = 0.0f;
-
+    static float readDelay(const std::vector<float>& b,size_t write,float delay){
+        const size_t n=b.size();
+        float pos=static_cast<float>(write)-std::clamp(delay,2.0f,static_cast<float>(n-4));
+        if(pos<0.0f)pos+=static_cast<float>(n);
+        const size_t i=static_cast<size_t>(pos)%n;
+        return b[i]+(b[(i+1)%n]-b[i])*(pos-std::floor(pos));
+    }
+    static float allpass(float in,std::vector<float>& buf,size_t& pos,float g){
+        float old=buf[pos];float out=old-g*in;
+        buf[pos]=in+g*out;pos=(pos+1)%buf.size();return out;
+    }
+    float sr_=48000.0f,phase_=0.0f;
+    std::vector<float> preL_,preR_;size_t prePos_=0;
+    std::vector<float> preDiffL_[4],preDiffR_[4],outDiffL_[4],outDiffR_[4];
+    size_t pdPosL_[4]{},pdPosR_[4]{},odPosL_[4]{},odPosR_[4]{};
+    std::vector<float> tankL_[8],tankR_[8];
+    size_t tankPosL_[8]{},tankPosR_[8]{};
+    float baseL_[8]{},baseR_[8]{},dampL_[8]{},dampR_[8]{};
+    float dcXL_=0,dcYL_=0,dcXR_=0,dcYR_=0;
+    int cachedType_=-1;
+    float cachedSize_=-1.0f,cachedDamp_=-1.0f,cachedScale_=1.0f,cachedLp_=0.4f;
+    float cachedFbL_[8]{},cachedFbR_[8]{};
     ShimmerReverbEngine shimmerEngine_;
 };
 

@@ -1,0 +1,93 @@
+<!-- Five independent sample players; parameters persist with performance programs. -->
+<div class="modal-backdrop" id="modalPianoSample" role="dialog" aria-modal="true" aria-label="MIXER / Editor de muestras por capa">
+  <section class="modal-window piano-sample-window">
+    <header class="sample-editor-header"><div><span class="panel-eyebrow">LIVE STAGE · PIANO ENGINE</span>
+      <h2>SAMPLE <em>CONFIG</em></h2><p>Controles individuales por capa; no modifican las otras capas.</p></div>
+      <button type="button" class="expand-btn" onclick="closeModal('modalPianoSample')">CERRAR ×</button></header>
+    <div class="piano-sample-tabs" role="tablist" aria-label="Seleccionar capa a editar">
+      <button type="button" id="pianoSampleTab0" role="tab" class="mini-mode-pill" onclick="setSampleEditorLayer(0)">LAYER 1</button>
+      <button type="button" id="pianoSampleTab1" role="tab" class="mini-mode-pill" onclick="setSampleEditorLayer(1)">LAYER 2</button>
+      <button type="button" id="pianoSampleTab2" role="tab" class="mini-mode-pill" onclick="setSampleEditorLayer(2)">LAYER 3</button>
+      <button type="button" id="pianoSampleTab3" role="tab" class="mini-mode-pill" onclick="setSampleEditorLayer(3)">LAYER 4</button>
+      <button type="button" id="pianoSampleTab4" role="tab" class="mini-mode-pill" onclick="setSampleEditorLayer(4)">LAYER 5</button>
+    </div>
+    <p class="sample-editor-note">ADSR define cómo entra y desaparece cada muestra. LOOP HOLD determina su caída durante la reproducción. PAN y TUNE ajustan la posición y afinación de esa capa.</p>
+    <section class="piano-sample-layer" id="pianoSamplePanel0" role="tabpanel" aria-label="Ajustes layer 1" >
+      <div class="sample-editor-layer-heading"><strong>LAYER 01</strong><span id="pianoSampleLayerName0">SIN SONIDO</span></div>
+      <div class="sample-editor-knob-grid">
+        <div class="knob-cell" data-id="pianoSample0Atk" data-min="0.005" data-max="5" data-val="0.005" data-unit="s" data-label="ATTACK" data-small="1" data-log="1" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample0Dec" data-min="0.02" data-max="12" data-val="3.5" data-unit="s" data-label="DECAY" data-small="1" data-log="1" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample0Sus" data-min="0" data-max="1" data-val="1" data-unit="%" data-label="SUSTAIN" data-small="1" data-log="0" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample0Rel" data-min="0.02" data-max="10" data-val="0.35" data-unit="s" data-label="RELEASE" data-small="1" data-log="1" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample0Hold" data-min="0" data-max="1" data-val="0.65" data-unit="%" data-label="LOOP HOLD" data-small="1" data-log="0" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample0Pan" data-min="-1" data-max="1" data-val="0" data-unit="Pan" data-label="PAN" data-small="1" data-log="0" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample0Tune" data-min="-100" data-max="100" data-val="0" data-unit="ct" data-label="FINE TUNE" data-small="1" data-log="0" data-step-size="1"></div>
+        <div class="knob-cell" data-id="pianoSample0Cut" data-min="40" data-max="20000" data-val="20000" data-unit="Hz" data-label="CUTOFF" data-small="1" data-log="1"></div>
+        <div class="knob-cell" data-id="pianoSample0Res" data-min="0.5" data-max="12" data-val="0.707" data-unit="Q" data-label="RESONANCE" data-small="1"></div>
+      </div>
+      <div class="sample-channel-routing"><div><b>AUX SENDS</b><small>PRE-FX / FX MASTER</small></div><div class="sample-sends-grid"><div class="knob-cell fx-send-knob" data-id="fxSend0Mod" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-unit="%" data-label="MOD" data-small="1"></div><div class="knob-cell fx-send-knob" data-id="fxSend0Delay" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-unit="%" data-label="DELAY" data-small="1"></div><div class="knob-cell fx-send-knob" data-id="fxSend0Reverb" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-unit="%" data-label="REVERB" data-small="1"></div></div></div>
+    </section>
+    <section class="piano-sample-layer" id="pianoSamplePanel1" role="tabpanel" aria-label="Ajustes layer 2" hidden>
+      <div class="sample-editor-layer-heading"><strong>LAYER 02</strong><span id="pianoSampleLayerName1">SIN SONIDO</span></div>
+      <div class="sample-editor-knob-grid">
+        <div class="knob-cell" data-id="pianoSample1Atk" data-min="0.005" data-max="5" data-val="0.005" data-unit="s" data-label="ATTACK" data-small="1" data-log="1" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample1Dec" data-min="0.02" data-max="12" data-val="3.5" data-unit="s" data-label="DECAY" data-small="1" data-log="1" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample1Sus" data-min="0" data-max="1" data-val="1" data-unit="%" data-label="SUSTAIN" data-small="1" data-log="0" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample1Rel" data-min="0.02" data-max="10" data-val="0.35" data-unit="s" data-label="RELEASE" data-small="1" data-log="1" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample1Hold" data-min="0" data-max="1" data-val="0.65" data-unit="%" data-label="LOOP HOLD" data-small="1" data-log="0" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample1Pan" data-min="-1" data-max="1" data-val="0" data-unit="Pan" data-label="PAN" data-small="1" data-log="0" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample1Tune" data-min="-100" data-max="100" data-val="0" data-unit="ct" data-label="FINE TUNE" data-small="1" data-log="0" data-step-size="1"></div>
+        <div class="knob-cell" data-id="pianoSample1Cut" data-min="40" data-max="20000" data-val="20000" data-unit="Hz" data-label="CUTOFF" data-small="1" data-log="1"></div>
+        <div class="knob-cell" data-id="pianoSample1Res" data-min="0.5" data-max="12" data-val="0.707" data-unit="Q" data-label="RESONANCE" data-small="1"></div>
+      </div>
+      <div class="sample-channel-routing"><div><b>AUX SENDS</b><small>PRE-FX / FX MASTER</small></div><div class="sample-sends-grid"><div class="knob-cell fx-send-knob" data-id="fxSend1Mod" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-unit="%" data-label="MOD" data-small="1"></div><div class="knob-cell fx-send-knob" data-id="fxSend1Delay" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-unit="%" data-label="DELAY" data-small="1"></div><div class="knob-cell fx-send-knob" data-id="fxSend1Reverb" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-unit="%" data-label="REVERB" data-small="1"></div></div></div>
+    </section>
+    <section class="piano-sample-layer" id="pianoSamplePanel2" role="tabpanel" aria-label="Ajustes layer 3" hidden>
+      <div class="sample-editor-layer-heading"><strong>LAYER 03</strong><span id="pianoSampleLayerName2">SIN SONIDO</span></div>
+      <div class="sample-editor-knob-grid">
+        <div class="knob-cell" data-id="pianoSample2Atk" data-min="0.005" data-max="5" data-val="0.005" data-unit="s" data-label="ATTACK" data-small="1" data-log="1" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample2Dec" data-min="0.02" data-max="12" data-val="3.5" data-unit="s" data-label="DECAY" data-small="1" data-log="1" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample2Sus" data-min="0" data-max="1" data-val="1" data-unit="%" data-label="SUSTAIN" data-small="1" data-log="0" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample2Rel" data-min="0.02" data-max="10" data-val="0.35" data-unit="s" data-label="RELEASE" data-small="1" data-log="1" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample2Hold" data-min="0" data-max="1" data-val="0.65" data-unit="%" data-label="LOOP HOLD" data-small="1" data-log="0" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample2Pan" data-min="-1" data-max="1" data-val="0" data-unit="Pan" data-label="PAN" data-small="1" data-log="0" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample2Tune" data-min="-100" data-max="100" data-val="0" data-unit="ct" data-label="FINE TUNE" data-small="1" data-log="0" data-step-size="1"></div>
+        <div class="knob-cell" data-id="pianoSample2Cut" data-min="40" data-max="20000" data-val="20000" data-unit="Hz" data-label="CUTOFF" data-small="1" data-log="1"></div>
+        <div class="knob-cell" data-id="pianoSample2Res" data-min="0.5" data-max="12" data-val="0.707" data-unit="Q" data-label="RESONANCE" data-small="1"></div>
+      </div>
+      <div class="sample-channel-routing"><div><b>AUX SENDS</b><small>PRE-FX / FX MASTER</small></div><div class="sample-sends-grid"><div class="knob-cell fx-send-knob" data-id="fxSend2Mod" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-unit="%" data-label="MOD" data-small="1"></div><div class="knob-cell fx-send-knob" data-id="fxSend2Delay" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-unit="%" data-label="DELAY" data-small="1"></div><div class="knob-cell fx-send-knob" data-id="fxSend2Reverb" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-unit="%" data-label="REVERB" data-small="1"></div></div></div>
+    </section>
+    <section class="piano-sample-layer" id="pianoSamplePanel3" role="tabpanel" aria-label="Ajustes layer 4" hidden>
+      <div class="sample-editor-layer-heading"><strong>LAYER 04</strong><span id="pianoSampleLayerName3">SIN SONIDO</span></div>
+      <div class="sample-editor-knob-grid">
+        <div class="knob-cell" data-id="pianoSample3Atk" data-min="0.005" data-max="5" data-val="0.005" data-unit="s" data-label="ATTACK" data-small="1" data-log="1" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample3Dec" data-min="0.02" data-max="12" data-val="3.5" data-unit="s" data-label="DECAY" data-small="1" data-log="1" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample3Sus" data-min="0" data-max="1" data-val="1" data-unit="%" data-label="SUSTAIN" data-small="1" data-log="0" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample3Rel" data-min="0.02" data-max="10" data-val="0.35" data-unit="s" data-label="RELEASE" data-small="1" data-log="1" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample3Hold" data-min="0" data-max="1" data-val="0.65" data-unit="%" data-label="LOOP HOLD" data-small="1" data-log="0" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample3Pan" data-min="-1" data-max="1" data-val="0" data-unit="Pan" data-label="PAN" data-small="1" data-log="0" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample3Tune" data-min="-100" data-max="100" data-val="0" data-unit="ct" data-label="FINE TUNE" data-small="1" data-log="0" data-step-size="1"></div>
+        <div class="knob-cell" data-id="pianoSample3Cut" data-min="40" data-max="20000" data-val="20000" data-unit="Hz" data-label="CUTOFF" data-small="1" data-log="1"></div>
+        <div class="knob-cell" data-id="pianoSample3Res" data-min="0.5" data-max="12" data-val="0.707" data-unit="Q" data-label="RESONANCE" data-small="1"></div>
+      </div>
+      <div class="sample-channel-routing"><div><b>AUX SENDS</b><small>PRE-FX / FX MASTER</small></div><div class="sample-sends-grid"><div class="knob-cell fx-send-knob" data-id="fxSend3Mod" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-unit="%" data-label="MOD" data-small="1"></div><div class="knob-cell fx-send-knob" data-id="fxSend3Delay" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-unit="%" data-label="DELAY" data-small="1"></div><div class="knob-cell fx-send-knob" data-id="fxSend3Reverb" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-unit="%" data-label="REVERB" data-small="1"></div></div></div>
+    </section>
+    <section class="piano-sample-layer" id="pianoSamplePanel4" role="tabpanel" aria-label="Ajustes layer 5" hidden>
+      <div class="sample-editor-layer-heading"><strong>LAYER 05</strong><span id="pianoSampleLayerName4">SIN SONIDO</span></div>
+      <div class="sample-editor-knob-grid">
+        <div class="knob-cell" data-id="pianoSample4Atk" data-min="0.005" data-max="5" data-val="0.005" data-unit="s" data-label="ATTACK" data-small="1" data-log="1" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample4Dec" data-min="0.02" data-max="12" data-val="3.5" data-unit="s" data-label="DECAY" data-small="1" data-log="1" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample4Sus" data-min="0" data-max="1" data-val="1" data-unit="%" data-label="SUSTAIN" data-small="1" data-log="0" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample4Rel" data-min="0.02" data-max="10" data-val="0.35" data-unit="s" data-label="RELEASE" data-small="1" data-log="1" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample4Hold" data-min="0" data-max="1" data-val="0.65" data-unit="%" data-label="LOOP HOLD" data-small="1" data-log="0" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample4Pan" data-min="-1" data-max="1" data-val="0" data-unit="Pan" data-label="PAN" data-small="1" data-log="0" data-step-size="0"></div>
+        <div class="knob-cell" data-id="pianoSample4Tune" data-min="-100" data-max="100" data-val="0" data-unit="ct" data-label="FINE TUNE" data-small="1" data-log="0" data-step-size="1"></div>
+        <div class="knob-cell" data-id="pianoSample4Cut" data-min="40" data-max="20000" data-val="20000" data-unit="Hz" data-label="CUTOFF" data-small="1" data-log="1"></div>
+        <div class="knob-cell" data-id="pianoSample4Res" data-min="0.5" data-max="12" data-val="0.707" data-unit="Q" data-label="RESONANCE" data-small="1"></div>
+      </div>
+      <div class="sample-channel-routing"><div><b>AUX SENDS</b><small>PRE-FX / FX MASTER</small></div><div class="sample-sends-grid"><div class="knob-cell fx-send-knob" data-id="fxSend4Mod" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-unit="%" data-label="MOD" data-small="1"></div><div class="knob-cell fx-send-knob" data-id="fxSend4Delay" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-unit="%" data-label="DELAY" data-small="1"></div><div class="knob-cell fx-send-knob" data-id="fxSend4Reverb" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-unit="%" data-label="REVERB" data-small="1"></div></div></div>
+    </section>
+    <div class="sample-editor-footer"><span>GUARDADO EN PROGRAMS 1–8 · PIANO L1–L5</span>
+      <button type="button" class="red-rect-btn" onclick="resetCurrentSampleEnvelope()">RESTAURAR CAPA</button></div>
+  </section>
+</div>

@@ -54,7 +54,7 @@
 .prog-slot-wrap { display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; }
 .prog-slot-num { font-size: 9.5px; font-weight: 800; color: #cbd5e1; }
 .pad-body.toggle-pad {
-  position: relative; width: 68px; height: 32px; border-radius: 6px;
+  position: relative; width: 68px; height: 46px; border-radius: 6px;
   border: 2px solid #060709; background: linear-gradient(180deg, #24282e 0%, #121418 100%);
   box-shadow: 0 4px 8px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.14);
   display: flex; align-items: center; justify-content: center;
@@ -76,3 +76,19 @@
 }
 
 .red-rect-btn.blink { animation: storeBlink 0.55s infinite alternate; }
+
+/* V7 - hardware-inspired performance display. The active program is the headline. */
+.nord-center-lcd{min-height:207px;gap:7px;padding:13px 15px;}
+.lcd-program-title{font:700 clamp(24px,2.5vw,38px)/1.07 'VT323',Consolas,monospace;
+ color:#e8fff3;letter-spacing:1px;text-shadow:0 0 11px #72ffd466;overflow:hidden;
+ text-overflow:ellipsis;white-space:nowrap;max-width:100%;}
+.lcd-active-engines{display:flex;flex-direction:column;gap:5px;min-height:72px;}
+.lcd-instrument{min-width:0;display:grid;grid-template-columns:18px 48px minmax(0,1fr);gap:8px;align-items:center;
+ padding:3px 5px;color:#a5dfd0;border-bottom:1px solid #518c7b2e;}
+.lcd-instrument[hidden],.lcd-no-engine[hidden]{display:none!important;}
+.lcd-instrument svg{width:18px;height:18px;fill:none;stroke:#a1e6c9;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;}
+.lcd-instrument-type{font:700 10px 'VT323',monospace;letter-spacing:.8px;color:#77b9a8;}
+.lcd-instrument strong{font:600 15px/1.1 'VT323',Consolas,monospace;color:#e1ffee;
+ min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.lcd-no-engine{font:600 16px 'VT323',monospace;color:#6fa598;margin:auto 0;}
+@media(max-width:550px){.lcd-program-title{font-size:29px}.lcd-instrument{grid-template-columns:18px 44px minmax(0,1fr)}}

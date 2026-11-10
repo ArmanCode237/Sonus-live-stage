@@ -17,6 +17,7 @@
 #include <set>
 #include <chrono>
 #include <cstdlib>
+#include <cctype>
 
 using namespace NordDSP;
 using json = nlohmann::json;
@@ -42,7 +43,14 @@ void midiCallback(double /*deltatime*/, std::vector<unsigned char>* message, voi
         host->noteOn(data1, data2);
     } else if (status == 0x80 || (status == 0x90 && data2 == 0)) {
         host->noteOff(data1);
+    } else if (status == 0xE0 && message->size() >= 3) {
+        const int bend14 = (static_cast<int>(data2) << 7) | static_cast<int>(data1);
+        const float centered = bend14 >= 8192 ? (bend14 - 8192) / 8191.f : (bend14 - 8192) / 8192.f;
+        host->setPitchBend(centered); // ±2 semitones, center=8192
     } else if (status == 0xB0) {
+        // CC 1 and sustain are performance controls and should not be swallowed by MIDI Learn.
+        if (data1 == 1) { host->setModWheel(data2 / 127.f); return; }
+        if (data1 == 121) { host->setModWheel(0.f); host->setPitchBend(0.f); return; }
         if (host->getRegistry().handleMidiCC(data1, data2)) return;
         if (data1 == 64) host->setSustainPedal(data2 >= 64);
         else if (data1 == 7) host->setMasterGain(static_cast<float>(data2) / 100.0f);
@@ -673,11 +681,30 @@ json serializeParams(const SynthPresetParams& p) {
     return {
         {"pianoEnabled", p.pianoEnabled},
         {"pianoVolume", p.pianoVolume},
-        {"pianoLayers", json::array({
-            {{"enabled", p.pianoLayerEnabled[0]}, {"volume", p.pianoLayerVolume[0]}},
-            {{"enabled", p.pianoLayerEnabled[1]}, {"volume", p.pianoLayerVolume[1]}},
-            {{"enabled", p.pianoLayerEnabled[2]}, {"volume", p.pianoLayerVolume[2]}}
-        })},
+        {"pianoLayers", [&] {
+            json layers = json::array();
+            for (int i = 0; i < PIANO_LAYER_COUNT; ++i)
+                layers.push_back({{"enabled", p.pianoLayerEnabled[i]}, {"volume", p.pianoLayerVolume[i]}});
+            return layers;
+        }()},
+        {"pianoSampleConfig", [&] {
+            json configs = json::array();
+            for (int i = 0; i < PIANO_LAYER_COUNT; ++i) {
+                const auto& c = p.pianoLayerSample[i];
+                configs.push_back({{"attackSec",c.attackSec},{"decaySec",c.decaySec},
+                    {"sustainLevel",c.sustainLevel},{"releaseSec",c.releaseSec},
+                    {"loopHold",c.loopHold},{"pan",c.pan},{"fineTuneCents",c.fineTuneCents},
+                    {"cutoffHz",c.cutoffHz},{"resonanceQ",c.resonanceQ}});
+            }
+            return configs;
+        }()},
+        {"fxSends", [&] {
+            json sends = json::array();
+            for (int i = 0; i < FX_SOURCE_COUNT; ++i)
+                sends.push_back({{"modulation", p.fxSends[i].modulation},
+                                 {"delay", p.fxSends[i].delay}, {"reverb", p.fxSends[i].reverb}});
+            return sends;
+        }()},
         {"maxVoices", p.maxVoices},
         {"transposeSemis", p.transposeSemis},
         {"octaveShift", p.octaveShift},
@@ -701,6 +728,11 @@ json serializeParams(const SynthPresetParams& p) {
         {"chorusRateHz", p.chorusRateHz},
         {"chorusDepth", p.chorusDepth},
         {"chorusMix", p.chorusMix},
+        {"chorusDelay",p.chorusDelay},
+        {"chorusTone",p.chorusTone},
+        {"chorusFeedback",p.chorusFeedback},
+        {"chorusWidth",p.chorusWidth},
+        {"chorusVoices",p.chorusVoices},
         {"phaserEnabled", p.phaserEnabled},
         {"phaserRateHz", p.phaserRateHz},
         {"phaserDepth", p.phaserDepth},
@@ -752,6 +784,17 @@ json serializeParams(const SynthPresetParams& p) {
         {"organVolume", p.organVolume},
         {"organRotaryFast", p.organRotaryFast},
         {"organDrive", p.organDrive},
+        {"organRotaryMix", p.organRotaryMix},
+        {"organVibratoDepth", p.organVibratoDepth},
+        {"organVibratoRate", p.organVibratoRate},
+        {"organChorusVoices",p.organChorusVoices},
+        {"organChorusTone",p.organChorusTone},
+        {"organChorusFeedback",p.organChorusFeedback},
+        {"organChorusWidth",p.organChorusWidth},
+        {"organChorusMix",p.organChorusMix},
+        {"organChorusDepth",p.organChorusDepth},
+        {"organChorusRate",p.organChorusRate},
+        {"organChorusEnabled",p.organChorusEnabled},
         {"drawbars", drawbarsArr},
         {"organVibratoMode", p.organVibratoMode},
         {"organPercEnabled", p.organPercEnabled},
@@ -767,11 +810,23 @@ SynthPresetParams deserializeParams(const json& j, const SynthPresetParams& fall
     p.pianoEnabled     = j.value("pianoEnabled", p.pianoEnabled);
     p.pianoVolume      = j.value("pianoVolume", p.pianoVolume);
     if (j.contains("pianoLayers") && j["pianoLayers"].is_array()) {
-        for (size_t i = 0; i < std::min<size_t>(3, j["pianoLayers"].size()); ++i) {
+        // Legacy programs had 3 layers; don't leak enabled L4-L5 from current patch.
+        for (size_t i = j["pianoLayers"].size(); i < PIANO_LAYER_COUNT; ++i)
+            p.pianoLayerEnabled[i] = false;
+        for (size_t i = 0; i < std::min<size_t>(PIANO_LAYER_COUNT, j["pianoLayers"].size()); ++i) {
             const auto& layer = j["pianoLayers"][i];
             if (!layer.is_object()) continue;
             p.pianoLayerEnabled[i] = layer.value("enabled", p.pianoLayerEnabled[i]);
             p.pianoLayerVolume[i] = layer.value("volume", p.pianoLayerVolume[i]);
+        }
+    }
+    if (j.contains("fxSends") && j["fxSends"].is_array()) {
+        for (size_t i = 0; i < std::min<size_t>(FX_SOURCE_COUNT, j["fxSends"].size()); ++i) {
+            if (!j["fxSends"][i].is_object()) continue;
+            const auto& f = j["fxSends"][i];
+            p.fxSends[i].modulation = std::clamp(f.value("modulation", p.fxSends[i].modulation), 0.0f, 1.0f);
+            p.fxSends[i].delay = std::clamp(f.value("delay", p.fxSends[i].delay), 0.0f, 1.0f);
+            p.fxSends[i].reverb = std::clamp(f.value("reverb", p.fxSends[i].reverb), 0.0f, 1.0f);
         }
     }
     p.maxVoices        = j.value("maxVoices", p.maxVoices);
@@ -787,6 +842,33 @@ SynthPresetParams deserializeParams(const json& j, const SynthPresetParams& fall
     p.sustainLevel     = j.value("sustainLevel", p.sustainLevel);
     p.releaseSec       = j.value("releaseSec", p.releaseSec);
     p.loopHold         = j.value("loopHold", p.loopHold);
+    // Backwards compatible: old programs without per-layer envelopes use the old global sample envelope.
+    if (j.contains("pianoSampleConfig") && j["pianoSampleConfig"].is_array()) {
+        for (size_t i=0;i<std::min<size_t>(PIANO_LAYER_COUNT,j["pianoSampleConfig"].size());++i) {
+            const auto& c=j["pianoSampleConfig"][i];
+            if (!c.is_object()) continue;
+            auto& dst=p.pianoLayerSample[i];
+            dst.attackSec=c.value("attackSec",dst.attackSec);
+            dst.decaySec=c.value("decaySec",dst.decaySec);
+            dst.sustainLevel=c.value("sustainLevel",dst.sustainLevel);
+            dst.releaseSec=c.value("releaseSec",dst.releaseSec);
+            dst.loopHold=c.value("loopHold",dst.loopHold);
+            dst.pan=c.value("pan",dst.pan);
+            dst.fineTuneCents=c.value("fineTuneCents",dst.fineTuneCents);
+            dst.cutoffHz=std::clamp(c.value("cutoffHz",dst.cutoffHz),40.f,20000.f);
+            dst.resonanceQ=std::clamp(c.value("resonanceQ",dst.resonanceQ),.5f,12.f);
+        }
+    } else {
+        for (auto& c : p.pianoLayerSample) {
+            c.attackSec=std::max(0.005f,p.attackSec);
+            c.decaySec=p.decaySec;
+            c.sustainLevel=p.sustainLevel;
+            c.releaseSec=p.releaseSec;
+            c.loopHold=p.loopHold;
+            c.pan=0.f;
+            c.fineTuneCents=0.f;
+        }
+    }
     p.volume           = j.value("volume", p.volume);
     p.pan              = j.value("pan", p.pan);
 
@@ -805,6 +887,11 @@ SynthPresetParams deserializeParams(const json& j, const SynthPresetParams& fall
     p.chorusRateHz     = j.value("chorusRateHz", p.chorusRateHz);
     p.chorusDepth      = j.value("chorusDepth", p.chorusDepth);
     p.chorusMix        = j.value("chorusMix", p.chorusMix);
+    p.chorusDelay = j.value("chorusDelay", p.chorusDelay);
+    p.chorusTone = j.value("chorusTone", p.chorusTone);
+    p.chorusFeedback = j.value("chorusFeedback", p.chorusFeedback);
+    p.chorusWidth = j.value("chorusWidth", p.chorusWidth);
+    p.chorusVoices = j.value("chorusVoices", p.chorusVoices);
 
     p.phaserEnabled    = j.value("phaserEnabled", p.phaserEnabled);
     p.phaserRateHz     = j.value("phaserRateHz", p.phaserRateHz);
@@ -946,6 +1033,17 @@ SynthPresetParams deserializeParams(const json& j, const SynthPresetParams& fall
     p.organVolume       = j.value("organVolume", p.organVolume);
     p.organRotaryFast   = j.value("organRotaryFast", p.organRotaryFast);
     p.organDrive        = j.value("organDrive", p.organDrive);
+    p.organRotaryMix = j.value("organRotaryMix", p.organRotaryMix);
+    p.organVibratoDepth = j.value("organVibratoDepth", p.organVibratoDepth);
+    p.organVibratoRate = j.value("organVibratoRate", p.organVibratoRate);
+    p.organChorusVoices = j.value("organChorusVoices", p.organChorusVoices);
+    p.organChorusTone = j.value("organChorusTone", p.organChorusTone);
+    p.organChorusFeedback = j.value("organChorusFeedback", p.organChorusFeedback);
+    p.organChorusWidth = j.value("organChorusWidth", p.organChorusWidth);
+    p.organChorusMix = j.value("organChorusMix", p.organChorusMix);
+    p.organChorusDepth = j.value("organChorusDepth", p.organChorusDepth);
+    p.organChorusRate = j.value("organChorusRate", p.organChorusRate);
+    p.organChorusEnabled = j.value("organChorusEnabled", p.organChorusEnabled);
     p.organVibratoMode  = j.value("organVibratoMode", p.organVibratoMode);
     p.organPercEnabled  = j.value("organPercEnabled", p.organPercEnabled);
     p.organPercHarmonic = j.value("organPercHarmonic", p.organPercHarmonic);
@@ -965,7 +1063,7 @@ SynthPresetParams deserializeParams(const json& j, const SynthPresetParams& fall
 json serializePianoLayerSources(const NordPianoEngine& engine) {
     json layers = json::array();
     const auto banks = engine.getPianoInstruments();
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < PIANO_LAYER_COUNT; ++i) {
         auto bank = banks[i];
         const std::string path = bank ? fs::path(bank->sourcePath).generic_string() : "";
         layers.push_back({{"layer", i}, {"name", bank ? bank->name : "Sin sonido"},
@@ -981,7 +1079,7 @@ bool restorePianoLayerSources(const json& program, NordPianoEngine& engine,
     bool loadedFirst = false;
     const json layers = (program.contains("pianoLayers") && program["pianoLayers"].is_array())
         ? program["pianoLayers"] : json::array();
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < PIANO_LAYER_COUNT; ++i) {
         const json layer = (i < static_cast<int>(layers.size()) && layers[i].is_object())
             ? layers[i] : json::object();
         const std::string savedPath = i == 0 && layer.empty()
@@ -1033,6 +1131,8 @@ int main(int argc, char* argv[]) {
     std::string statusMsg = "Listo.";
     std::mutex dataMutex;
     int activeProgramSlot = 0;
+    std::string currentProgramName = "Program 1";
+    bool initializedEditBuffer = false;
     std::atomic<uint64_t> paramRevCounter{1};
 
     const std::string programsFilePath = "programs.json";
@@ -1080,6 +1180,8 @@ int main(int argc, char* argv[]) {
         if (pf) pf << userPrograms.dump(2);
     }
 
+    currentProgramName = userPrograms[0].value("name", std::string("Program 1"));
+
     HardwareManager hw(engine);
 
     const std::string tagsFilePath = "sample_tags.json";
@@ -1111,11 +1213,15 @@ int main(int argc, char* argv[]) {
     };
 
     svr.Get("/", [&](const httplib::Request&, httplib::Response& res) { serveHtmlPage("index.html", res); });
-    svr.Get("/synth", [&](const httplib::Request&, httplib::Response& res) { serveHtmlPage("synth.html", res); });
+    svr.Get("/synth", [&](const httplib::Request&, httplib::Response& res) {
+        serveHtmlPage("synth.html", res);
+        res.set_header("Cache-Control", "no-store, max-age=0");
+    });
     svr.Get("/organ", [&](const httplib::Request&, httplib::Response& res) { serveHtmlPage("organ.html", res); });
     svr.Get("/settings", [&](const httplib::Request&, httplib::Response& res) { serveHtmlPage("settings.html", res); });
 
     svr.Get("/api/state", [&](const httplib::Request&, httplib::Response& res) {
+        res.set_header("Cache-Control", "no-store, max-age=0");
         hw.pollHotPlugIfNeeded();
         SynthPresetParams p = engine.getCurrentParams();
         auto inst = engine.getInstrument();
@@ -1133,6 +1239,7 @@ int main(int argc, char* argv[]) {
 
         json j = {
             {"activeProgramSlot", activeProgramSlot},
+            {"programName", currentProgramName},
             {"paramRev", paramRevCounter.load()},
             {"pianoLayers", serializePianoLayerSources(engine)},
             {"instrumentId", inst ? inst->id : 0},
@@ -1154,6 +1261,8 @@ int main(int argc, char* argv[]) {
             {"lastMidiVel", engine.getLastMidiVel()},
             {"lastStrokeIdx", engine.getLastStrokeIndex()},
             {"midiSeq", engine.getMidiEventSeq()},
+            {"modWheel",engine.getModWheel()},
+            {"pitchBend",engine.getPitchBend()},
             {"activeKeys", activeKeysJson},
             {"connectedMidiCount", hwJson["connectedEnabledMidiCount"]},
             {"disconnectedMidiCount", hwJson["disconnectedEnabledMidiCount"]},
@@ -1177,7 +1286,16 @@ int main(int argc, char* argv[]) {
         auto inst = engine.getInstrument();
         std::string normPath = inst ? fs::path(inst->sourcePath).generic_string() : "";
         std::string fName = inst ? fs::path(inst->sourcePath).filename().string() : "";
-        std::string instName = inst ? inst->name : ("Program " + std::to_string(slotIdx + 1));
+        std::string suggested = inst ? inst->name : ("Program " + std::to_string(slotIdx + 1));
+        std::string instName = body.value("name", suggested);
+        // Trim/limit user-supplied display names (no HTML injection; UI uses textContent).
+        const auto begin = instName.find_first_not_of(" \t\n\r");
+        if (begin == std::string::npos) instName = suggested;
+        else { const auto end = instName.find_last_not_of(" \t\n\r");
+            instName = instName.substr(begin, end - begin + 1); }
+        if (instName.size() > 48) instName.resize(48);
+        currentProgramName = instName;
+        initializedEditBuffer = false;
 
         userPrograms[slotIdx] = {
             {"slot", slotIdx + 1},
@@ -1194,6 +1312,7 @@ int main(int argc, char* argv[]) {
             {"ok", true},
             {"slot", slotIdx},
             {"storedName", instName},
+            {"programName", currentProgramName},
             {"programs", userPrograms}
         }).dump(), "application/json");
     });
@@ -1204,6 +1323,8 @@ int main(int argc, char* argv[]) {
         int slotIdx = std::clamp(body.value("slot", 0), 0, 7);
         activeProgramSlot = slotIdx;
         const auto& prog = userPrograms[slotIdx];
+        currentProgramName = prog.value("name", "Program");
+        initializedEditBuffer = false;
 
         restorePianoLayerSources(prog, engine, libraryRootDir, statusMsg);
         if (prog.contains("params")) {
@@ -1216,6 +1337,7 @@ int main(int argc, char* argv[]) {
         res.set_content(json({
             {"ok", true},
             {"slot", slotIdx},
+            {"programName", currentProgramName},
             {"pianoLayers", serializePianoLayerSources(engine)},
             {"instrumentId", activeInst ? activeInst->id : 0},
             {"instrumentName", activeInst ? activeInst->name : prog.value("name", "Program")},
@@ -1224,6 +1346,21 @@ int main(int argc, char* argv[]) {
             {"memoryMB", activeInst ? activeInst->memoryMB : 0.0},
             {"params", serializeParams(engine.getCurrentParams())}
         }).dump(), "application/json");
+    });
+
+    // INIT resets only the active edit buffer; it DOES NOT overwrite programs.json.
+    // The player explicitly stores the initialized setup with STORE if desired.
+    svr.Post("/api/programs/init", [&](const httplib::Request&, httplib::Response& res) {
+        std::lock_guard<std::mutex> lock(dataMutex);
+        engine.allNotesOff();
+        for (int i = 0; i < PIANO_LAYER_COUNT; ++i) engine.setLayerInstrument(i, {});
+        engine.applyPreset(SynthPresetParams{});
+        currentProgramName = "INIT PERFORMANCE";
+        initializedEditBuffer = true;
+        paramRevCounter.fetch_add(1);
+        res.set_content(json({{"ok",true}, {"programName",currentProgramName},
+            {"slot",activeProgramSlot}, {"pianoLayers",serializePianoLayerSources(engine)},
+            {"params",serializeParams(engine.getCurrentParams())}}).dump(), "application/json");
     });
 
     svr.Post("/api/programs/import", [&](const httplib::Request& req, httplib::Response& res) {
@@ -1250,6 +1387,21 @@ int main(int argc, char* argv[]) {
         json arr = json::array();
         for (const auto& it : items) {
             std::string group = it.instrumentGroup;
+            // Non-destructive filename heuristics. Explicit user tags override these defaults.
+            const auto lowered = [&]{ std::string name=it.name; std::transform(name.begin(),name.end(),name.begin(),
+                [](unsigned char c){return static_cast<char>(std::tolower(c));}); return name; }();
+            const auto has = [&](const char* token){return lowered.find(token)!=std::string::npos;};
+            if (has("bell") || has("chime")) group="Bells & Chimes";
+            else if (has("pad") || has("ambient") || has("atmos")) group="Pads & Atmospheres";
+            else if (has("lead")) group="Synth Leads";
+            else if (has("bass") || has("sub")) group="Bass & Sub";
+            else if (has("pluck")) group="Plucks & Arpeggios";
+            else if (has("brass") || has("horn") || has("trumpet")) group="Brass";
+            else if (has("string") || has("violin") || has("cello")) group="Strings";
+            else if (has("choir") || has("vox") || has("vocal")) group="Choirs & Vocals";
+            else if (has("guitar") || has("ukulele")) group="Guitars & Plucked";
+            else if (has("drum") || has("percussion") || has("perc")) group="Drums & Percussion";
+            else if (has("rhodes") || has("wurlitzer") || has("clav")) group="Electric Pianos";
             bool favorite = false;
             if (sampleTags.contains(it.name) && sampleTags[it.name].is_object()) {
                 group = sampleTags[it.name].value("group", group);
@@ -1332,7 +1484,7 @@ int main(int argc, char* argv[]) {
     svr.Post("/api/load", [&](const httplib::Request& req, httplib::Response& res) {
         auto body = json::parse(req.body, nullptr, false);
         std::string targetPath = body.value("path", "");
-        int pianoLayer = std::clamp(body.value("layer", 0), 0, 2);
+        int pianoLayer = std::clamp(body.value("layer", 0), 0, PIANO_LAYER_COUNT - 1);
 
         fs::path p(targetPath);
         std::string ext = p.extension().string();
@@ -1375,7 +1527,7 @@ int main(int argc, char* argv[]) {
     svr.Post("/api/piano/layers/clear", [&](const httplib::Request& req, httplib::Response& res) {
         auto body = json::parse(req.body, nullptr, false);
         if (!body.is_object() || !body.contains("layer") || !body["layer"].is_number_integer()
-            || body["layer"].get<int>() < 0 || body["layer"].get<int>() >= 3) {
+            || body["layer"].get<int>() < 0 || body["layer"].get<int>() >= PIANO_LAYER_COUNT) {
             res.status = 400;
             res.set_content(R"({"ok":false,"error":"Capa inválida"})", "application/json");
             return;
@@ -1386,6 +1538,71 @@ int main(int argc, char* argv[]) {
         paramRevCounter.fetch_add(1);
         res.set_content(json({{"ok", true}, {"pianoLayers", serializePianoLayerSources(engine)},
                               {"params", serializeParams(engine.getCurrentParams())}}).dump(), "application/json");
+    });
+
+    // Factory patches: explicit runtime/version diagnostics. A running copy of the
+    // previous executable can still own :8080 after the new binary was compiled.
+    // The browser should never claim a factory patch was loaded based only on the
+    // HTTP POST; this GET reads the actual active engine parameters.
+    constexpr int kFactoryPresetCount = 48;
+    const std::string factoryBuild = "Live Stage V6.2 / Factory API 2";
+    auto factoryState = [&]() {
+        const auto p = engine.getCurrentParams();
+        json layerTimbres = json::array();
+        int enabledLayers = 0;
+        for (const auto& layer : p.synthLayers) {
+            if (layer.enabled) ++enabledLayers;
+            layerTimbres.push_back({
+                {"enabled", layer.enabled}, {"wave", layer.waveType},
+                {"cutoff", layer.cutoffHz}, {"attack", layer.attackSec},
+                {"volume", layer.volume}
+            });
+        }
+        return json({
+            {"ok", true}, {"build", factoryBuild},
+            {"apiVersion", 2}, {"maxFactoryPresets", kFactoryPresetCount},
+            {"presetId", p.synthPresetId}, {"synthEnabled", p.synthEnabled},
+            {"synthMasterVol", p.synthMasterVol},
+            {"enabledLayers", enabledLayers}, {"layerTimbres", layerTimbres},
+            {"uiRoot", findUiDir()}
+        });
+    };
+    svr.Get("/api/synth/factory/status", [&](const httplib::Request&, httplib::Response& res) {
+        res.set_header("Cache-Control", "no-store, max-age=0");
+        res.set_content(factoryState().dump(), "application/json");
+    });
+
+    // Factory synth patches are independent from the 8 stored performance programs.
+    // One endpoint avoids a two-request race (power ON, then preset selection).
+    svr.Post("/api/synth/factory/load", [&](const httplib::Request& req, httplib::Response& res) {
+        const auto body = json::parse(req.body, nullptr, false);
+        if (!body.is_object() || !body.contains("id") || !body["id"].is_number_integer()) {
+            res.status = 400;
+            res.set_content(R"({"ok":false,"error":"Se requiere un id entero de 1 a 48"})", "application/json");
+            return;
+        }
+        const int id = body["id"].get<int>();
+        if (id < 1 || id > kFactoryPresetCount) {
+            res.status = 400;
+            // Observa la palabra "json" añadida como delimitador
+            res.set_content(R"json({"ok":false,"error":"Preset fuera de rango (1 a 48)"})json", "application/json");
+            return;
+        }
+        const bool changed = engine.applyParamById("synthPresetId", static_cast<float>(id), false);
+        const bool powered = engine.applyParamById("synthEnabled", 1.0f, false);
+        if (!changed || !powered) {
+            res.status = 500;
+            res.set_content(R"({"ok":false,"error":"No fue posible activar el sintetizador o cargar el preset"})", "application/json");
+            return;
+        }
+        paramRevCounter.fetch_add(1);
+        const auto params = engine.getCurrentParams();
+        const bool active = (params.synthPresetId == id && params.synthEnabled);
+        auto diagnostic = factoryState();
+        diagnostic["ok"] = active;
+        diagnostic["params"] = serializeParams(params);
+        res.set_header("Cache-Control", "no-store, max-age=0");
+        res.set_content(diagnostic.dump(), "application/json");
     });
 
     svr.Post("/api/param", [&](const httplib::Request& req, httplib::Response& res) {

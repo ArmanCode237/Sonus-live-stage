@@ -10,19 +10,27 @@ const DEFAULT_FREQS = [60, 250, 1000, 4000, 12000];
 const BAND_NAMES = ['BAND 1 (LOW)', 'BAND 2 (LOW-MID)', 'BAND 3 (MID)', 'BAND 4 (HI-MID)', 'BAND 5 (HIGH)'];
 const SOUND_GROUPS = [
   'Acoustic Pianos', 'Electric Pianos', 'Accordion & Organ',
-  'Xylophone & Mallets', 'Strings, Brass & Pads', 'Synth & Misc Samples', 'Programs'
+  'Xylophone & Mallets', 'Strings, Brass & Pads', 'Synth & Misc Samples',
+  'Pads & Atmospheres', 'Synth Leads', 'Bass & Sub', 'Plucks & Arpeggios',
+  'Bells & Chimes', 'Brass', 'Strings', 'Choirs & Vocals', 'Guitars & Plucked',
+  'Drums & Percussion', 'Ambient & Textures', 'Sound Effects',
+  'Upright & Felt Pianos', 'Clavinet', 'Harpsichord', 'Celesta', 'Music Box',
+  'Orchestral Hits', 'Woodwinds', 'Flutes', 'Reeds', 'World & Ethnic',
+  'Analog Synth', 'Digital Synth', 'FM Keys', 'Synth Arps', 'Synth Sequences',
+  'Cinematic Drones', 'Soundscapes', 'Pads & Motion', 'Bass Acoustic',
+  'Bass Electric', 'Bass Synth', 'Leads Mono', 'Leads Poly', 'Plucked Synth',
+  'Percussive Keys', 'Glockenspiel', 'Vibraphone', 'Marimba', 'Programs'
 ];
-const SYNTH_PRESET_NAMES = [
-  '', 'P1: Juno Warm Pad', 'P2: Jupiter Brass', 'P3: Jupiter Lead',
-  'P4: Crystal Pluck', 'P5: Juno Strings', 'P6: Deep Analog Bass',
-  'P7: PWM Motion', 'P8: Jupiter Poly'
-];
+const SYNTH_PRESET_NAMES = ["", "Juno Warm Pad", "Jupiter Brass", "Jupiter Lead", "Crystal Pluck", "Juno Strings", "Deep Analog Bass", "PWM Motion", "Jupiter Poly", "Analog Keys", "Glass Bells", "Motion Pad", "Vintage Brass", "Neo Poly Keys", "Dyno Analog", "Soft Tines", "Juno Comp", "Air EP", "Wide Spark", "Velvet Cloud", "Slow PWM", "Warm Ensemble", "Atmosphere", "Dark Cinema", "Poly Horizon", "Classic Poly Brass", "Jupiter Stab", "Soft Horns", "Bright Brass", "Synth Section", "Power Brass", "Rubber Bass", "Sub Foundation", "DCO Punch", "Acid Pulse", "Deep Stack", "Grit Bass", "Mono Vector", "Pulse Solo", "Classic Pro", "Octave Lead", "Resonant Edge", "Bright Solo", "Stereo Saw", "Hyper Poly", "Wide 80s", "Unison Rise", "Air Saw", "Stadium Saw"];
+const SYNTH_PRESET_CATEGORIES = ["", "PADS", "BRASS", "LEADS", "KEYS", "STRINGS", "BASS", "PADS", "KEYS", "KEYS", "BELLS", "PADS", "BRASS", "KEYS", "KEYS", "KEYS", "KEYS", "KEYS", "KEYS", "PADS", "PADS", "PADS", "PADS", "PADS", "PADS", "BRASS", "BRASS", "BRASS", "BRASS", "BRASS", "BRASS", "BASS", "BASS", "BASS", "BASS", "BASS", "BASS", "LEADS", "LEADS", "LEADS", "LEADS", "LEADS", "LEADS", "SAWS", "SAWS", "SAWS", "SAWS", "SAWS", "SAWS"];
 
 const state = {
   pianoEnabled: true, pianoVolume: 1.0,
   activePianoLayer: 0,
-  pianoLayers: [{enabled:true,volume:1},{enabled:false,volume:0.75},{enabled:false,volume:0.75}],
-  pianoLayerSources: [{name:'Sin sonido',sourcePath:''},{name:'VACÍA',sourcePath:''},{name:'VACÍA',sourcePath:''}],
+  pianoLayers: Array.from({length:5},(_,i)=>({enabled:i===0,volume:i===0?1:0.75})),
+  pianoLayerSources: Array.from({length:5},(_,i)=>({name:i===0?'Sin sonido':'VACÍA',sourcePath:''})),
+  pianoSampleConfig: Array.from({length:5},()=>({attackSec:0.005,decaySec:3.5,sustainLevel:1,releaseSec:.35,loopHold:.65,pan:0,fineTuneCents:0,cutoffHz:20000,resonanceQ:0.707})),
+  fxSends: Array.from({length:9},()=>({modulation:1,delay:1,reverb:1})),
   tune: 0, volume: 0.85, pan: 0.0,
   transpose: 0, octave: 0, touch: 1, softRelease: false,
   cutoff: 20000, resonance: 0.71,
@@ -31,7 +39,7 @@ const state = {
   eqFreq0: 60, eqFreq1: 250, eqFreq2: 1000, eqFreq3: 4000, eqFreq4: 12000,
   eqQ0: 0.9, eqQ1: 1.0, eqQ2: 1.0, eqQ3: 1.0, eqQ4: 0.9,
   eqGain0: 0, eqGain1: 0, eqGain2: 0, eqGain3: 0, eqGain4: 0,
-  chorusEnabled: false, chorusRate: 0.8, chorusDepth: 0.45, chorusMix: 0.35,
+  chorusEnabled: false, chorusRate: 0.8, chorusDepth: 0.45, chorusMix: 0.35, chorusVoices:2, chorusWidth:.85, chorusFeedback:.08, chorusTone:9500, chorusDelay:16,
   phaserEnabled: false, phaserRate: 0.6, phaserDepth: 0.60, phaserFeedback: 0.40, phaserMix: 0.35,
   tremoloEnabled: false, tremoloRate: 4.5, tremoloDepth: 0.50,
   delayEnabled: false, delayTimeMs: 360, delayFeedback: 0.35, delayDamping: 0.35, delayMix: 0.25, delayPingPong: true,
@@ -44,6 +52,8 @@ const state = {
   synthLfoEnabled: false, synthLfoWave: 0, synthLfoRate: 4.5,
   synthLfoDepth: 0, synthLfoPitch: 0, synthLfoCutoff: 0,
   organEnabled: false, organModel: 0, organVolume: 0.80, organRotaryFast: false, organDrive: 0.12,
+  organRotaryMix: 1, organVibratoDepth: 1, organVibratoRate: 6.8,
+  organChorusEnabled:false,organChorusRate:.65,organChorusDepth:.55,organChorusMix:.3,organChorusWidth:.85,organChorusFeedback:.08,organChorusTone:9000,organChorusVoices:3,
   organVibratoMode: 0, organPercEnabled: false, organPercHarmonic: 3, organPercDecaySec: 0.35, organPercLevel: 0.85,
   activeModTab: 'chorus', storeMode: false, activeProgramSlot: 0,
   programs: [], libraryItems: [], filteredList: [],
@@ -146,6 +156,17 @@ function openModal(id) {
   if (!el) return;
   el.classList.add('open');
   if (id === 'modalEq' && typeof drawEqCurve === 'function') drawEqCurve();
+  if (id === 'modalFxSends') {
+    if (typeof buildFxSendMatrix === 'function') buildFxSendMatrix();
+    if (typeof initAllKnobs === 'function') initAllKnobs();
+    if (typeof refreshFxSends === 'function') refreshFxSends();
+  }
+  if (id === 'modalPianoSample') {
+    if (typeof initAllKnobs==='function') initAllKnobs();
+    if (typeof refreshPianoSampleEditor==='function') refreshPianoSampleEditor();
+    if (typeof refreshFxSends==='function') refreshFxSends();
+  }
+  if (id === 'modalOrganEffects' && typeof initAllKnobs==='function') initAllKnobs();
   if (id === 'modalBrowser' && typeof renderCategorySidebar === 'function') {
     renderCategorySidebar();
     renderBrowserList();
@@ -183,7 +204,7 @@ function toggleEffect(key) {
 }
 
 function updateModLeds() {
-  ['pianoEnabled', 'eqEnabled', 'delayEnabled', 'reverbEnabled', 'synthEnabled', 'organEnabled', 'organPercEnabled'].forEach(k => {
+  ['pianoEnabled', 'eqEnabled', 'delayEnabled', 'reverbEnabled', 'synthEnabled', 'organEnabled', 'organPercEnabled','organChorusEnabled'].forEach(k => {
     const el = $(`led_${k}`);
     if (el) el.classList.toggle('on', !!state[k]);
     const elPage = $(`ledPage_${k}`);
@@ -197,4 +218,5 @@ function updateModLeds() {
   });
   const modLed = $('led_modActive');
   if (modLed) modLed.classList.toggle('on', !!state[`${state.activeModTab}Enabled`]);
+  if (typeof updateMainDashboard==='function') updateMainDashboard();
 }

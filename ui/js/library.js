@@ -53,17 +53,8 @@ function renderCategorySidebar() {
   const counts = { ALL: state.libraryItems.length, FAV: state.libraryItems.filter(x => x.favorite).length };
   SOUND_GROUPS.forEach(g => { counts[g] = state.libraryItems.filter(x => x.group === g).length; });
 
-  const entries = [
-    { id: 'ALL', label: '📁 Todos los Samples' },
-    { id: 'FAV', label: '★ Favoritos' },
-    { id: 'Acoustic Pianos', label: '🎹 Acoustic Pianos' },
-    { id: 'Electric Pianos', label: '⚡ Electric Pianos' },
-    { id: 'Accordion & Organ', label: '🪗 Accordion & Organ' },
-    { id: 'Xylophone & Mallets', label: '🔔 Xylophone & Mallets' },
-    { id: 'Strings, Brass & Pads', label: '🎻 Strings, Brass & Pads' },
-    { id: 'Synth & Misc Samples', label: '🎛 Synth & Misc' },
-    { id: 'Programs', label: '💾 Programs (.ns3f)' }
-  ];
+  const entries = [{id:'ALL',label:'Todos los samples'},{id:'FAV',label:'Favoritos'},
+    ...SOUND_GROUPS.map(g=>({id:g,label:g}))];
   entries.forEach(e => {
     const btn = document.createElement('button');
     btn.className = 'cat-nav-btn' + (state.selectedCategory === e.id ? ' active' : '');

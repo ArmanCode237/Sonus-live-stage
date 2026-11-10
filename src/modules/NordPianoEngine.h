@@ -55,11 +55,20 @@ public:
     std::shared_ptr<const PianoInstrument> getInstrument() const;
     void setLayerInstrument(int layer, std::shared_ptr<const PianoInstrument> inst);
     std::shared_ptr<const PianoInstrument> getLayerInstrument(int layer) const;
-    std::array<std::shared_ptr<const PianoInstrument>, 3> getPianoInstruments() const;
+    std::array<std::shared_ptr<const PianoInstrument>, PIANO_LAYER_COUNT> getPianoInstruments() const;
     void setPianoVolume(float level) { pianoVolume_.store(std::clamp(level, 0.0f, 1.5f)); }
-    void setPianoLayerEnabled(int layer, bool enabled) { if (layer >= 0 && layer < 3) pianoLayerEnabled_[layer].store(enabled); }
-    void setPianoLayerVolume(int layer, float volume) { if (layer >= 0 && layer < 3) pianoLayerVolume_[layer].store(std::clamp(volume, 0.0f, 1.5f)); }
+    void setPianoLayerEnabled(int layer, bool enabled) { if (layer >= 0 && layer < PIANO_LAYER_COUNT) pianoLayerEnabled_[layer].store(enabled); }
+    void setPianoLayerVolume(int layer, float volume) { if (layer >= 0 && layer < PIANO_LAYER_COUNT) pianoLayerVolume_[layer].store(std::clamp(volume, 0.0f, 1.5f)); }
 
+    void setFxSend(int source, int bus, float amount) {
+        if (source >= 0 && source < FX_SOURCE_COUNT && bus >= 0 && bus < FX_BUS_COUNT)
+            fxSends_[source][bus].store(std::clamp(amount, 0.0f, 1.0f));
+    }
+    void setPianoLayerSampleParam(int layer, int param, float value);
+    void setModWheel(float normalized) { modWheel_.store(std::clamp(normalized, 0.0f, 1.0f)); }
+    void setPitchBend(float normalized) { pitchBend_.store(std::clamp(normalized, -1.0f, 1.0f)); }
+    float getModWheel() const { return modWheel_.load(); }
+    float getPitchBend() const { return pitchBend_.load(); }
     void applyPreset(const SynthPresetParams& p);
 
     void noteOn(int midiKey, int velocity);
@@ -82,11 +91,11 @@ public:
     void setCutoffHz(float hz) { cutoffHz_.store(std::clamp(hz, 20.0f, 20000.0f)); filterDirty_.store(true); }
     void setResonanceQ(float q) { resonanceQ_.store(std::clamp(q, 0.5f, 15.0f)); filterDirty_.store(true); }
 
-    void setAttackSec(float sec) { attackSec_.store(std::clamp(sec, 0.001f, 10.0f)); }
-    void setDecaySec(float sec) { decaySec_.store(std::clamp(sec, 0.005f, 15.0f)); }
-    void setSustainLevel(float lvl) { sustainLevel_.store(std::clamp(lvl, 0.0f, 1.0f)); }
-    void setReleaseSec(float sec) { releaseSec_.store(std::clamp(sec, 0.005f, 15.0f)); }
-    void setLoopHold(float hold) { loopHold_.store(std::clamp(hold, 0.0f, 1.0f)); }
+    void setAttackSec(float sec) { attackSec_.store(std::clamp(sec, 0.001f, 10.0f)); for(int i=0;i<PIANO_LAYER_COUNT;++i) setPianoLayerSampleParam(i,0,attackSec_.load()); }
+    void setDecaySec(float sec) { decaySec_.store(std::clamp(sec, 0.005f, 15.0f)); for(int i=0;i<PIANO_LAYER_COUNT;++i) setPianoLayerSampleParam(i,1,decaySec_.load()); }
+    void setSustainLevel(float lvl) { sustainLevel_.store(std::clamp(lvl, 0.0f, 1.0f)); for(int i=0;i<PIANO_LAYER_COUNT;++i) setPianoLayerSampleParam(i,2,sustainLevel_.load()); }
+    void setReleaseSec(float sec) { releaseSec_.store(std::clamp(sec, 0.005f, 15.0f)); for(int i=0;i<PIANO_LAYER_COUNT;++i) setPianoLayerSampleParam(i,3,releaseSec_.load()); }
+    void setLoopHold(float hold) { loopHold_.store(std::clamp(hold, 0.0f, 1.0f)); for(int i=0;i<PIANO_LAYER_COUNT;++i) setPianoLayerSampleParam(i,4,loopHold_.load()); }
 
     void setEqEnabled(bool en) { eqEnabled_.store(en); eqDirty_.store(true); }
     void setLowCutHz(float hz) { lowCutHz_.store(std::clamp(hz, 20.0f, 1000.0f)); eqDirty_.store(true); }
@@ -99,6 +108,11 @@ public:
     void setChorusRate(float hz) { chorusRate_.store(std::clamp(hz, 0.1f, 8.0f)); }
     void setChorusDepth(float d) { chorusDepth_.store(std::clamp(d, 0.0f, 1.0f)); }
     void setChorusMix(float m) { chorusMix_.store(std::clamp(m, 0.0f, 1.0f)); }
+    void setChorusVoices(int v) { chorusVoices_.store(std::clamp(v,1,3)); }
+    void setChorusWidth(float v) { chorusWidth_.store(std::clamp(v,0.0f,1.0f)); }
+    void setChorusFeedback(float v) { chorusFeedback_.store(std::clamp(v,-0.5f,0.5f)); }
+    void setChorusTone(float v) { chorusTone_.store(std::clamp(v,500.0f,18000.0f)); }
+    void setChorusDelay(float v) { chorusDelay_.store(std::clamp(v,7.0f,28.0f)); }
 
     void setPhaserEnabled(bool en) { phaserEnabled_.store(en); }
     void setPhaserRate(float hz) { phaserRate_.store(std::clamp(hz, 0.1f, 8.0f)); }
@@ -158,7 +172,7 @@ public:
 
 private:
     void pushMidiEvent(uint8_t type, int d1, int d2);
-    void handleNoteOnInternal(const std::array<std::shared_ptr<const PianoInstrument>, 3>& instruments, int rawMidiKey, int velocity);
+    void handleNoteOnInternal(const std::array<std::shared_ptr<const PianoInstrument>, PIANO_LAYER_COUNT>& instruments, int rawMidiKey, int velocity);
     void startPianoVoice(const std::shared_ptr<const PianoInstrument>& inst, int layer, int rawMidiKey, int midiKey, int velocity);
     void handleNoteOffInternal(int rawMidiKey);
     void handleSustainInternal(bool down);
@@ -168,8 +182,12 @@ private:
 
     double hostSampleRate_ = 48000.0;
     std::shared_ptr<const PianoInstrument> instrument_; // legacy layer 1
-    std::array<std::shared_ptr<const PianoInstrument>, 2> extraPianoInstruments_{};
+    std::array<std::shared_ptr<const PianoInstrument>, PIANO_LAYER_COUNT - 1> extraPianoInstruments_{};
     mutable std::mutex instPtrMutex_;
+
+    std::array<std::array<std::atomic<float>, FX_BUS_COUNT>, FX_SOURCE_COUNT> fxSends_{};
+    std::array<std::array<float, FX_BUS_COUNT>, FX_SOURCE_COUNT> fxSendSmoothed_{};
+    std::array<std::vector<float>, FX_SOURCE_COUNT> sourceAudio_{};
 
     std::array<Voice, MAX_VOICES> voices_;
     bool sustainPedalDown_ = false;
@@ -184,8 +202,13 @@ private:
 
     std::atomic<bool> pianoEnabled_{true};
     std::atomic<float> pianoVolume_{1.0f};
-    std::array<std::atomic<bool>, 3> pianoLayerEnabled_{{true, false, false}};
-    std::array<std::atomic<float>, 3> pianoLayerVolume_{{1.0f, 0.75f, 0.75f}};
+    std::array<std::atomic<bool>, PIANO_LAYER_COUNT> pianoLayerEnabled_{{true, false, false, false, false}};
+    std::array<std::atomic<float>, PIANO_LAYER_COUNT> pianoLayerVolume_{{1.0f, 0.75f, 0.75f, 0.75f, 0.75f}};
+    std::array<std::array<std::atomic<float>, 9>, PIANO_LAYER_COUNT> pianoLayerSample_{};
+    struct LayerFilterState { float ic1L=0.f,ic2L=0.f,ic1R=0.f,ic2R=0.f; };
+    std::array<LayerFilterState, PIANO_LAYER_COUNT> pianoFilterStates_{};
+    std::atomic<float> modWheel_{0.0f};
+    std::atomic<float> pitchBend_{0.0f};
     std::atomic<int> maxVoicesLimit_{128};
     std::atomic<int> transposeSemis_{0};
     std::atomic<int> octaveShift_{0};
@@ -212,6 +235,11 @@ private:
     std::atomic<float> chorusRate_{0.8f};
     std::atomic<float> chorusDepth_{0.45f};
     std::atomic<float> chorusMix_{0.35f};
+    std::atomic<int> chorusVoices_{2};
+    std::atomic<float> chorusWidth_{0.85f};
+    std::atomic<float> chorusFeedback_{0.08f};
+    std::atomic<float> chorusTone_{9500.0f};
+    std::atomic<float> chorusDelay_{16.0f};
 
     std::atomic<bool> phaserEnabled_{false};
     std::atomic<float> phaserRate_{0.6f};

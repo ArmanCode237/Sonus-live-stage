@@ -19,7 +19,11 @@ async function loadIncludes(root = document) {
       slot.replaceWith(tpl.content);
     } catch (err) {
       console.error('[include] No se pudo cargar', url, err);
-      slot.innerHTML = `<div style="color:#f87171;padding:8px;">Error cargando ${url}</div>`;
+      // IMPORTANT: remove the data-include marker on failure. Otherwise this
+      // placeholder was recursively fetched FOREVER and app.js never initialized
+      // any faders, knobs or keyboard after a page change.
+      slot.removeAttribute('data-include');
+      slot.innerHTML = `<div class="include-error" role="alert">No se pudo cargar ${url}. Recarga el panel.</div>`;
     }
   }));
   // Un partial puede contener a su vez otros includes

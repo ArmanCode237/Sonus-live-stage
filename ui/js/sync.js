@@ -14,6 +14,21 @@ function syncFromServerParams(p) {
   if(p.pianoLayers && Array.isArray(p.pianoLayers)) {
     state.pianoLayers = p.pianoLayers.map((l,i)=>({enabled:!!l.enabled, volume:Number(l.volume ?? (i===0?1:0.75))}));
   }
+  if(Array.isArray(p.pianoSampleConfig)) {
+    state.pianoSampleConfig = p.pianoSampleConfig.map(cfg=>({...cfg}));
+    if(typeof refreshPianoSampleEditor==='function')refreshPianoSampleEditor();
+  }
+  if(Array.isArray(p.fxSends)) {
+    state.fxSends = Array.from({length:9},(_,i)=>{
+      const src = p.fxSends[i] || {};
+      return {
+        modulation: Number(src.modulation ?? 1),
+        delay: Number(src.delay ?? 1),
+        reverb: Number(src.reverb ?? 1)
+      };
+    });
+    if(typeof refreshFxSends === 'function') refreshFxSends();
+  }
   if(typeof updatePianoLayerControls==='function') updatePianoLayerControls();
   const mv = p.maxVoices || 128;
   const mvSel = $('maxVoicesSelect');
@@ -38,6 +53,7 @@ function syncFromServerParams(p) {
     attack: p.attackSec, decay: p.decaySec, sustain: p.sustainLevel, release: p.releaseSec, loopHold: p.loopHold,
     lowCut: p.lowCutHz, highCut: p.highCutHz,
     chorusRate: p.chorusRateHz, chorusDepth: p.chorusDepth, chorusMix: p.chorusMix,
+    chorusVoices:p.chorusVoices,chorusWidth:p.chorusWidth,chorusFeedback:p.chorusFeedback,chorusTone:p.chorusTone,chorusDelay:p.chorusDelay,
     phaserRate: p.phaserRateHz, phaserDepth: p.phaserDepth, phaserFeedback: p.phaserFeedback, phaserMix: p.phaserMix,
     tremoloRate: p.tremoloRateHz, tremoloDepth: p.tremoloDepth,
     delayTimeMs: p.delayTimeMs, delayFeedback: p.delayFeedback, delayDamping: p.delayDamping, delayMix: p.delayMix,
@@ -49,6 +65,10 @@ function syncFromServerParams(p) {
     synthLfoRate: p.synthLfoRate, synthLfoDepth: p.synthLfoDepth,
     synthLfoPitch: p.synthLfoPitch, synthLfoCutoff: p.synthLfoCutoff,
     organVolume: p.organVolume, organDrive: p.organDrive,
+    organRotaryMix: p.organRotaryMix, organVibratoDepth:p.organVibratoDepth,
+    organVibratoRate:p.organVibratoRate,
+    organChorusRate:p.organChorusRate,organChorusDepth:p.organChorusDepth,organChorusMix:p.organChorusMix,
+    organChorusWidth:p.organChorusWidth,organChorusFeedback:p.organChorusFeedback,organChorusTone:p.organChorusTone,organChorusVoices:p.organChorusVoices,
     organPercDecaySec: p.organPercDecaySec, organPercLevel: p.organPercLevel
   };
   Object.keys(direct).forEach(k => {
@@ -114,6 +134,9 @@ function syncFromServerParams(p) {
   }
 
   state.synthEnabled = !!p.synthEnabled;
+  state.organChorusEnabled = !!p.organChorusEnabled;
+  setActive('led_organChorusEnabled',state.organChorusEnabled);
+  setActive('ledOrgan_organChorusEnabled',state.organChorusEnabled);
   state.organEnabled = !!p.organEnabled;
   state.organRotaryFast = !!p.organRotaryFast;
   state.organModel = p.organModel || 0;

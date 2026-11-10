@@ -2,9 +2,9 @@
 <div class="modal-backdrop" id="modalFxRack">
   <div class="modal-window" style="width:1080px;">
     <div class="modal-top">
-      <h3>🎚 Master Effects 19" Studio Rack (Filter SVF · Modulation · Stereo Delay · Acoustic & Valhalla Shimmer Reverb)</h3>
+      <h3>MASTER EFFECTS / 19" STUDIO RACK (Filter SVF · Modulation · Stereo Delay · Acoustic & Valhalla Shimmer Reverb)</h3>
       <div style="display:flex; gap:8px;">
-        <button class="expand-btn" onclick="closeModal('modalFxRack'); openModal('modalEq');">🎛 Abrir EQ Paramétrico 5-Bandas</button>
+        <button class="expand-btn" onclick="closeModal('modalFxRack'); openModal('modalEq');">ABRIR EQ PARAMÉTRICO 5-BANDAS</button>
         <button class="close-modal-btn" onclick="closeModal('modalFxRack')">Cerrar ✕</button>
       </div>
     </div>
@@ -30,6 +30,11 @@
           <div class="knob-cell" data-id="chorusRate" data-min="0.1" data-max="6.0" data-val="0.8" data-log="0" data-unit="Hz" data-label="RATE" data-small="1"></div>
           <div class="knob-cell" data-id="chorusDepth" data-min="0.0" data-max="1.0" data-val="0.45" data-log="0" data-unit="%" data-label="DEPTH" data-small="1"></div>
           <div class="knob-cell" data-id="chorusMix" data-min="0.0" data-max="1.0" data-val="0.35" data-log="0" data-unit="%" data-label="MIX" data-small="1"></div>
+          <div class="knob-cell" data-id="chorusVoices" data-min="1" data-max="3" data-val="2" data-log="0" data-unit="" data-label="VOICES" data-small="1" data-step-size="1"></div>
+          <div class="knob-cell" data-id="chorusWidth" data-min="0" data-max="1" data-val="0.85" data-unit="%" data-label="ST WIDTH" data-small="1"></div>
+          <div class="knob-cell" data-id="chorusFeedback" data-min="-0.5" data-max="0.5" data-val="0.08" data-unit="%" data-label="FEEDBACK" data-small="1"></div>
+          <div class="knob-cell" data-id="chorusTone" data-min="500" data-max="18000" data-val="9500" data-log="1" data-unit="Hz" data-label="TONE" data-small="1"></div>
+          <div class="knob-cell" data-id="chorusDelay" data-min="7" data-max="28" data-val="16" data-unit="ms" data-label="BASE DELAY" data-small="1"></div>
         </div>
       </div>
 
@@ -81,7 +86,7 @@
           <span class="mini-mode-pill" id="modalRevType_0" style="padding:5px 12px; font-size:10px;" onclick="selectReverbType(0)">ROOM ACÚSTICO</span>
           <span class="mini-mode-pill" id="modalRevType_1" style="padding:5px 12px; font-size:10px;" onclick="selectReverbType(1)">STUDIO PLATE</span>
           <span class="mini-mode-pill active" id="modalRevType_2" style="padding:5px 12px; font-size:10px;" onclick="selectReverbType(2)">CONCERT HALL</span>
-          <span class="mini-mode-pill" id="modalRevType_3" style="padding:5px 12px; font-size:10px;" onclick="selectReverbType(3)">✨ VALHALLA SHIMMER</span>
+          <span class="mini-mode-pill" id="modalRevType_3" style="padding:5px 12px; font-size:10px;" onclick="selectReverbType(3)">SHIMMER</span>
         </div>
       </div>
 
@@ -122,8 +127,8 @@
           <div class="eq-band-card">
             <div class="eq-band-title">TONE COLOR</div>
             <div class="mode-pills-row">
-              <span class="mini-mode-pill" id="shmColor_0" onclick="setShimmerMode('shimmerColorMode', 0)">☀ BRIGHT</span>
-              <span class="mini-mode-pill active" id="shmColor_1" onclick="setShimmerMode('shimmerColorMode', 1)">🌙 DARK</span>
+              <span class="mini-mode-pill" id="shmColor_0" onclick="setShimmerMode('shimmerColorMode', 0)">BRIGHT</span>
+              <span class="mini-mode-pill active" id="shmColor_1" onclick="setShimmerMode('shimmerColorMode', 1)">DARK</span>
             </div>
           </div>
         </div>

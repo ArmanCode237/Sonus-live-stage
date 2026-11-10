@@ -70,3 +70,9 @@
 .fav-star-btn { background: transparent; border: none; font-size: 16px; cursor: pointer; color: #475569; padding: 0; }
 .fav-star-btn.fav { color: #fbbf24; text-shadow: 0 0 6px rgba(251,191,36,0.6); }
 .row-group-select { background: #161b24; color: #93c5fd; border: 1px solid #334155; border-radius: 4px; padding: 3px 6px; font-size: 11px; cursor: pointer; }
+
+/* V7 independent organ ensemble controls */
+.organ-ensemble-group{grid-column:1/-1;border-top:2px solid #b42630;background:linear-gradient(145deg,#273035,#192227);}
+.organ-ensemble-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.organ-ensemble-knobs{display:grid;grid-template-columns:repeat(auto-fit,minmax(85px,1fr));gap:10px;justify-items:center;}
+.organ-ensemble-knobs .knob-cell{max-width:110px;min-width:0;}

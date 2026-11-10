@@ -214,6 +214,7 @@ void SingleSynthLayer::renderLayer(float* mixL, float* mixR, unsigned int numFra
         v.panGainR = std::sin(angle);
     }
 
+    const float bendRatio = std::pow(2.f, performancePitchBendSemis / 12.f);
     for (unsigned int n = 0; n < numFrames; ++n) {
         pwmPhase_ += std::clamp(cfg.pwmRateHz, 0.05f, 12.0f) / sr;
         if (pwmPhase_ >= 1.0) pwmPhase_ -= 1.0;
@@ -247,7 +248,10 @@ void SingleSynthLayer::renderLayer(float* mixL, float* mixR, unsigned int numFra
             }
             if (!v.active) continue;
 
-            const double inc = std::clamp(v.freq * v.detuneMult * pitchLfo / sr,
+            const float vibCents = performanceModWheel * 30.f *
+                std::sin(2.f*PI_F*static_cast<float>(pwmPhase_) * (5.2f / std::max(0.05f,cfg.pwmRateHz)));
+            const double performanceRatio = bendRatio * std::pow(2.f,vibCents/1200.f);
+            const double inc = std::clamp(v.freq * v.detuneMult * pitchLfo * performanceRatio / sr,
                                           0.0000001, 0.45);
             const double inc2 = std::clamp(inc * osc2Ratio, 0.0000001, 0.45);
             auto saw = [this](double phase, double step) -> float {
@@ -446,7 +450,7 @@ void NordSynthModule::updateLFOsAndEnvs(unsigned int numFrames, float sr) {
 }
 
 void NordSynthModule::loadBuiltInSynthPreset(int presetId) {
-    synthPresetId = std::clamp(presetId, 1, 8);
+    synthPresetId = std::clamp(presetId, 1, 48);
 
     if (synthPresetId == 1) { // 1: Warm Pad
         layers[0].cfg = {true, 4, 0.80f, -0.20f, 0, 0, -6.0f, 4800.0f, 0.8f, 0.18f, 2.2f, 0.85f, 0.95f,
@@ -538,6 +542,127 @@ void NordSynthModule::loadBuiltInSynthPreset(int presetId) {
         layers[2].cfg.waveType = 8; layers[2].cfg.subLevel = 0.35f;
         layers[2].cfg.pwmDepth = 0.15f;
     }
+    // New bank: Keys, Bells, Cinematic Pads and Classic Brass.
+    if (synthPresetId == 9) { // Analog Keys
+        for (auto& l : layers) l.cfg = SynthLayerConfig{};
+        auto& a=layers[0].cfg; a.enabled=true; a.waveType=8; a.volume=.82f;
+        a.attackSec=.008f; a.decaySec=.85f; a.sustainLevel=.45f; a.releaseSec=.40f;
+        a.cutoffHz=5800.f; a.pulseLevel=.55f; a.sawLevel=.50f; a.pwmDepth=.12f;
+        auto& b=layers[1].cfg; b.enabled=true; b.waveType=3; b.octave=1; b.volume=.24f;
+        b.attackSec=.003f; b.decaySec=.44f; b.sustainLevel=.18f; b.releaseSec=.25f;
+    } else if (synthPresetId == 10) { // FM-like Glass Bells with partial wavetable
+        for (auto& l : layers) l.cfg = SynthLayerConfig{};
+        auto& a=layers[0].cfg; a.enabled=true; a.waveType=6; a.wavetableIdx=5;
+        a.octave=1; a.attackSec=.003f; a.decaySec=1.5f; a.sustainLevel=.01f;
+        a.releaseSec=1.9f; a.cutoffHz=12500.f; a.volume=.77f;
+        auto& b=layers[1].cfg; b.enabled=true; b.waveType=3;
+        b.octave=2; b.semitones=7; b.volume=.27f; b.attackSec=.002f;
+        b.decaySec=1.0f; b.sustainLevel=.01f; b.releaseSec=1.6f;
+    } else if (synthPresetId == 11) { // Soft Motion Pad
+        for (auto& l : layers) l.cfg = SynthLayerConfig{};
+        auto& a=layers[0].cfg; a.enabled=true; a.waveType=8; a.volume=.63f;
+        a.attackSec=.9f; a.decaySec=3.2f; a.sustainLevel=.84f; a.releaseSec=3.0f;
+        a.cutoffHz=3400.f; a.pulseLevel=.8f; a.sawLevel=.18f;
+        a.pwmDepth=.34f; a.pwmRateHz=.19f;
+        auto& b=layers[1].cfg; b=a; b.enabled=true; b.detuneCents=12.f;
+        b.pan=.45f; b.volume=.48f; b.pwmRateHz=.26f;
+        a.pan=-.45f;
+        auto& c=layers[2].cfg; c.enabled=true; c.waveType=3; c.octave=-1;
+        c.volume=.29f; c.attackSec=1.2f; c.releaseSec=3.2f;
+    } else if (synthPresetId == 12) { // Vintage Brass Section
+        for (auto& l : layers) l.cfg = SynthLayerConfig{};
+        auto& a=layers[0].cfg; a.enabled=true; a.waveType=9;
+        a.volume=.78f; a.cutoffHz=2200.f; a.filterEnvAmt=.82f;
+        a.filtAttackSec=.035f; a.filtDecaySec=.48f; a.filtSustainLvl=.25f;
+        a.attackSec=.045f; a.decaySec=.58f; a.sustainLevel=.70f; a.releaseSec=.30f;
+        a.sawLevel=.88f; a.osc2Level=.62f; a.osc2Detune=9.f;
+        auto& b=layers[1].cfg; b=a; b.enabled=true; b.pan=.28f;
+        b.detuneCents=7.f; b.osc2Semitones=7; b.volume=.40f;
+        a.pan=-.28f;
+    }
+    // Expanded factory bank 13–48, six families × six independently voiced variations.
+    // Different IDs alter filter, oscillators, envelope and stereo layering (not just names).
+    if (synthPresetId >= 13) {
+        const int family = (synthPresetId - 13) / 6; // keys, pads, brass, bass, leads, saws
+        const int variant = (synthPresetId - 13) % 6;
+        const float v = static_cast<float>(variant);
+        for (auto& layer : layers) layer.cfg = SynthLayerConfig{};
+        auto& a = layers[0].cfg;
+        a.enabled = true; a.volume = .72f; a.pan = 0.f;
+        a.cutoffHz = std::min(15000.f, 1600.f + v * 1100.f);
+        a.resonanceQ = .75f + v * .23f;
+        a.filterKeyTrack = .25f + v * .08f;
+        a.sawLevel = .78f; a.pulseLevel = .38f;
+        a.subLevel = .18f; a.noiseLevel = 0.f;
+        a.osc2Detune = 4.f + v * 3.f;
+        a.pwmRateHz = .17f + v * .13f;
+        a.attackSec=.01f; a.decaySec=.85f; a.sustainLevel=.6f; a.releaseSec=.4f;
+        auto& b = layers[1].cfg;
+        b = a; b.enabled = true; b.volume = .30f; b.pan = .30f;
+        b.detuneCents = 4.f + 2.f*v; a.pan = -.22f;
+        auto& c = layers[2].cfg;
+        c = SynthLayerConfig{};
+        switch (family) {
+        case 0: // KEYS: tines, polykeys, classic DCO keyboards
+            a.waveType = (variant % 3 == 0 ? 3 : 8);
+            a.attackSec=.003f; a.decaySec=.32f + .22f*v;
+            a.sustainLevel=.13f + .08f*v; a.releaseSec=.22f+.12f*v;
+            a.cutoffHz=2600.f + v*1750.f; a.filterEnvAmt=.27f + .06f*v;
+            b.waveType=(variant % 2 ? 2 : 3); b.octave = 1; b.volume=.22f;
+            if (variant==4) { c.enabled=true; c.waveType=3; c.octave=2; c.volume=.12f; c.releaseSec=1.5f; }
+            break;
+        case 1: // PADS: evolving PWM, velvet analog, cinematic slow brass
+            a.waveType=8; a.attackSec=.18f + .22f*v; a.decaySec=2.1f;
+            a.sustainLevel=.72f+.03f*v; a.releaseSec=1.8f+.34f*v;
+            a.pwmDepth=.13f+.055f*v; a.pwmRateHz=.12f+.075f*v;
+            a.cutoffHz=1800.f+v*1050.f; a.pulseLevel=.80f;
+            b=a; b.pan=.48f; a.pan=-.48f; b.detuneCents=7.f+3.f*v; b.volume=.52f;
+            if (variant>2) { c.enabled=true; c.waveType=3; c.octave=-1; c.volume=.16f; c.attackSec=.9f; c.releaseSec=2.9f; }
+            break;
+        case 2: // BRASS: resonant filter envelope, dual DCO, ensemble voicing
+            a.waveType=9; a.osc2Level=.45f+.08f*v; a.osc2Detune=6.f+v*2.f;
+            a.attackSec=.016f+.007f*v; a.decaySec=.47f;
+            a.sustainLevel=.58f; a.releaseSec=.22f+.08f*v;
+            a.cutoffHz=900.f + 400.f*v; a.filterEnvAmt=.56f+.065f*v;
+            a.filtAttackSec=.015f; a.filtDecaySec=.27f+.09f*v; a.filtSustainLvl=.17f;
+            b=a; b.pan=.26f; a.pan=-.26f; b.detuneCents=5.f+v*2.f; b.volume=.44f;
+            if (variant%2==0) b.osc2Semitones=7;
+            break;
+        case 3: // BASS: octave subs, PWM bass, gritty Jupiter bass
+            a.waveType=variant%2 ? 9 : 8;
+            a.cutoffHz=380.f+v*330.f; a.subLevel=.65f+.045f*v;
+            a.osc2Level=variant%2 ? .42f : 0.f;
+            a.resonanceQ=.9f+.28f*v; a.drive=.09f+.065f*v;
+            a.filterEnvAmt=.57f; a.filtDecaySec=.21f+.04f*v;
+            a.filtSustainLvl=.09f; a.attackSec=.002f;
+            a.decaySec=.35f+.06f*v; a.sustainLevel=.54f; a.releaseSec=.12f+.035f*v;
+            b.enabled=false; c.enabled=false;
+            if (variant>3) { b=a; b.enabled=true; b.octave=-1; b.volume=.21f; b.subLevel=.24f; }
+            break;
+        case 4: // LEADS: pulse/saw dual VCO, interval harmonics, portamento-like legato tone
+            a.waveType=variant%2 ? 9 : 4;
+            a.unisonVoices=(variant%3==0 ? 3 : 2);
+            a.unisonDetune=5.f+4.f*v; a.unisonSpread=.20f+.08f*v;
+            a.osc2Level=variant%2 ? .62f : 0.f;
+            a.cutoffHz=2800.f+v*1900.f; a.filterEnvAmt=.19f;
+            a.attackSec=.004f; a.decaySec=.3f; a.sustainLevel=.85f;
+            a.releaseSec=.20f+.08f*v; a.drive=.10f+.06f*v;
+            b.enabled=(variant>2); b.volume=.23f;
+            b.octave=(variant==5 ? 1 : 0);
+            break;
+        default: // SAWS: wide supersaws, PWM saw poly, digital hybrids
+            a.waveType=variant%2 ? 9 : 4; a.unisonVoices=3+(variant%3);
+            a.unisonDetune=10.f+v*4.f; a.unisonSpread=.48f+.08f*v;
+            a.osc2Level=variant%2 ? .7f : 0.f;
+            a.cutoffHz=4600.f+v*1600.f;
+            a.attackSec=.006f; a.decaySec=1.1f;
+            a.sustainLevel=.8f; a.releaseSec=.5f+.15f*v;
+            b=a; b.enabled=true; b.pan=.42f; a.pan=-.42f;
+            b.detuneCents=8.f+v*2.f; b.volume=.33f;
+            if (variant==5) { c.enabled=true; c.waveType=8; c.octave=-1; c.volume=.2f; c.releaseSec=1.6f; }
+            break;
+        }
+    }
     for (auto& l : layers) l.reset();
 }
 
@@ -558,24 +683,24 @@ void NordSynthModule::allNotesOff() {
     for (auto& l : layers) l.reset();
 }
 
-void NordSynthModule::render(float* outInterleavedStereo, unsigned int numFrames) {
+void NordSynthModule::render(float* outInterleavedStereo, unsigned int numFrames,
+                             const std::array<float*, 3>* layerStems) {
     if (!synthEnabled || synthMasterVol <= 0.001f) return;
     if (bufL_.size() < numFrames) {
         bufL_.resize(numFrames);
         bufR_.resize(numFrames);
     }
-    std::fill(bufL_.begin(), bufL_.begin() + numFrames, 0.0f);
-    std::fill(bufR_.begin(), bufR_.begin() + numFrames, 0.0f);
-
     updateLFOsAndEnvs(numFrames, sr_);
-
-    for (auto& l : layers) {
-        l.renderLayer(bufL_.data(), bufR_.data(), numFrames, sr_,
-                      synthMacroCutoff, wavetableBank, lfos.data(), envelopes.data());
-    }
-    for (unsigned int n = 0; n < numFrames; ++n) {
-        outInterleavedStereo[n * 2]     += bufL_[n] * synthMasterVol;
-        outInterleavedStereo[n * 2 + 1] += bufR_[n] * synthMasterVol;
+    for (int layer = 0; layer < 3; ++layer) {
+        std::fill(bufL_.begin(), bufL_.begin() + numFrames, 0.0f);
+        std::fill(bufR_.begin(), bufR_.begin() + numFrames, 0.0f);
+        layers[layer].renderLayer(bufL_.data(), bufR_.data(), numFrames, sr_,
+                                 synthMacroCutoff, wavetableBank, lfos.data(), envelopes.data());
+        float* stem = layerStems ? (*layerStems)[layer] : outInterleavedStereo;
+        for (unsigned int n = 0; n < numFrames; ++n) {
+            stem[n * 2]     += bufL_[n] * synthMasterVol;
+            stem[n * 2 + 1] += bufR_[n] * synthMasterVol;
+        }
     }
 }
 

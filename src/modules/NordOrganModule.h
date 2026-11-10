@@ -49,6 +49,15 @@ public:
     float organVolume = 0.80f;
     bool  organRotaryFast = false;
     float organDrive = 0.12f;
+    float rotaryMix = 1.0f;
+    float vibratoDepth = 1.0f;
+    float vibratoRate = 6.8f;
+    bool chorusEnabled = false;
+    float chorusRate = 0.65f, chorusDepth = 0.55f, chorusMix = 0.30f;
+    float chorusWidth = 0.85f, chorusFeedback = 0.08f, chorusTone = 9000.0f;
+    int chorusVoices = 3;
+    float pitchBendSemis = 0.0f;
+    float modWheel = 0.0f;
     // Registro clásico B3 88 8000 000 por defecto (nunca inicia en silencio)
     std::array<float, 9> drawbars = {1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
     int   vibratoMode = 0;        // 0=Off, 1=V1, 2=V2, 3=V3, 4=C1, 5=C2, 6=C3
@@ -78,12 +87,14 @@ public:
 
 private:
     float sr_ = 48000.0f;
+    ModulationRack ownChorus_;
     LeslieRotor horn_;
     LeslieRotor drum_;
     float drumLP_state_ = 0.0f;
     std::array<float, VIB_DELAY_SAMPLES> vibDelayLine_{};
     int  vibWritePos_ = 0;
     double vibLfoPhase_ = 0.0;
+    double wheelPhase_ = 0.0;
     float clickEnvelope_ = 0.0f;
     float clickSample_ = 0.0f;
 };

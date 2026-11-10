@@ -34,6 +34,31 @@ function buildOrganDrawbarsPage() {
   }
 }
 
+// Mini-drawbars interactivos en MAIN. Se conectan al mismo parámetro drawbar0..8
+// utilizado por la página de órgano, sin nuevas rutas de API.
+function buildMainOrganDrawbars() {
+  const deck = $('mainOrganDrawbars');
+  if (!deck) return;
+  deck.innerHTML = '';
+  for (let i = 0; i < 9; i++) {
+    const el = document.createElement('div');
+    el.className = 'mini-drawbar';
+    el.dataset.tone = DRAWBAR_TONES[i];
+    el.innerHTML = `
+      <span class="mini-drawbar-harmonic">${DRAWBAR_NAMES[i]}</span>
+      <div class="mini-drawbar-slot">
+        <span class="mini-drawbar-rail"></span>
+        <span class="mini-drawbar-handle" id="miniDbHandle_${i}" aria-hidden="true"></span>
+        <input type="range" id="miniDbRange_${i}" class="mini-drawbar-input"
+          min="0" max="8" step="1" aria-label="Drawbar ${DRAWBAR_NAMES[i]}" value="0"
+          oninput="onDrawbarSlider(${i},this.value)">
+      </div>
+      <output id="miniDbValue_${i}" class="mini-drawbar-number">0</output>`;
+    deck.appendChild(el);
+    updateDrawbarVisual(i,state['drawbar'+i] || 0);
+  }
+}
+
 function buildOrganOptions() {
   const models = $('organModelPills');
   if (models) {
@@ -65,6 +90,11 @@ function updateDrawbarVisual(idx, normVal) {
   setText('dbValBadge_'+idx,step);
   const slider=$('dbRange_'+idx);
   if(slider && document.activeElement!==slider)slider.value=String(step);
+  const miniHandle=$('miniDbHandle_'+idx);
+  if(miniHandle)miniHandle.style.top=(14+step/8*72)+'%';
+  setText('miniDbValue_'+idx,step);
+  const miniInput=$('miniDbRange_'+idx);
+  if(miniInput && document.activeElement!==miniInput)miniInput.value=String(step);
 }
 
 function setOrganModel(m)   { state.organModel = m;        updateOrganControlsVisual(); sendParam('organModel', m); }
@@ -100,6 +130,8 @@ function updateOrganRotaryVisual() {
     pMain.innerText = state.organRotaryFast ? 'ROTARY: FAST' : 'ROTARY: SLOW';
     pMain.classList.toggle('active', state.organRotaryFast);
   }
+  const fxSpeed=$('organFxRotarySpeed');
+  if(fxSpeed)fxSpeed.textContent=state.organRotaryFast?'ROTARY FAST':'ROTARY SLOW';
   const bPage = $('btnRotaryPage');
   if (bPage) bPage.innerText = state.organRotaryFast ? 'ROTARY SPEAKER: FAST (TREMOLO)' : 'ROTARY SPEAKER: SLOW (CHORALE)';
 }

@@ -10,7 +10,7 @@ function initProgramButtons() {
     const wrap = document.createElement('div');
     wrap.className = 'prog-slot-wrap';
     wrap.innerHTML = `
-      <span class="prog-slot-num">● ${i + 1}</span>
+      <span class="prog-slot-num">${i + 1}</span>
       <div class="pad-body toggle-pad ${i === 0 ? 'active' : ''}" id="progPad_${i}">
         <div class="toggle-nord-oval"></div>
         <div class="toggle-hw-led"></div>
@@ -22,38 +22,51 @@ function initProgramButtons() {
   fetch('/api/programs').then(r => r.json()).then(d => { state.programs = d; }).catch(() => {});
 }
 
-function toggleStoreMode() {
-  state.storeMode = !state.storeMode;
-  const st = $('btnStore'); if (st) st.classList.toggle('blink', state.storeMode);
+function toggleStoreMode(){
+  const sel=$('programStoreSlot'),name=$('programStoreName');
+  if(sel)sel.value=String(state.activeProgramSlot||0);
+  if(name)name.value=state.programs?.[Number(sel?.value||0)]?.name || `PROGRAM ${Number(sel?.value||0)+1}`;
+  openModal('modalProgramStore');name?.focus();name?.select();
 }
-
-function onProgramButtonClick(slotIdx) {
-  if (state.storeMode) {
-    state.storeMode = false;
-    const st = $('btnStore'); if (st) st.classList.remove('blink');
-    fetch('/api/programs/store', {
-      method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ slot: slotIdx })
-    }).then(r => r.json()).then(res => {
-      if (res.programs) state.programs = res.programs;
+async function commitProgramStore(){
+  const slotIdx=Number($('programStoreSlot')?.value||0);
+  const name=($('programStoreName')?.value||'').trim();
+  if(!name){$('programStoreName')?.focus();return;}
+  try{
+    const response=await fetch('/api/programs/store',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slot:slotIdx,name})});
+    if(!response.ok)throw new Error(`HTTP ${response.status}`);
+    const res=await response.json();if(!res.ok)throw new Error(res.error||'Store failed');
+    if(res.programs)state.programs=res.programs;
+    setActiveProgramPad(slotIdx);setText('lcdProgramName',res.programName||name);
+    closeModal('modalProgramStore');
+  }catch(err){const warn=$('programStoreWarning');if(warn)warn.textContent='No fue posible guardar: '+err.message;}
+}
+async function confirmInitProgram(){
+  if(!confirm('¿Inicializar la configuración actual? No se sobrescribirán los programas guardados hasta usar STORE.'))return;
+  try{
+    const resp=await fetch('/api/programs/init',{method:'POST'});if(!resp.ok)throw new Error(`HTTP ${resp.status}`);
+    const res=await resp.json();if(!res.ok)throw new Error(res.error||'Initialization failed');
+    if(res.params)syncFromServerParams(res.params);
+    if(res.pianoLayers&&typeof updatePianoLayerSources==='function')updatePianoLayerSources(res.pianoLayers);
+    setText('lcdProgramName',res.programName||'INIT PERFORMANCE');
+  }catch(err){alert('Error al inicializar: '+err.message);}
+}
+function onProgramButtonClick(slotIdx){
+  fetch('/api/programs/recall',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({slot:slotIdx})})
+    .then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()})
+    .then(res=>{
       setActiveProgramPad(slotIdx);
-    }).catch(() => {});
-  } else {
-    fetch('/api/programs/recall', {
-      method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ slot: slotIdx })
-    }).then(r => r.json()).then(res => {
-      setActiveProgramPad(slotIdx);
-      if (res.instrumentName) setText('lcdSampleName', res.instrumentName);
-      if (res.sourcePath) state.currentSourcePath = res.sourcePath;
-      if (res.params) syncFromServerParams(res.params);
-      if (res.pianoLayers && typeof updatePianoLayerSources==='function')updatePianoLayerSources(res.pianoLayers);
-    }).catch(() => {});
-  }
+      setText('lcdProgramName',res.programName||'Program');
+      // Instrument names are rendered independently for enabled modules.
+      if(res.sourcePath)state.currentSourcePath=res.sourcePath;
+      if(res.params)syncFromServerParams(res.params);
+      if(res.pianoLayers&&typeof updatePianoLayerSources==='function')updatePianoLayerSources(res.pianoLayers);
+    }).catch(err=>console.error('[program recall]',err));
 }
 
 function setActiveProgramPad(slotIdx) {
   state.activeProgramSlot = slotIdx;
+  if (typeof updateMainDashboard==='function') updateMainDashboard();
   for (let i = 0; i < 8; i++) {
     const pad = $(`progPad_${i}`);
     if (pad) pad.classList.toggle('active', i === slotIdx);

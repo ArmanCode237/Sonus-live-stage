@@ -1,6 +1,6 @@
 // Piano sample layers. State changes go through /api/param, bank changes through /api/load.
 function selectPianoLayer(layer) {
-  state.activePianoLayer = Math.max(0,Math.min(2,Number(layer)||0));
+  state.activePianoLayer = Math.max(0,Math.min(4,Number(layer)||0));
   updatePianoLayerControls();
   if(typeof renderBrowserList==='function')renderBrowserList();
 }
@@ -16,6 +16,7 @@ function changePianoLayerVolume(layer,value) {
   state.pianoLayers[layer].volume=volume;
   const output=$('pianoLayerVal'+layer);
   if(output) output.textContent=Math.round(volume*100)+'%';
+  updateAllControlsForId('pianoLayerVol'+layer, volume);
   sendParam('pianoLayerVol'+layer,volume);
 }
 function updatePianoLayerSources(sources) {
@@ -28,7 +29,7 @@ function updatePianoLayerSources(sources) {
 }
 function updatePianoLayerControls() {
   const layer=state.activePianoLayer||0;
-  for(let i=0;i<3;i++){
+  for(let i=0;i<5;i++){
     const p=state.pianoLayers?.[i]||{enabled:i===0,volume:i===0?1:0.75};
     const bank=state.pianoLayerSources?.[i]||{name:'VACÍA',sourcePath:''};
     const row=$('pianoLayerRow'+i);
@@ -37,8 +38,8 @@ function updatePianoLayerControls() {
     if(led)led.classList.toggle('on',!!p.enabled);
     const label=$('pianoLayerName'+i);
     if(label){label.textContent=bank.name;label.title=bank.sourcePath||'Sin sonido';}
-    const slider=$('pianoLayerSlider'+i);
-    if(slider && document.activeElement!==slider)slider.value=String(p.volume);
+    // Las capas utilizan la misma perilla SVG que los demás parámetros.
+    if (typeof updateAllControlsForId==='function') updateAllControlsForId('pianoLayerVol'+i,p.volume);
     const output=$('pianoLayerVal'+i);
     if(output)output.textContent=Math.round(p.volume*100)+'%';
   }
@@ -63,7 +64,6 @@ function adjustMainEqGain(band,val) {
   sendParam('eqGain'+band,gain);
 }
 function updateMainEqSlider(band,val) {
-  const input=$('eqMainSlider'+band),output=$('eqMainValue'+band);
-  if(input && document.activeElement!==input)input.value=String(val);
+  const output=$('eqMainValue'+band);
   if(output)output.textContent=(val>=0?'+':'')+Number(val).toFixed(1)+' dB';
 }

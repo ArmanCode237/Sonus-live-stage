@@ -29,7 +29,11 @@ function normToVal(cell, norm) {
   const min = parseFloat(cell.dataset.min), max = parseFloat(cell.dataset.max);
   let v = cell.dataset.log === "1" ? min * Math.pow(max / min, norm) : min + norm * (max - min);
   if (cell.dataset.step === "1") v = Math.round(v);
-  return v;
+  else if (cell.dataset.stepSize) {
+    const step = Number(cell.dataset.stepSize);
+    if (step > 0) v = Math.round(v / step) * step;
+  }
+  return Math.min(max,Math.max(min,v));
 }
 
 function formatReadout(val, unit) {
@@ -51,6 +55,11 @@ function updateSingleKnobCell(cell, val) {
   const ro  = cell.querySelector('.knob-readout');
   if (ptr) ptr.setAttribute('transform', `rotate(${-135 + norm * 270} 40 40)`);
   if (ro)  ro.innerText = formatReadout(val, cell.dataset.unit);
+  const svg=cell.querySelector('.knob-svg');
+  if (svg) {
+    svg.setAttribute('aria-valuenow', String(Number(val.toFixed(4))));
+    svg.setAttribute('aria-valuetext',formatReadout(val,cell.dataset.unit));
+  }
 }
 
 function updateAllControlsForId(id, val) {
@@ -58,6 +67,13 @@ function updateAllControlsForId(id, val) {
   if (id.startsWith('eqGain') && typeof updateMainEqSlider === 'function') {
     updateMainEqSlider(parseInt(id.replace('eqGain','')), val);
   }
+  if (/^pianoLayerVol[0-4]$/.test(id)) {
+    const layer=Number(id.slice(-1));
+    if (state.pianoLayers?.[layer]) state.pianoLayers[layer].volume=Number(val);
+    setText(`pianoLayerVal${layer}`,`${Math.round(val*100)}%`);
+  }
+  if (/^fxSend[0-8](Mod|Delay|Reverb)$/.test(id) && typeof updateFxSendKnob === 'function') updateFxSendKnob(id,val);
+  if (/^pianoSample[0-4](Atk|Dec|Sus|Rel|Hold|Pan|Tune|Cut|Res)$/.test(id) && typeof updateSampleLayerParameter==='function') updateSampleLayerParameter(id,val);
   if (id.startsWith('eqGain') && typeof updateEqFaderVisual === 'function') {
     updateEqFaderVisual(parseInt(id.replace('eqGain', '')), val);
   }
@@ -65,14 +81,38 @@ function updateAllControlsForId(id, val) {
 
 function initAllKnobs() {
   const ticks = buildNordTicksSvg();
-  document.querySelectorAll('.knob-cell').forEach(cell => {
+  document.querySelectorAll('.knob-cell').forEach((cell, index) => {
+    if (cell.dataset.knobInitialized === '1') return;
+    cell.dataset.knobInitialized = '1';
     const id = cell.dataset.id;
     const sizeCls = cell.dataset.large === "1" ? "large" : (cell.dataset.small === "1" ? "small" : "");
+    // Definiciones únicas: SVG robusto aun con muchas perillas en la misma vista.
+    const metalId=`metal-${index}`, faceId=`face-${index}`;
+    let grip='';
+    for (let n=0;n<20;n++) {
+      const a=n*Math.PI/10;
+      grip+=`<line class="knob-grip" x1="${(40+21*Math.cos(a)).toFixed(2)}" y1="${(40+21*Math.sin(a)).toFixed(2)}" x2="${(40+25*Math.cos(a)).toFixed(2)}" y2="${(40+25*Math.sin(a)).toFixed(2)}"/>`;
+    }
     cell.innerHTML = `
-      <svg class="knob-svg ${sizeCls}" viewBox="0 0 80 80">
+      <svg class="knob-svg ${sizeCls}" viewBox="0 0 80 80" tabindex="0" role="slider"
+        aria-label="${cell.dataset.label || id}" aria-valuemin="${cell.dataset.min}" aria-valuemax="${cell.dataset.max}">
+        <defs>
+          <linearGradient id="${metalId}" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#747b7c"/><stop offset="23%" stop-color="#272d31"/>
+            <stop offset="60%" stop-color="#111719"/><stop offset="100%" stop-color="#545c5e"/>
+          </linearGradient>
+          <radialGradient id="${faceId}" cx="37%" cy="24%" r="88%">
+            <stop offset="0%" stop-color="#535b5b"/><stop offset="42%" stop-color="#22282c"/>
+            <stop offset="100%" stop-color="#080d0f"/>
+          </radialGradient>
+        </defs>
         <g class="knob-nord-ticks">${ticks}</g>
-        <circle class="knob-cap" cx="40" cy="40" r="24"/>
-        <line class="knob-pointer" x1="40" y1="40" x2="40" y2="18"/>
+        <circle cx="40" cy="41" r="27" fill="#020607" opacity=".72"/>
+        <circle class="knob-outer" cx="40" cy="40" r="27" fill="url(#${metalId})"/>
+        <circle class="knob-cap" cx="40" cy="40" r="23" fill="url(#${faceId})"/>
+        <g>${grip}</g>
+        <circle class="knob-bevel" cx="40" cy="40" r="19.6"/>
+        <line class="knob-pointer" x1="40" y1="39" x2="40" y2="18"/>
       </svg>
       <div class="knob-title">${cell.dataset.label || id}</div>
       <div class="knob-readout"></div>
@@ -83,6 +123,25 @@ function initAllKnobs() {
     updateSingleKnobCell(cell, initVal);
 
     svg.style.touchAction = 'none';
+    svg.addEventListener('keydown', e => {
+      const min=Number(cell.dataset.min),max=Number(cell.dataset.max);
+      const current=state[id]===undefined ? Number(cell.dataset.val) : Number(state[id]);
+      const currentNorm=Math.max(0,Math.min(1,valToNorm(cell,current)));
+      let targetNorm;
+      if (e.key==='ArrowUp'||e.key==='ArrowRight') targetNorm=currentNorm+.01;
+      else if(e.key==='ArrowDown'||e.key==='ArrowLeft') targetNorm=currentNorm-.01;
+      else if(e.key==='PageUp') targetNorm=currentNorm+.10;
+      else if(e.key==='PageDown') targetNorm=currentNorm-.10;
+      else if(e.key==='Home')targetNorm=0;
+      else if(e.key==='End')targetNorm=1;
+      else return;
+      e.preventDefault();
+      let v=normToVal(cell,Math.max(0,Math.min(1,targetNorm)));
+      state[id]=v;
+      updateAllControlsForId(id,v);
+      sendParam(id,v);
+      if ((id.startsWith('eq') || id==='lowCut' || id==='highCut') && typeof drawEqCurve==='function') drawEqCurve();
+    });
     svg.addEventListener('pointerdown', e => {
       e.preventDefault();
       state.isDraggingControl = true;

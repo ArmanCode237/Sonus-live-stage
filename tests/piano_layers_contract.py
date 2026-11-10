@@ -13,9 +13,10 @@ assert 'svr.Post("/api/piano/layers/clear"' in main
 assert 'pianoLayerSources' in piano and "body:JSON.stringify({path,layer})" in lib
 assert 'sampleBank = inst' in engine and 'voiceInst.undampedFromKey' in engine
 for i in range(3):
- assert f'pianoLayerRow{i}' in ui and f'pianoLayerSlider{i}' in ui
+ assert f'pianoLayerRow{i}' in ui and f'data-id="pianoLayerVol{i}"' in ui
 for i in range(5):
- assert f'eqMainSlider{i}' in ui
+ assert f'data-id="eqGain{i}"' in ui
 assert 'VOICE & LOOP CFG' not in ui
 assert 'drawbar-handle' in organ and 'drawbar-led' not in organ
-print('Piano/EQ/organ UI and API contracts: OK')
+assert 'buildMainOrganDrawbars' in organ and 'mainOrganDrawbars' in ui
+print('Piano/EQ/organ UI and API contracts (knob edition): OK')

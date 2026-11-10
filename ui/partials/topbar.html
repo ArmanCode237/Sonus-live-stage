@@ -1,9 +1,9 @@
 <!-- partials/topbar.html — Barra superior compartida (Audio/MIDI, estado, master) -->
 <div class="top-strip">
   <div style="display:flex; gap:6px;">
-    <button class="wrench-btn" id="btnAudioMidiTop" onclick="openSettingsWindow()">🔧 Audio & MIDI</button>
-    <button class="wrench-btn" onclick="openModal('modalVoiceConfig')" title="Configuración de Loop Hold, Release, ADSR y Polifonía">⚙ Sample & Synth Config</button>
-    <button class="wrench-btn active-toggle" id="btnToggleKeyboard" onclick="toggleKeyboardVisibility()">🎹 Teclado 88</button>
+    <button class="wrench-btn" id="btnAudioMidiTop" onclick="openSettingsWindow()"><span data-ui-icon="headphones"></span> AUDIO / MIDI</button>
+    <button class="wrench-btn" onclick="openModal('modalVoiceConfig')" title="Configuración de Loop Hold, Release, ADSR y Polifonía"><span data-ui-icon="settings"></span> SAMPLE CONFIG</button>
+    <button class="wrench-btn active-toggle" id="btnToggleKeyboard" onclick="toggleKeyboardVisibility()"><span data-ui-icon="keyboard"></span> KEYBOARD 88</button>
   </div>
 
   <div class="info-bar-box">
@@ -18,7 +18,7 @@
     </div>
     <div class="k-info-row" style="justify-content:flex-end;">
       <span>RAM: <strong id="ramTopText">0.0 MB</strong></span>
-      <button class="expand-btn" onclick="openModal('modalBrowser')">📂 Browser</button>
+      <button class="expand-btn" onclick="openModal('modalBrowser')"><span data-ui-icon="folder"></span> BROWSER</button>
     </div>
   </div>
 

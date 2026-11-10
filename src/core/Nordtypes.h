@@ -147,6 +147,29 @@ struct SynthEnvelopePatch {
     float releaseSec = 0.3f;
 };
 
+constexpr int PIANO_LAYER_COUNT = 5;
+constexpr int SYNTH_LAYER_COUNT = 3;
+constexpr int FX_SOURCE_COUNT = PIANO_LAYER_COUNT + SYNTH_LAYER_COUNT + 1; // 5 piano + 3 synth + organ
+constexpr int FX_BUS_COUNT = 3; // Modulation, Delay, Reverb
+
+struct PianoLayerSampleConfig {
+    float attackSec = 0.005f;
+    float decaySec = 3.5f;
+    float sustainLevel = 1.0f;
+    float releaseSec = 0.35f;
+    float loopHold = 0.65f;
+    float pan = 0.0f;
+    float fineTuneCents = 0.0f;
+    float cutoffHz = 20000.0f;
+    float resonanceQ = 0.707f;
+};
+
+struct FxSendLevels {
+    float modulation = 1.0f;
+    float delay = 1.0f;
+    float reverb = 1.0f;
+};
+
 struct SynthPresetParams {
     int maxVoices = 128;
     int transposeSemis = 0;
@@ -157,11 +180,12 @@ struct SynthPresetParams {
 
     // Módulo 1: Piano / Sample Principal
     bool pianoEnabled = true;
-    // Piano mixer: three independent sample instruments, defaults preserve
-    // programs created before the layer mixer existed.
+    // Five sample layers. Older 3-layer programs load into L1-L3; L4-L5 remain off.
     float pianoVolume = 1.0f;
-    bool pianoLayerEnabled[3] = {true, false, false};
-    float pianoLayerVolume[3] = {1.0f, 0.75f, 0.75f};
+    bool pianoLayerEnabled[PIANO_LAYER_COUNT] = {true, false, false, false, false};
+    float pianoLayerVolume[PIANO_LAYER_COUNT] = {1.0f, 0.75f, 0.75f, 0.75f, 0.75f};
+    PianoLayerSampleConfig pianoLayerSample[PIANO_LAYER_COUNT]{};
+    FxSendLevels fxSends[FX_SOURCE_COUNT]{};
     float cutoffHz = 20000.0f;
     float resonanceQ = 0.707f;
     float attackSec = 0.001f;
@@ -194,6 +218,17 @@ struct SynthPresetParams {
     float organVolume = 0.80f;
     bool organRotaryFast = false;
     float organDrive = 0.12f;
+    float organRotaryMix = 1.0f;
+    float organVibratoDepth = 1.0f;
+    float organVibratoRate = 6.8f;
+    bool organChorusEnabled = false;
+    float organChorusRate = 0.65f;
+    float organChorusDepth = 0.55f;
+    float organChorusMix = 0.30f;
+    float organChorusWidth = 0.85f;
+    float organChorusFeedback = 0.08f;
+    float organChorusTone = 9000.0f;
+    int organChorusVoices = 3;
     float drawbars[9] = {1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f}; // 88 8000 000
     int organVibratoMode = 0;   // 0=Off, 1=V1, 2=V2, 3=V3, 4=C1, 5=C2, 6=C3
     bool organPercEnabled = false;
@@ -218,6 +253,11 @@ struct SynthPresetParams {
     float chorusRateHz = 0.8f;
     float chorusDepth = 0.45f;
     float chorusMix = 0.35f;
+    int chorusVoices = 2;
+    float chorusWidth = 0.85f;
+    float chorusFeedback = 0.08f;
+    float chorusTone = 9500.0f;
+    float chorusDelay = 16.0f;
 
     bool phaserEnabled = false;
     float phaserRateHz = 0.6f;

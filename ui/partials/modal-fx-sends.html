@@ -1,0 +1,58 @@
+<!-- Dedicated auxiliary sends, independent of global rack effect settings -->
+<div class="modal-backdrop" id="modalFxSends" role="dialog" aria-modal="true" aria-label="Matriz de envíos a efectos">
+  <section class="modal-window fx-send-window">
+    <div class="fx-send-header"><div><span class="panel-eyebrow">STAGE PERFORMANCE ROUTING</span><h2>AUX SEND <em>MATRIX</em></h2><p>Envíos independientes · 5 piano · 3 synth · organ</p></div>
+      <button type="button" class="expand-btn" onclick="closeModal('modalFxSends')" aria-label="Cerrar matriz">CERRAR ×</button></div>
+    <div class="fx-send-explainer">La señal original permanece en DRY. Cada perilla controla la cantidad enviada a ese bus. Los botones del RACK determinan si el efecto está encendido.</div>
+    <div class="fx-send-table-head"><span>FUENTE / CAPA</span><span>MODULATION</span><span>DELAY</span><span>REVERB</span></div>
+    <div id="fxSendsRows" class="fx-sends-rows">
+      <div class="fx-send-row" role="group" aria-label="PIANO L1"><div class="fx-send-source"><span class="fx-send-source-index">01</span><strong>PIANO L1</strong></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend0Mod" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="MOD" data-unit="%" data-small="1"></div></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend0Delay" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="DELAY" data-unit="%" data-small="1"></div></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend0Reverb" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="REVERB" data-unit="%" data-small="1"></div></div>
+      </div>
+      <div class="fx-send-row" role="group" aria-label="PIANO L2"><div class="fx-send-source"><span class="fx-send-source-index">02</span><strong>PIANO L2</strong></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend1Mod" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="MOD" data-unit="%" data-small="1"></div></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend1Delay" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="DELAY" data-unit="%" data-small="1"></div></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend1Reverb" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="REVERB" data-unit="%" data-small="1"></div></div>
+      </div>
+      <div class="fx-send-row" role="group" aria-label="PIANO L3"><div class="fx-send-source"><span class="fx-send-source-index">03</span><strong>PIANO L3</strong></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend2Mod" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="MOD" data-unit="%" data-small="1"></div></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend2Delay" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="DELAY" data-unit="%" data-small="1"></div></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend2Reverb" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="REVERB" data-unit="%" data-small="1"></div></div>
+      </div>
+      <div class="fx-send-row" role="group" aria-label="PIANO L4"><div class="fx-send-source"><span class="fx-send-source-index">04</span><strong>PIANO L4</strong></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend3Mod" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="MOD" data-unit="%" data-small="1"></div></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend3Delay" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="DELAY" data-unit="%" data-small="1"></div></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend3Reverb" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="REVERB" data-unit="%" data-small="1"></div></div>
+      </div>
+      <div class="fx-send-row" role="group" aria-label="PIANO L5"><div class="fx-send-source"><span class="fx-send-source-index">05</span><strong>PIANO L5</strong></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend4Mod" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="MOD" data-unit="%" data-small="1"></div></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend4Delay" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="DELAY" data-unit="%" data-small="1"></div></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend4Reverb" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="REVERB" data-unit="%" data-small="1"></div></div>
+      </div>
+      <div class="fx-send-row" role="group" aria-label="SYNTH L1"><div class="fx-send-source"><span class="fx-send-source-index">06</span><strong>SYNTH L1</strong></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend5Mod" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="MOD" data-unit="%" data-small="1"></div></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend5Delay" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="DELAY" data-unit="%" data-small="1"></div></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend5Reverb" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="REVERB" data-unit="%" data-small="1"></div></div>
+      </div>
+      <div class="fx-send-row" role="group" aria-label="SYNTH L2"><div class="fx-send-source"><span class="fx-send-source-index">07</span><strong>SYNTH L2</strong></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend6Mod" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="MOD" data-unit="%" data-small="1"></div></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend6Delay" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="DELAY" data-unit="%" data-small="1"></div></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend6Reverb" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="REVERB" data-unit="%" data-small="1"></div></div>
+      </div>
+      <div class="fx-send-row" role="group" aria-label="SYNTH L3"><div class="fx-send-source"><span class="fx-send-source-index">08</span><strong>SYNTH L3</strong></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend7Mod" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="MOD" data-unit="%" data-small="1"></div></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend7Delay" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="DELAY" data-unit="%" data-small="1"></div></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend7Reverb" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="REVERB" data-unit="%" data-small="1"></div></div>
+      </div>
+      <div class="fx-send-row" role="group" aria-label="ORGAN"><div class="fx-send-source"><span class="fx-send-source-index">09</span><strong>ORGAN</strong></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend8Mod" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="MOD" data-unit="%" data-small="1"></div></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend8Delay" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="DELAY" data-unit="%" data-small="1"></div></div>
+        <div class="fx-send-control"><div class="knob-cell fx-send-knob" data-id="fxSend8Reverb" data-min="0" data-max="1" data-val="1" data-step-size="0.01" data-log="0" data-label="REVERB" data-unit="%" data-small="1"></div></div>
+      </div>
+    </div>
+    <div class="fx-send-footer"><span>DRY SIGNAL: SIEMPRE DISPONIBLE · PROGRAMS 1–8: GUARDADO GLOBAL</span>
+      <button type="button" class="expand-btn" onclick="resetFxSends()">RESETEAR ENVIOS</button></div>
+  </section>
+</div>

@@ -1,0 +1,24 @@
+/* Rack routing matrix, retaining red anodized / graphite physical hardware look. */
+.fx-routing-access {display:flex;justify-content:flex-end;margin:7px 14px 12px;}
+.include-error {padding:10px;color:#fecaca;background:#441419;border:1px solid #c72a37;border-radius:6px;font-size:12px;}
+#modalFxSends {z-index:2500;}
+#modalFxSends .fx-send-window {max-width:min(1050px,96vw);width:min(1050px,96vw);max-height:90vh;overflow:auto;background:linear-gradient(145deg,#343c41 0%,#141b20 94%);border:2px solid #6f777a;border-top:5px solid #d12432;border-radius:12px;padding:15px 18px;}
+.fx-send-header {display:flex;align-items:flex-start;justify-content:space-between;gap:15px;border-bottom:1px solid #4e5559;padding-bottom:10px;}
+.fx-send-header h2 {font-size:21px;letter-spacing:1.3px;margin:4px 0;color:#f1f5f9;}
+.fx-send-header h2 em {font-style:normal;color:#fa5965;}
+.fx-send-header p {font-size:11px;color:#aebbc0;margin:3px 0;}
+.fx-send-explainer {margin:10px 0 12px;font-size:11px;line-height:1.45;color:#bdcacc;}
+.fx-send-table-head,.fx-send-row {display:grid;grid-template-columns:minmax(120px,1.4fr) repeat(3,minmax(80px,1fr));align-items:center;gap:8px;text-align:center;}
+.fx-send-table-head {font-size:10px;letter-spacing:.8px;font-weight:800;color:#c6d8d6;background:#11181b;border:1px solid #38434a;border-radius:7px;padding:9px 5px;}
+.fx-send-row {padding:5px 8px;border-bottom:1px solid #425058;background:#273136;}
+.fx-send-row:nth-child(even){background:#20282e;}
+.fx-send-row:first-child{border-radius:8px 8px 0 0;}
+.fx-send-row:last-child{border-radius:0 0 8px 8px;}
+.fx-send-source {display:flex;align-items:center;gap:7px;font:800 11px 'Segoe UI',sans-serif;color:#f5f5f6;text-align:left;}
+.fx-send-source-index {color:#f06770;font:700 12px Consolas,monospace;}
+.fx-send-control {display:flex;justify-content:center;min-width:0;}
+.fx-send-control .knob-cell{width:90px;}
+.fx-send-control .knob-title{display:none;}
+.fx-send-control .knob-readout {font:700 10px Consolas,monospace;color:#9fe0c7;}
+.fx-send-footer {display:flex;align-items:center;justify-content:space-between;gap:8px;font:800 9px 'Segoe UI',sans-serif;color:#9caeae;margin-top:14px;}
+@media(max-width:620px){.fx-send-table-head,.fx-send-row{grid-template-columns:minmax(78px,1fr) repeat(3,minmax(59px,.7fr));gap:2px;padding:4px 2px}.fx-send-source{font-size:9px;flex-wrap:wrap}.fx-send-source-index{font-size:9px}.fx-send-control .knob-cell{width:64px}.fx-send-control .knob-readout{font-size:8px}}

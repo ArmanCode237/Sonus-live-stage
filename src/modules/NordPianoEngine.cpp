@@ -13,6 +13,16 @@ NordPianoEngine::NordPianoEngine() {
         eqGainDb_[i].store(0.0f);
     }
     for (auto& ks : keyStates_) ks.store(0);
+    for (int i = 0; i < PIANO_LAYER_COUNT; ++i) {
+        const float defaults[9] = {0.005f, 3.5f, 1.f, 0.35f, 0.65f, 0.f, 0.f, 20000.f, .707f};
+        for (int k = 0; k < 9; ++k) pianoLayerSample_[i][k].store(defaults[k]);
+    }
+    for (int src = 0; src < FX_SOURCE_COUNT; ++src) {
+        for (int bus = 0; bus < FX_BUS_COUNT; ++bus) {
+            fxSends_[src][bus].store(1.0f);
+            fxSendSmoothed_[src][bus] = 1.0f;
+        }
+    }
     multiSynth_.init(48000.0f);
     organModule_.init(48000.0f);
     modRack_.init(48000.0f);
@@ -29,6 +39,9 @@ void NordPianoEngine::setSampleRate(double sr) {
     float fsr = static_cast<float>(hostSampleRate_);
     multiSynth_.init(fsr);
     organModule_.init(fsr);
+    // Preallocate 4096 stereo frames per source outside the real-time callback.
+    // The buffers are reused for all subsequent render blocks.
+    for (auto& stem : sourceAudio_) stem.assign(8192, 0.0f);
     svfFilter_.reset();
     modRack_.init(fsr);
     delayFx_.init(fsr);
@@ -44,7 +57,7 @@ void NordPianoEngine::setInstrument(std::shared_ptr<const PianoInstrument> inst)
 }
 
 void NordPianoEngine::setLayerInstrument(int layer, std::shared_ptr<const PianoInstrument> inst) {
-    if (layer < 0 || layer >= 3) return;
+    if (layer < 0 || layer >= PIANO_LAYER_COUNT) return;
     {
         std::lock_guard<std::mutex> lock(instPtrMutex_);
         if (layer == 0) instrument_ = std::move(inst);
@@ -70,22 +83,35 @@ std::shared_ptr<const PianoInstrument> NordPianoEngine::getInstrument() const {
 }
 
 std::shared_ptr<const PianoInstrument> NordPianoEngine::getLayerInstrument(int layer) const {
-    if (layer < 0 || layer >= 3) return {};
+    if (layer < 0 || layer >= PIANO_LAYER_COUNT) return {};
     std::lock_guard<std::mutex> lock(instPtrMutex_);
     return layer == 0 ? instrument_ : extraPianoInstruments_[layer - 1];
 }
 
-std::array<std::shared_ptr<const PianoInstrument>, 3> NordPianoEngine::getPianoInstruments() const {
+std::array<std::shared_ptr<const PianoInstrument>, PIANO_LAYER_COUNT> NordPianoEngine::getPianoInstruments() const {
     std::lock_guard<std::mutex> lock(instPtrMutex_);
-    return {instrument_, extraPianoInstruments_[0], extraPianoInstruments_[1]};
+    return {instrument_, extraPianoInstruments_[0], extraPianoInstruments_[1],
+            extraPianoInstruments_[2], extraPianoInstruments_[3]};
+}
+
+void NordPianoEngine::setPianoLayerSampleParam(int layer, int param, float value) {
+    if (layer < 0 || layer >= PIANO_LAYER_COUNT || param < 0 || param >= 9) return;
+    const float lo[9] = {0.005f,0.02f,0.f,0.02f,0.f,-1.f,-100.f,40.f,0.5f};
+    const float hi[9] = {5.f,12.f,1.f,10.f,1.f,1.f,100.f,20000.f,12.f};
+    pianoLayerSample_[layer][param].store(std::clamp(value, lo[param], hi[param]));
 }
 
 void NordPianoEngine::applyPreset(const SynthPresetParams& p) {
     setPianoEnabled(p.pianoEnabled);
     setPianoVolume(p.pianoVolume);
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < PIANO_LAYER_COUNT; ++i) {
         setPianoLayerEnabled(i, p.pianoLayerEnabled[i]);
         setPianoLayerVolume(i, p.pianoLayerVolume[i]);
+    }
+    for (int src = 0; src < FX_SOURCE_COUNT; ++src) {
+        setFxSend(src, 0, p.fxSends[src].modulation);
+        setFxSend(src, 1, p.fxSends[src].delay);
+        setFxSend(src, 2, p.fxSends[src].reverb);
     }
     setMaxVoices(p.maxVoices);
     setTranspose(p.transposeSemis);
@@ -101,6 +127,13 @@ void NordPianoEngine::applyPreset(const SynthPresetParams& p) {
     setSustainLevel(p.sustainLevel);
     setReleaseSec(p.releaseSec);
     setLoopHold(p.loopHold);
+    // Apply individual sound-layer envelopes *after* legacy global controls.
+    for (int layer = 0; layer < PIANO_LAYER_COUNT; ++layer) {
+        const auto& cfg = p.pianoLayerSample[layer];
+        const float values[9] = {cfg.attackSec,cfg.decaySec,cfg.sustainLevel,cfg.releaseSec,
+                                 cfg.loopHold,cfg.pan,cfg.fineTuneCents,cfg.cutoffHz,cfg.resonanceQ};
+        for (int k = 0; k < 9; ++k) setPianoLayerSampleParam(layer,k,values[k]);
+    }
     setMasterGain(p.volume);
     setPan(p.pan);
 
@@ -117,6 +150,11 @@ void NordPianoEngine::applyPreset(const SynthPresetParams& p) {
     setChorusRate(p.chorusRateHz);
     setChorusDepth(p.chorusDepth);
     setChorusMix(p.chorusMix);
+    setChorusVoices(p.chorusVoices);
+    setChorusWidth(p.chorusWidth);
+    setChorusFeedback(p.chorusFeedback);
+    setChorusTone(p.chorusTone);
+    setChorusDelay(p.chorusDelay);
 
     setPhaserEnabled(p.phaserEnabled);
     setPhaserRate(p.phaserRateHz);
@@ -199,6 +237,17 @@ void NordPianoEngine::applyPreset(const SynthPresetParams& p) {
     organModule_.organVolume = p.organVolume;
     organModule_.organRotaryFast = p.organRotaryFast;
     organModule_.organDrive = p.organDrive;
+    organModule_.rotaryMix = p.organRotaryMix;
+    organModule_.vibratoDepth = p.organVibratoDepth;
+    organModule_.vibratoRate = p.organVibratoRate;
+    organModule_.chorusEnabled = p.organChorusEnabled;
+    organModule_.chorusRate = p.organChorusRate;
+    organModule_.chorusDepth = p.organChorusDepth;
+    organModule_.chorusMix = p.organChorusMix;
+    organModule_.chorusWidth = p.organChorusWidth;
+    organModule_.chorusFeedback = p.organChorusFeedback;
+    organModule_.chorusTone = p.organChorusTone;
+    organModule_.chorusVoices = p.organChorusVoices;
     organModule_.vibratoMode = p.organVibratoMode;
     organModule_.percussionEnabled = p.organPercEnabled;
     organModule_.percussionHarmonic = p.organPercHarmonic;
@@ -234,9 +283,24 @@ SynthPresetParams NordPianoEngine::getCurrentParams() const {
     SynthPresetParams p;
     p.pianoEnabled = pianoEnabled_.load();
     p.pianoVolume = pianoVolume_.load();
-    for (int i = 0; i < 3; ++i) {
+    for (int i = 0; i < PIANO_LAYER_COUNT; ++i) {
         p.pianoLayerEnabled[i] = pianoLayerEnabled_[i].load();
         p.pianoLayerVolume[i] = pianoLayerVolume_[i].load();
+        auto& cfg = p.pianoLayerSample[i];
+        cfg.attackSec = pianoLayerSample_[i][0].load();
+        cfg.decaySec = pianoLayerSample_[i][1].load();
+        cfg.sustainLevel = pianoLayerSample_[i][2].load();
+        cfg.releaseSec = pianoLayerSample_[i][3].load();
+        cfg.loopHold = pianoLayerSample_[i][4].load();
+        cfg.pan = pianoLayerSample_[i][5].load();
+        cfg.fineTuneCents = pianoLayerSample_[i][6].load();
+        cfg.cutoffHz = pianoLayerSample_[i][7].load();
+        cfg.resonanceQ = pianoLayerSample_[i][8].load();
+    }
+    for (int src = 0; src < FX_SOURCE_COUNT; ++src) {
+        p.fxSends[src].modulation = fxSends_[src][0].load();
+        p.fxSends[src].delay = fxSends_[src][1].load();
+        p.fxSends[src].reverb = fxSends_[src][2].load();
     }
     p.maxVoices = maxVoicesLimit_.load();
     p.transposeSemis = transposeSemis_.load();
@@ -268,6 +332,11 @@ SynthPresetParams NordPianoEngine::getCurrentParams() const {
     p.chorusRateHz = chorusRate_.load();
     p.chorusDepth = chorusDepth_.load();
     p.chorusMix = chorusMix_.load();
+    p.chorusVoices = chorusVoices_.load();
+    p.chorusWidth = chorusWidth_.load();
+    p.chorusFeedback = chorusFeedback_.load();
+    p.chorusTone = chorusTone_.load();
+    p.chorusDelay = chorusDelay_.load();
 
     p.phaserEnabled = phaserEnabled_.load();
     p.phaserRateHz = phaserRate_.load();
@@ -349,6 +418,17 @@ SynthPresetParams NordPianoEngine::getCurrentParams() const {
     p.organVolume = organModule_.organVolume;
     p.organRotaryFast = organModule_.organRotaryFast;
     p.organDrive = organModule_.organDrive;
+    p.organRotaryMix = organModule_.rotaryMix;
+    p.organVibratoDepth = organModule_.vibratoDepth;
+    p.organVibratoRate = organModule_.vibratoRate;
+    p.organChorusEnabled = organModule_.chorusEnabled;
+    p.organChorusRate = organModule_.chorusRate;
+    p.organChorusDepth = organModule_.chorusDepth;
+    p.organChorusMix = organModule_.chorusMix;
+    p.organChorusWidth = organModule_.chorusWidth;
+    p.organChorusFeedback = organModule_.chorusFeedback;
+    p.organChorusTone = organModule_.chorusTone;
+    p.organChorusVoices = organModule_.chorusVoices;
     p.organVibratoMode = organModule_.vibratoMode;
     p.organPercEnabled = organModule_.percussionEnabled;
     p.organPercHarmonic = organModule_.percussionHarmonic;
@@ -450,7 +530,7 @@ const StrokeSample* NordPianoEngine::selectStrokeFor(const PianoInstrument& inst
 }
 
 void NordPianoEngine::handleNoteOnInternal(
-    const std::array<std::shared_ptr<const PianoInstrument>, 3>& instruments,
+    const std::array<std::shared_ptr<const PianoInstrument>, PIANO_LAYER_COUNT>& instruments,
     int rawMidiKey, int velocity) {
     int midiKey = std::clamp(rawMidiKey + transposeSemis_.load() + octaveShift_.load() * 12, 0, 127);
 
@@ -459,7 +539,7 @@ void NordPianoEngine::handleNoteOnInternal(
     organModule_.noteOn(rawMidiKey, midiKey, velocity);
 
     if (!pianoEnabled_.load()) return;
-    for (int layer = 0; layer < 3; ++layer) {
+    for (int layer = 0; layer < PIANO_LAYER_COUNT; ++layer) {
         if (!pianoLayerEnabled_[layer].load() || !instruments[layer] || instruments[layer]->strokes.empty()) continue;
         startPianoVoice(instruments[layer], layer, rawMidiKey, midiKey, velocity);
     }
@@ -657,25 +737,35 @@ void NordPianoEngine::render(float* outInterleavedStereo, unsigned int numFrames
         );
     }
 
-    const float attackSec = std::max(0.001f, attackSec_.load());
-    const float decaySec = std::max(0.005f, decaySec_.load());
-    const float sustainLvl = std::clamp(sustainLevel_.load(), 0.0f, 1.0f);
-    const float userRelSec = std::max(0.005f, releaseSec_.load());
-    const float loopHold = std::clamp(loopHold_.load(), 0.0f, 1.0f);
     const bool softRel = softRelease_.load();
-
-    const float attackStep = 1.0f / (attackSec * sr);
-    const float decayCoef = std::exp(-4.6f / (decaySec * sr));
     const float fastStealStep = 1.0f / (0.012f * sr);
-
-    const float loopDecayExponent = (loopHold >= 0.99f) ? 0.0f : std::pow((1.0f - loopHold) * 1.6f, 1.5f);
     const size_t maxAllowed = static_cast<size_t>(std::clamp(maxVoicesLimit_.load(), 16, static_cast<int>(MAX_VOICES)));
 
     int activeCount = 0;
     uint8_t localKeyMap[128] = {0};
 
-    multiSynth_.render(outInterleavedStereo, numFrames);
-    organModule_.render(outInterleavedStereo, numFrames);
+    // Independent stereo stems for five piano layers, three synth layers, and organ.
+    // Keep these vectors allocated between callbacks to avoid heap work at steady state.
+    for (auto& stem : sourceAudio_) {
+        if (stem.size() < numFrames * 2) stem.resize(numFrames * 2);
+        std::fill_n(stem.data(), numFrames * 2, 0.0f);
+    }
+    const std::array<float*, 3> synthStems = {
+        sourceAudio_[PIANO_LAYER_COUNT + 0].data(),
+        sourceAudio_[PIANO_LAYER_COUNT + 1].data(),
+        sourceAudio_[PIANO_LAYER_COUNT + 2].data()
+    };
+    const float midiBend = pitchBend_.load(std::memory_order_relaxed);
+    const float midiMod = modWheel_.load(std::memory_order_relaxed);
+    const double tremPhaseStep = 2.0 * 3.141592653589793 * 5.2 / hostSampleRate_;
+    for (auto& synthLayer : multiSynth_.layers) {
+        synthLayer.performancePitchBendSemis = midiBend * 2.f;
+        synthLayer.performanceModWheel = midiMod;
+    }
+    organModule_.pitchBendSemis = midiBend * 2.f;
+    organModule_.modWheel = midiMod;
+    multiSynth_.render(outInterleavedStereo, numFrames, &synthStems);
+    organModule_.render(sourceAudio_[FX_SOURCE_COUNT - 1].data(), numFrames);
 
     // Contabilizar voces y teclas activas en Synth y Órgano para el visualizador de 88 teclas
     if (multiSynth_.synthEnabled) {
@@ -730,7 +820,22 @@ void NordPianoEngine::render(float* outInterleavedStereo, unsigned int numFrames
             if (v.playedMidiKey >= voiceInst.undampedFromKey) {
                 damperSec = std::max(damperSec, 0.85f);
             }
-            float effectiveRelSec = std::max(0.02f, damperSec * (userRelSec / 0.35f));
+            const int li = std::clamp(v.pianoLayer, 0, PIANO_LAYER_COUNT-1);
+            const float layerAtk = std::max(0.005f, pianoLayerSample_[li][0].load());
+            const float layerDec = std::max(0.02f, pianoLayerSample_[li][1].load());
+            const float layerSus = std::clamp(pianoLayerSample_[li][2].load(), 0.f, 1.f);
+            const float layerRel = std::max(0.02f, pianoLayerSample_[li][3].load());
+            const float layerHold = std::clamp(pianoLayerSample_[li][4].load(), 0.f, 1.f);
+            const float layerPan = std::clamp(pianoLayerSample_[li][5].load(), -1.f, 1.f);
+            const float layerTune = pianoLayerSample_[li][6].load();
+            const float attackStep = 1.f / (layerAtk * sr);
+            const float decayCoef = std::exp(-4.6f / (layerDec * sr));
+            const float sustainLvl = layerSus;
+            const float loopDecayExponent = (layerHold >= 0.99f) ? 0.f : std::pow((1.f-layerHold)*1.6f,1.5f);
+            const float panGainL = std::sqrt(1.f-std::max(0.f,layerPan));
+            const float panGainR = std::sqrt(1.f+std::min(0.f,layerPan));
+            const double pitchMultiplier = std::pow(2.0, (midiBend*200.f+layerTune)/1200.0);
+            float effectiveRelSec = std::max(0.02f, damperSec * (layerRel / 0.35f));
             const float releaseCoef = std::exp(-6.907755f / (effectiveRelSec * sr));
 
             const float effectiveLoopDecay = (loopDecayExponent <= 0.0f)
@@ -810,11 +915,13 @@ void NordPianoEngine::render(float* outInterleavedStereo, unsigned int numFrames
                 float xm1R = s.audioR[km1], x0R = s.audioR[k0], x1R = s.audioR[k1], x2R = s.audioR[k2];
                 float valR = x0R + 0.5f * t * (x1R - xm1R + t * (2.0f * xm1R - 5.0f * x0R + 4.0f * x1R - x2R + t * (3.0f * (x0R - x1R) + x2R - xm1R)));
 
-                float voiceGain = voiceAudible ? v.velocityGain * v.sampleEnv * v.adsrLevel * layerGain : 0.0f;
-                outInterleavedStereo[n * 2]     += valL * voiceGain;
-                outInterleavedStereo[n * 2 + 1] += valR * voiceGain;
+                const float tremGain = 1.0f - midiMod * 0.12f *
+                    (0.5f + 0.5f * std::sin((v.pos * v.step * tremPhaseStep)));
+                float voiceGain = voiceAudible ? v.velocityGain * v.sampleEnv * v.adsrLevel * layerGain * tremGain : 0.0f;
+                sourceAudio_[v.pianoLayer][n * 2]     += valL * voiceGain * panGainL;
+                sourceAudio_[v.pianoLayer][n * 2 + 1] += valR * voiceGain * panGainR;
 
-                v.pos += v.step;
+                v.pos += v.step * pitchMultiplier;
                 if (useLoop && v.pos >= loopStart) {
                     v.inLoop = true;
                 }
@@ -827,6 +934,33 @@ void NordPianoEngine::render(float* outInterleavedStereo, unsigned int numFrames
                     }
                 }
             }
+        }
+    }
+
+    // Per-piano-layer resonant low-pass: processing happens on isolated stems, BEFORE
+    // routing to AUX sends. State persists per layer/channel across audio blocks.
+    // Coefficients are constant per block to avoid zipper noise on each individual note.
+    for (int layer = 0; layer < PIANO_LAYER_COUNT; ++layer) {
+        const float hz = std::clamp(pianoLayerSample_[layer][7].load(), 40.f, sr * .45f);
+        const float q = std::clamp(pianoLayerSample_[layer][8].load(), .5f, 12.f);
+        if (hz >= 19500.f && q <= .75f) { pianoFilterStates_[layer] = {}; continue; } // transparent legacy default
+        const float g = std::tan(3.14159265358979f * hz / sr);
+        const float k = 1.f / q;
+        const float a1 = 1.f / (1.f + g * (g + k));
+        const float a2 = g * a1, a3 = g * a2;
+        auto& f = pianoFilterStates_[layer];
+        float* stem = sourceAudio_[layer].data();
+        for (unsigned n = 0; n < numFrames; ++n) {
+            const unsigned x = n * 2;
+            const float v3L = stem[x] - f.ic2L;
+            const float v1L = a1 * f.ic1L + a2 * v3L;
+            const float v2L = f.ic2L + a2 * f.ic1L + a3 * v3L;
+            f.ic1L = 2.f * v1L - f.ic1L; f.ic2L = 2.f * v2L - f.ic2L;
+            const float v3R = stem[x+1] - f.ic2R;
+            const float v1R = a1 * f.ic1R + a2 * v3R;
+            const float v2R = f.ic2R + a2 * f.ic1R + a3 * v3R;
+            f.ic1R = 2.f * v1R - f.ic1R; f.ic2R = 2.f * v2R - f.ic2R;
+            stem[x] = v2L; stem[x+1] = v2R;
         }
     }
 
@@ -871,6 +1005,11 @@ void NordPianoEngine::render(float* outInterleavedStereo, unsigned int numFrames
     const float chorusRate = chorusRate_.load();
     const float chorusDepth = chorusDepth_.load();
     const float chorusMix = chorusMix_.load();
+    const int chorusVoices = chorusVoices_.load();
+    const float chorusWidth = chorusWidth_.load();
+    const float chorusFeedback = chorusFeedback_.load();
+    const float chorusTone = chorusTone_.load();
+    const float chorusDelay = chorusDelay_.load();
 
     const bool delayOn = delayEnabled_.load();
     const float delayTime = delayTimeMs_.load();
@@ -889,26 +1028,55 @@ void NordPianoEngine::render(float* outInterleavedStereo, unsigned int numFrames
 
     float maxL = 0.0f, maxR = 0.0f;
     bool clipped = false;
+    const float sendCoeff = 1.0f - std::exp(-1.0f / (0.012f * sr));
 
     for (unsigned int n = 0; n < numFrames; ++n) {
-        float L = outInterleavedStereo[n * 2];
-        float R = outInterleavedStereo[n * 2 + 1];
+        float dryL = outInterleavedStereo[n * 2];  // test tone, if active
+        float dryR = outInterleavedStereo[n * 2 + 1];
+        float fxIn[FX_BUS_COUNT][2]{};
+        for (int src = 0; src < FX_SOURCE_COUNT; ++src) {
+            const float inL = sourceAudio_[src][n * 2];
+            const float inR = sourceAudio_[src][n * 2 + 1];
+            dryL += inL; dryR += inR;
+            for (int bus = 0; bus < FX_BUS_COUNT; ++bus) {
+                float& smoothed = fxSendSmoothed_[src][bus];
+                smoothed += (fxSends_[src][bus].load(std::memory_order_relaxed) - smoothed) * sendCoeff;
+                fxIn[bus][0] += inL * smoothed;
+                fxIn[bus][1] += inR * smoothed;
+            }
+        }
 
+        float L = dryL, R = dryR;
         if (useSvf) svfFilter_.processStereo(L, R);
         masterEq_.processStereo(L, R);
 
-        modRack_.processStereo(L, R,
+        // Parallel wet-only auxiliary buses; original samples are present ONCE in dry.
+        float modL = fxIn[0][0], modR = fxIn[0][1];
+        modRack_.processStereo(modL, modR,
                                tremOn, tremRate, tremDepth,
                                phaserOn, phaserRate, phaserDepth, phaserFb, phaserMix,
-                               chorusOn, chorusRate, chorusDepth, chorusMix);
+                               chorusOn, chorusRate, chorusDepth, chorusMix,
+                               chorusVoices, chorusWidth, chorusFeedback, chorusTone, chorusDelay);
+        L += modL - fxIn[0][0]; R += modR - fxIn[0][1];
 
-        delayFx_.processStereo(L, R, delayOn, delayTime, delayFb, delayDamp, delayMix, delayPP);
+        float dlyL = fxIn[1][0], dlyR = fxIn[1][1];
+        delayFx_.processStereo(dlyL, dlyR, delayOn, delayTime, delayFb,
+                               delayDamp, delayMix, delayPP);
+        L += dlyL - fxIn[1][0]; R += dlyR - fxIn[1][1];
+
         if (revOn) {
-            if (revType == 3) {
-                shimmerReverbFx_.processStereo(L, R);
-            } else {
-                reverbFx_.processStereo(L, R, true, revType, revMix, revSize, revDamp, revPre, revShimmer);
-            }
+            float revL = fxIn[2][0], revR = fxIn[2][1];
+            if (revType == 3) shimmerReverbFx_.processStereo(revL, revR);
+            else reverbFx_.processStereo(revL, revR, true, revType, revMix,
+                                         revSize, revDamp, revPre, revShimmer);
+            // Each reverb implementation mixes its own dry signal. Remove
+            // precisely that dry component so the send remains wet-only and
+            // never cancels part of the workstation's main dry path.
+            const float revDryGain = revType == 3
+                ? std::cos(revMix * PI_F * 0.42f)
+                : 1.0f - revMix * 0.28f;
+            L += revL - fxIn[2][0] * revDryGain;
+            R += revR - fxIn[2][1] * revDryGain;
         }
 
         L *= gainL;
@@ -916,8 +1084,13 @@ void NordPianoEngine::render(float* outInterleavedStereo, unsigned int numFrames
 
         if (std::abs(L) > 0.99f || std::abs(R) > 0.99f) clipped = true;
 
-        outInterleavedStereo[n * 2]     = std::clamp(L, -1.0f, 1.0f);
-        outInterleavedStereo[n * 2 + 1] = std::clamp(R, -1.0f, 1.0f);
+        // Soft limiting protects stacked layers from harsh digital clipping.
+        auto softLimit = [](float x) {
+            const float a = std::abs(x);
+            return a <= 0.85f ? x : std::copysign(0.85f + 0.15f * std::tanh((a - 0.85f) / 0.15f), x);
+        };
+        outInterleavedStereo[n * 2]     = softLimit(L);
+        outInterleavedStereo[n * 2 + 1] = softLimit(R);
 
         if (std::abs(L) > maxL) maxL = std::abs(L);
         if (std::abs(R) > maxR) maxR = std::abs(R);

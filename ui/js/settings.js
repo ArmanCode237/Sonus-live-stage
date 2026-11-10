@@ -16,7 +16,7 @@ function postJson(url, body) {
 function showHwError(err) {
   console.error('[settings]', err);
   const box = document.getElementById('audioStatusBox');
-  if (box) box.innerText = '⚠ Error de comunicación con el servidor: ' + err.message;
+  if (box) box.innerText = 'AVISO: Error de comunicación con el servidor: ' + err.message;
 }
 
 let hwData = null;
@@ -31,7 +31,7 @@ function loadHardware() {
       const banner = document.getElementById('missingAudioBanner');
       if (hw.savedAudioMissing && hw.savedAudioDeviceName) {
         banner.style.display = 'block';
-        banner.innerText = `⚠ El dispositivo guardado [${hw.savedAudioApi}] "${hw.savedAudioDeviceName}" no está conectado. Usando salida de respaldo.`;
+        banner.innerText = `AVISO: El dispositivo guardado [${hw.savedAudioApi}] "${hw.savedAudioDeviceName}" no está conectado. Usando salida de respaldo.`;
       } else {
         banner.style.display = 'none';
       }

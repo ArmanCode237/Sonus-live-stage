@@ -14,8 +14,22 @@ WorkstationHost::WorkstationHost() : NordPianoEngine() {
 
 void WorkstationHost::registerAllParameters() {
     registry_.registerParam("pianoEnabled", 0.0f, 1.0f, [this](float v) { setPianoEnabled(v >= 0.5f); });
+    for (int src = 0; src < FX_SOURCE_COUNT; ++src) {
+        for (int bus = 0; bus < FX_BUS_COUNT; ++bus) {
+            const std::string busName[FX_BUS_COUNT] = {"Mod", "Delay", "Reverb"};
+            registry_.registerParam("fxSend" + std::to_string(src) + busName[bus], 0.0f, 1.0f,
+                                    [this, src, bus](float v) { setFxSend(src, bus, v); });
+        }
+    }
+    const std::string sampleNames[9] = {"Atk", "Dec", "Sus", "Rel", "Hold", "Pan", "Tune", "Cut", "Res"};
+    const float sampleMin[9] = {0.005f, 0.02f, 0.f, 0.02f, 0.f, -1.f, -100.f, 40.f, 0.5f};
+    const float sampleMax[9] = {5.f, 12.f, 1.f, 10.f, 1.f, 1.f, 100.f, 20000.f, 12.f};
+    for (int layer = 0; layer < PIANO_LAYER_COUNT; ++layer)
+        for (int param = 0; param < 9; ++param)
+            registry_.registerParam("pianoSample" + std::to_string(layer) + sampleNames[param],
+                sampleMin[param], sampleMax[param], [this, layer, param](float v) { setPianoLayerSampleParam(layer, param, v); });
     registry_.registerParam("pianoVolume", 0.0f, 1.5f, [this](float v) { setPianoVolume(v); });
-    for (int layer = 0; layer < 3; ++layer) {
+    for (int layer = 0; layer < PIANO_LAYER_COUNT; ++layer) {
         registry_.registerParam("pianoLayerEnabled" + std::to_string(layer), 0.0f, 1.0f,
             [this, layer](float v) { setPianoLayerEnabled(layer, v >= 0.5f); });
         registry_.registerParam("pianoLayerVol" + std::to_string(layer), 0.0f, 1.5f,
@@ -52,6 +66,11 @@ void WorkstationHost::registerAllParameters() {
     registry_.registerParam("chorusRate", 0.1f, 6.0f, [this](float v) { setChorusRate(v); });
     registry_.registerParam("chorusDepth", 0.0f, 1.0f, [this](float v) { setChorusDepth(v); });
     registry_.registerParam("chorusMix", 0.0f, 1.0f, [this](float v) { setChorusMix(v); });
+    registry_.registerParam("chorusVoices",1.0f,3.0f,[this](float v){setChorusVoices(static_cast<int>(std::lround(v)));});
+    registry_.registerParam("chorusWidth",0.0f,1.0f,[this](float v){setChorusWidth(v);});
+    registry_.registerParam("chorusFeedback",-0.5f,0.5f,[this](float v){setChorusFeedback(v);});
+    registry_.registerParam("chorusTone",500.0f,18000.0f,[this](float v){setChorusTone(v);});
+    registry_.registerParam("chorusDelay",7.0f,28.0f,[this](float v){setChorusDelay(v);});
     registry_.registerParam("phaserEnabled", 0.0f, 1.0f, [this](float v) { setPhaserEnabled(v >= 0.5f); });
     registry_.registerParam("phaserRate", 0.1f, 6.0f, [this](float v) { setPhaserRate(v); });
     registry_.registerParam("phaserDepth", 0.0f, 1.0f, [this](float v) { setPhaserDepth(v); });
@@ -88,7 +107,7 @@ void WorkstationHost::registerAllParameters() {
 
     // Módulo 2: Synth 3-Layers
     registry_.registerParam("synthEnabled", 0.0f, 1.0f, [this](float v) { multiSynth_.synthEnabled = (v >= 0.5f); });
-    registry_.registerParam("synthPresetId", 1.0f, 8.0f, [this](float v) { multiSynth_.loadBuiltInSynthPreset(static_cast<int>(v)); });
+    registry_.registerParam("synthPresetId", 1.0f, 48.0f, [this](float v) { multiSynth_.loadBuiltInSynthPreset(static_cast<int>(v)); });
     registry_.registerParam("synthMasterVol", 0.0f, 1.5f, [this](float v) { multiSynth_.synthMasterVol = v; });
     registry_.registerParam("synthMacroCutoff", 0.1f, 2.0f, [this](float v) { multiSynth_.synthMacroCutoff = v; });
 
@@ -143,6 +162,17 @@ void WorkstationHost::registerAllParameters() {
     registry_.registerParam("organVolume", 0.0f, 1.5f, [this](float v) { organModule_.organVolume = v; });
     registry_.registerParam("organRotaryFast", 0.0f, 1.0f, [this](float v) { organModule_.organRotaryFast = (v >= 0.5f); });
     registry_.registerParam("organDrive", 0.0f, 1.0f, [this](float v) { organModule_.organDrive = v; });
+    registry_.registerParam("organRotaryMix", 0.0f, 1.0f, [this](float v) { organModule_.rotaryMix = v; });
+    registry_.registerParam("organVibratoDepth", 0.0f, 2.0f, [this](float v) { organModule_.vibratoDepth = v; });
+    registry_.registerParam("organVibratoRate", 2.0f, 12.0f, [this](float v) { organModule_.vibratoRate = v; });
+    registry_.registerParam("organChorusEnabled",0.0f,1.0f,[this](float v){organModule_.chorusEnabled=v>=0.5f;});
+    registry_.registerParam("organChorusRate",0.1f,5.0f,[this](float v){organModule_.chorusRate=v;});
+    registry_.registerParam("organChorusDepth",0.0f,1.0f,[this](float v){organModule_.chorusDepth=v;});
+    registry_.registerParam("organChorusMix",0.0f,1.0f,[this](float v){organModule_.chorusMix=v;});
+    registry_.registerParam("organChorusWidth",0.0f,1.0f,[this](float v){organModule_.chorusWidth=v;});
+    registry_.registerParam("organChorusFeedback",-0.5f,0.5f,[this](float v){organModule_.chorusFeedback=v;});
+    registry_.registerParam("organChorusTone",500.0f,18000.0f,[this](float v){organModule_.chorusTone=v;});
+    registry_.registerParam("organChorusVoices",1.0f,3.0f,[this](float v){organModule_.chorusVoices=std::clamp(static_cast<int>(std::lround(v)),1,3);});
     for (int d = 0; d < 9; ++d) {
         registry_.registerParam("drawbar" + std::to_string(d), 0.0f, 1.0f, [this, d](float v) {
             organModule_.drawbars[d] = std::clamp(v, 0.0f, 1.0f);
@@ -263,7 +293,13 @@ json WorkstationHost::getOrganParamsJson() const {
     return {
         {"organEnabled", o.organEnabled}, {"organModel", o.organModel},
         {"organVolume", o.organVolume}, {"organRotaryFast", o.organRotaryFast},
-        {"organDrive", o.organDrive}, {"drawbars", drawbars},
+        {"organDrive", o.organDrive}, {"rotaryMix", o.rotaryMix},
+        {"vibratoDepth", o.vibratoDepth}, {"vibratoRate", o.vibratoRate},
+        {"chorusEnabled",o.chorusEnabled},{"chorusRate",o.chorusRate},
+        {"chorusDepth",o.chorusDepth},{"chorusMix",o.chorusMix},
+        {"chorusWidth",o.chorusWidth},{"chorusFeedback",o.chorusFeedback},
+        {"chorusTone",o.chorusTone},{"chorusVoices",o.chorusVoices},
+        {"drawbars", drawbars},
         {"vibratoMode", o.vibratoMode}, {"percussionEnabled", o.percussionEnabled},
         {"percussionHarmonic", o.percussionHarmonic},
         {"percussionDecaySec", o.percussionDecaySec}, {"percussionLevel", o.percussionLevel},
@@ -360,6 +396,17 @@ void WorkstationHost::applyOrganPresetJson(const json& p) {
     organModule_.organVolume = p.value("organVolume", organModule_.organVolume);
     organModule_.organRotaryFast = p.value("organRotaryFast", organModule_.organRotaryFast);
     organModule_.organDrive = p.value("organDrive", organModule_.organDrive);
+    organModule_.rotaryMix = p.value("rotaryMix", organModule_.rotaryMix);
+    organModule_.vibratoDepth = p.value("vibratoDepth", organModule_.vibratoDepth);
+    organModule_.vibratoRate = p.value("vibratoRate", organModule_.vibratoRate);
+    organModule_.chorusEnabled = p.value("chorusEnabled",organModule_.chorusEnabled);
+    organModule_.chorusRate = p.value("chorusRate",organModule_.chorusRate);
+    organModule_.chorusDepth = p.value("chorusDepth",organModule_.chorusDepth);
+    organModule_.chorusMix = p.value("chorusMix",organModule_.chorusMix);
+    organModule_.chorusWidth = p.value("chorusWidth",organModule_.chorusWidth);
+    organModule_.chorusFeedback = p.value("chorusFeedback",organModule_.chorusFeedback);
+    organModule_.chorusTone = p.value("chorusTone",organModule_.chorusTone);
+    organModule_.chorusVoices = p.value("chorusVoices",organModule_.chorusVoices);
     organModule_.vibratoMode = p.value("vibratoMode", organModule_.vibratoMode);
     organModule_.percussionEnabled = p.value("percussionEnabled", organModule_.percussionEnabled);
     organModule_.percussionHarmonic = p.value("percussionHarmonic", organModule_.percussionHarmonic);

@@ -91,6 +91,8 @@ struct SynthPolyVoice {
 class SingleSynthLayer {
 public:
     SynthLayerConfig cfg;
+    float performancePitchBendSemis = 0.f;
+    float performanceModWheel = 0.f;
     std::array<SynthPolyVoice, SYNTH_MAX_VOICES_PER_LAYER> voices{};
 
     void init(float sr);
@@ -135,7 +137,8 @@ public:
     void noteOff(int rawKey, bool pedalDown);
     void setSustain(bool down);
     void allNotesOff();
-    void render(float* outInterleavedStereo, unsigned int numFrames);
+    void render(float* outInterleavedStereo, unsigned int numFrames,
+                const std::array<float*, 3>* layerStems = nullptr);
 
     void addWavetable(const Wavetable& wt);
     void clearWavetables();

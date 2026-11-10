@@ -20,7 +20,8 @@ function startWorkstationPolling() {
       state.currentInstId = s.instrumentId;
       state.lastParamRev = s.paramRev;
       state.currentSourcePath = s.sourcePath || state.currentSourcePath;
-      setText('lcdSampleName', s.instrumentName || 'Synth / Organ Stage');
+      // Instrument names are displayed per enabled module by updateMainDashboard().
+      if(s.programName) setText('lcdProgramName',s.programName);
       setText('zoneCountNum', s.zoneCount || 0);
       setText('ramTopText', (s.memoryMB || 0).toFixed(1) + ' MB');
       if (s.activeProgramSlot !== undefined) setActiveProgramPad(s.activeProgramSlot);
@@ -29,6 +30,9 @@ function startWorkstationPolling() {
     }
 
     setText('activeVoicesText', s.activeVoices);
+    if (typeof s.modWheel==='number') setText('modWheelView',Math.round(s.modWheel*100)+'%');
+    if (typeof s.pitchBend==='number') setText('pitchBendView',Math.abs(s.pitchBend)<.01?'CENTER':(s.pitchBend>0?'+':'')+(s.pitchBend*2).toFixed(2)+' st');
+    if (typeof updateMainDashboard==='function') updateMainDashboard(s);
     const vuL = $('vuL'), vuR = $('vuR');
     if (vuL) vuL.style.width = Math.min(100, Math.pow(s.peakL || 0, 0.5) * 100) + '%';
     if (vuR) vuR.style.width = Math.min(100, Math.pow(s.peakR || 0, 0.5) * 100) + '%';
@@ -44,7 +48,7 @@ function startWorkstationPolling() {
     if (midiBadge) {
       if (s.disconnectedMidiCount > 0) {
         midiBadge.className = 'hw-badge warn';
-        midiBadge.innerText = `⚠ MIDI DESCONECTADO (${s.disconnectedMidiCount})`;
+        midiBadge.innerText = `MIDI DESCONECTADO (${s.disconnectedMidiCount})`;
       } else if (s.connectedMidiCount > 0) {
         midiBadge.className = 'hw-badge';
         midiBadge.innerText = `MIDI ACTIVO (${s.connectedMidiCount})`;

@@ -24,8 +24,10 @@ void NordOrganModule::init(float sr) {
     drum_.phase = 0.25;
     drum_.currentRPS = LESLIE_SLOW_RPS;
     drumLP_state_ = 0.0f;
+    ownChorus_.init(sr_);
     vibWritePos_ = 0;
     vibLfoPhase_ = 0.0;
+    wheelPhase_ = 0.0;
     vibDelayLine_.fill(0.0f);
     clickEnvelope_ = 0.0f;
 }
@@ -79,7 +81,12 @@ void NordOrganModule::noteOn(int rawKey, int playedKey, int velocity) {
     OrganVoice* target = nullptr;
     for (auto& v : organVoices) {
         if (v.active && v.keyHeld && v.rawKey != rawKey) anyHeldBefore = true;
-        if (v.active && v.rawKey == rawKey) target = &v;
+        // Retrigger: fade the old oscillator instead of replacing it mid-cycle.
+        if (v.active && v.rawKey == rawKey) {
+            v.keyHeld = false;
+            v.sustained = false;
+            v.stage = 4;
+        }
     }
     if (!target) {
         for (auto& v : organVoices) {
@@ -93,7 +100,7 @@ void NordOrganModule::noteOn(int rawKey, int playedKey, int velocity) {
     target->keyHeld = true;
     target->sustained = false;
     target->stage = 3;
-    target->env = 1.0f;
+    target->env = 0.0f; // smooth 5 ms key-on instead of hard waveform discontinuity
     target->velGain = 0.85f + (velocity / 127.0f) * 0.15f; // El órgano es casi constante en velocidad
     target->freq = 440.0 * std::pow(2.0, (playedKey - 69.0) / 12.0);
 
@@ -105,8 +112,9 @@ void NordOrganModule::noteOn(int rawKey, int playedKey, int velocity) {
         target->percActive = false;
     }
 
-    clickEnvelope_ = 0.65f;
-    clickSample_ = ((rawKey & 1) ? 1.0f : -1.0f) * 0.18f;
+    // Subtle Hammond key-click, not an audible transient spike.
+    clickEnvelope_ = 0.07f;
+    clickSample_ = ((rawKey & 1) ? 1.0f : -1.0f) * 0.015f;
 }
 
 void NordOrganModule::noteOff(int rawKey, bool pedalDown) {
@@ -145,10 +153,11 @@ void NordOrganModule::render(float* outInterleavedStereo, unsigned int numFrames
     const double drumTarget = organRotaryFast ? LESLIE_FAST_DRUM_RPS : (LESLIE_SLOW_RPS * 0.85);
     const double wc = 2.0 * PI_F * CROSSOVER_HZ / sr_;
     const float lpCoef = static_cast<float>(wc / (wc + 1.0));
-    const float releaseStep = 1.0f / (0.0045f * sr_); // 4.5 ms anti-click release
+    const float releaseStep = 1.0f / (0.007f * sr_); // 7 ms anti-click release
+    const float attackStep = 1.0f / (0.005f * sr_);  // 5 ms soft start
     const double percDecayCoef = std::exp(-4.8 / (std::max(0.08f, percussionDecaySec) * sr_));
 
-    const double vibRateHz = 6.8;
+    const double vibRateHz = std::clamp(vibratoRate, 2.0f, 12.0f);
     const double vibInc = vibRateHz / sr_;
     float vibDepthSamples = 0.0f;
     bool useChorus = (vibratoMode >= 4);
@@ -159,7 +168,14 @@ void NordOrganModule::render(float* outInterleavedStereo, unsigned int numFrames
         default: vibDepthSamples = 0.0f; break;
     }
 
+    vibDepthSamples *= std::clamp(vibratoDepth, 0.0f, 2.0f);
+    const double pitchMul = std::pow(2.0, std::clamp(pitchBendSemis, -2.0f, 2.0f) / 12.0f);
+    const float wheelAmount = std::clamp(modWheel, 0.0f, 1.0f);
+    double wheelPhase = wheelPhase_;
     for (unsigned int n = 0; n < numFrames; ++n) {
+        wheelPhase += 5.2 / sr_;
+        if (wheelPhase >= 1.0) wheelPhase -= 1.0;
+        const double wheelPitch = std::pow(2.0, wheelAmount * 22.0 * std::sin(2.0 * PI_F * wheelPhase) / 1200.0);
         auto updateRotor = [&](LeslieRotor& r, double target) {
             double tau = (target > r.currentRPS) ? r.accelTau : r.decelTau;
             float coef = static_cast<float>(std::exp(-1.0 / (tau * sr_)));
@@ -176,6 +192,9 @@ void NordOrganModule::render(float* outInterleavedStereo, unsigned int numFrames
         for (auto& v : organVoices) {
             if (!v.active) continue;
 
+            if (v.stage == 3 && v.env < 1.0f) {
+                v.env = std::min(1.0f, v.env + attackStep);
+            }
             if (v.stage == 4) {
                 v.env -= releaseStep;
                 if (v.env <= 0.0f) {
@@ -207,7 +226,7 @@ void NordOrganModule::render(float* outInterleavedStereo, unsigned int numFrames
             }
 
             // CORRECCIÓN CLAVE: Envolver en 2.0 para que 0.5 (16') y 1.5 (5 1/3') completen ciclos enteros
-            v.phase1 += v.freq / sr_;
+            v.phase1 += v.freq * pitchMul * wheelPitch / sr_;
             if (v.phase1 >= 2.0) v.phase1 -= 2.0;
 
             if (percussionEnabled && v.percActive && v.percEnv > 0.001) {
@@ -267,12 +286,20 @@ void NordOrganModule::render(float* outInterleavedStereo, unsigned int numFrames
         float drumL = 0.70f + 0.30f * static_cast<float>(std::cos(drumAngle));
         float drumR = 0.70f + 0.30f * static_cast<float>(std::sin(drumAngle));
 
-        float finalL = (hornSig * hornL + drumSig * drumL) * organVolume;
-        float finalR = (hornSig * hornR + drumSig * drumR) * organVolume;
+        const float rotaryWet = std::clamp(rotaryMix, 0.0f, 1.0f);
+        float finalL = (outL * (1.f - rotaryWet) + (hornSig * hornL + drumSig * drumL) * rotaryWet) * organVolume;
+        float finalR = (outR * (1.f - rotaryWet) + (hornSig * hornR + drumSig * drumR) * rotaryWet) * organVolume;
 
+        // Independent ensemble chorus on the organ output, after scanner and Leslie.
+        // Even when bypassed the delay line keeps running to prevent stale-buffer clicks.
+        ownChorus_.processStereo(finalL, finalR,
+            false, 1.0f, 0.0f, false, 1.0f, 0.0f, 0.0f, 0.0f,
+            chorusEnabled, chorusRate, chorusDepth, chorusMix,
+            chorusVoices, chorusWidth, chorusFeedback, chorusTone);
         outInterleavedStereo[n * 2]     += finalL;
         outInterleavedStereo[n * 2 + 1] += finalR;
     }
+    wheelPhase_ = wheelPhase;
 }
 
 } // namespace NordDSP

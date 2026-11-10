@@ -12,11 +12,14 @@
 <link rel="stylesheet" href="/css/layout.css">
 <link rel="stylesheet" href="/css/topbar.css">
 <link rel="stylesheet" href="/css/components.css">
-<link rel="stylesheet" href="/css/console.css">
+<link rel="stylesheet" href="/css/console.css?v=7.0">
 <link rel="stylesheet" href="/css/drawbars.css">
 <link rel="stylesheet" href="/css/keyboard.css">
-<link rel="stylesheet" href="/css/modals.css">
-<link rel="stylesheet" href="/css/synth.css">
+<link rel="stylesheet" href="/css/modals.css?v=7.0">
+<link rel="stylesheet" href="/css/synth.css?v=7.0">
+<link rel="stylesheet" href="/css/nord-hardware.css">
+<link rel="stylesheet" href="/css/fx-sends.css">
+<link rel="stylesheet" href="/css/piano.css">
 </head>
 <body data-page="organ">
 
@@ -32,8 +35,9 @@
         <strong style="font-size:14px; letter-spacing:1px;">NORD C2D TONEWHEEL ORGAN (DRAWBAR DECK &amp; ROTARY SPEAKER)</strong>
       </div>
       <div style="display:flex; gap:10px; align-items:center;">
+        <button class="red-rect-btn" onclick="openModal('modalOrganEffects')">ORGAN FX · EDIT</button>
         <button class="red-rect-btn" id="btnRotaryPage" onclick="toggleOrganRotary()">ROTARY SPEAKER: SLOW (CHORALE)</button>
-        <a class="wrench-btn" href="/">⬅ Volver a Main</a>
+        <a class="wrench-btn" href="/"><span data-ui-icon="arrow-left"></span> MAIN PANEL</a>
       </div>
     </div>
 
@@ -78,11 +82,14 @@
     </section>
   </div>
 
+  <div class="fx-routing-access"><button type="button" class="red-rect-btn" onclick="openModal('modalFxSends')">FX SEND MATRIX · AJUSTAR ENVIOS POR CAPA</button></div>
   <div data-include="/partials/keyboard.html"></div>
 </div>
 
 <!-- Modales compartidos -->
 <div data-include="/partials/modal-voice.html"></div>
+<div data-include="/partials/modal-fx-sends.html"></div>
+<div data-include="/partials/modal-organ-effects.html"></div>
 <div data-include="/partials/modal-browser.html"></div>
 
 <!-- JS: módulos compartidos (el orden importa: core primero, app al final) -->
@@ -91,6 +98,7 @@
 <script src="/js/knobs.js"></script>
 <script src="/js/eq.js"></script>
 <script src="/js/fx.js"></script>
+<script src="/js/fx-sends.js"></script>
 <script src="/js/programs.js"></script>
 <script src="/js/library.js"></script>
 <script src="/js/synth.js"></script>
@@ -98,6 +106,8 @@
 <script src="/js/keyboard.js"></script>
 <script src="/js/sync.js"></script>
 <script src="/js/polling.js"></script>
+<script src="/js/icons.js"></script>
+<script src="/js/dashboard.js"></script>
 <script src="/js/app.js"></script>
 </body>
 </html>

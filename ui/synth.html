@@ -12,11 +12,14 @@
 <link rel="stylesheet" href="/css/layout.css">
 <link rel="stylesheet" href="/css/topbar.css">
 <link rel="stylesheet" href="/css/components.css">
-<link rel="stylesheet" href="/css/console.css">
+<link rel="stylesheet" href="/css/console.css?v=7.0">
 <link rel="stylesheet" href="/css/drawbars.css">
 <link rel="stylesheet" href="/css/keyboard.css">
-<link rel="stylesheet" href="/css/modals.css">
-<link rel="stylesheet" href="/css/synth.css">
+<link rel="stylesheet" href="/css/modals.css?v=7.0">
+<link rel="stylesheet" href="/css/synth.css?v=7.0">
+<link rel="stylesheet" href="/css/nord-hardware.css">
+<link rel="stylesheet" href="/css/fx-sends.css">
+<link rel="stylesheet" href="/css/piano.css">
 </head>
 <body data-page="synth">
 
@@ -26,17 +29,39 @@
 
   <!-- ===================== CONTENIDO PROPIO DE ESTA PÁGINA ===================== -->
   <div id="pageView_synth" class="page-panel">
-    <div class="page-toolbar">
-      <div style="display:flex; align-items:center; gap:12px;">
-        <button class="mod-led-btn" id="ledPage_synthEnabled" onclick="toggleEffect('synthEnabled')"></button>
-        <strong style="font-size:14px; letter-spacing:1px;">NORD 3-LAYER ANALOG SYNTHESIZER · JUNO / JUPITER ENGINE</strong>
+    <div class="synth-hero">
+      <div class="synth-hero-identity"><span class="panel-eyebrow">STAGE ENGINE / SYNTH SECTION</span>
+        <h2>ANALOG <span>SYNTHESIZER</span></h2>
+        <p>JUNO / JUPITER ARCHITECTURE <span class="hero-divider"></span> THREE INDEPENDENT VOICES</p>
+        <div class="synth-power-row"><button class="mod-led-btn" id="ledPage_synthEnabled" onclick="toggleEffect('synthEnabled')" aria-label="Encender o apagar sintetizador"></button><strong>SYNTH ON / OFF</strong></div>
       </div>
-      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
-        <span style="font-size:11px; color:#9ba3af;">PRESETS:</span>
-        <!-- Botones 1..8 generados por synth.js (buildSynthPresetButtons) -->
-        <span id="synthPresetButtons" style="display:flex; gap:6px; flex-wrap:wrap;"></span>
-        <a class="wrench-btn" href="/">⬅ Volver a Main</a>
+      <div class="synth-hero-screen" aria-label="Pantalla del sintetizador">
+        <div class="synth-screen-line"><span>FACTORY PATCH</span><span>PRG <strong id="synthScreenNumber">01</strong> / 48</span></div>
+        <div id="synthScreenPatch" class="synth-screen-patch">Juno Warm Pad</div>
+        <div class="synth-screen-line footer"><span>3 LAYER ANALOG</span><span>DCO → VCF → VCA</span></div>
       </div>
+      <a class="wrench-btn synth-back" href="/"><span data-ui-icon="arrow-left"></span> MAIN PANEL</a>
+    </div>
+    <div class="synth-factory-bank" aria-label="48 sonidos de fábrica del sintetizador">
+      <div class="synth-bank-label"><b>FACTORY</b><span>PATCH SELECT</span></div>
+      <div class="synth-factory-intro"><div><span class="panel-eyebrow">SYNTHESIS SOUND LIBRARY</span>
+        <h3>PATCH <em>EXPLORER</em></h3><p>Selecciona una familia y carga el sonido directamente en el motor.</p></div>
+        <div class="synth-library-counter"><strong>48</strong><small>FACTORY SOUNDS</small></div></div>
+      <div class="synth-factory-spotlight" aria-live="polite"><div class="synth-spotlight-art">
+        <svg viewBox="0 0 180 60" aria-hidden="true"><path d="M1 33L14 33L14 9L29 9L29 49L43 49L43 26L58 26L58 10L70 10L70 52L85 52L85 20L99 20L99 39L115 39L115 12L131 12L131 46L145 46L145 22L158 22L158 35L179 35" /></svg>
+      </div><div class="synth-spotlight-details"><span class="synth-spotlight-kicker">ACTIVE FACTORY PATCH <b id="synthFeaturedNumber">01 / 48</b></span>
+        <strong id="synthFeaturedName">Juno Warm Pad</strong><span id="synthFeaturedCategory">PADS</span></div>
+        <div class="synth-spotlight-led" aria-hidden="true"></div></div>
+      <div class="synth-category-tabs" id="synthCategoryPills" role="group" aria-label="Familias de sonido"></div>
+      <div class="synth-factory-toolbar"><label>CATEGORY <select id="synthFactoryCategory" onchange="buildSynthPresetButtons()"><option value="ALL">ALL FAMILIES</option><option>KEYS</option><option>PADS</option><option>BRASS</option><option>BASS</option><option>LEADS</option><option>SAWS</option><option>STRINGS</option><option>BELLS</option></select></label><label>SEARCH <input id="synthFactorySearch" type="search" placeholder="Buscar patch…" oninput="buildSynthPresetButtons()"></label><output id="synthFactoryResultCount">48 / 48 PATCHES</output></div>
+      <div class="synth-factory-direct">
+        <label for="synthFactoryDirectSelect">SELECCIÓN DIRECTA</label>
+        <select id="synthFactoryDirectSelect" class="quick-cat-select" aria-label="Seleccionar preset de fábrica"><option value="">Selecciona un sonido...</option></select>
+        <button type="button" class="expand-btn" onclick="verifySynthFactoryStatus(true)">VERIFICAR MOTOR</button>
+        <span id="synthFactoryEngineStatus" role="status">Comprobando motor...</span>
+      </div>
+      <div class="synth-factory-grid-heading"><strong>LIBRARY / PATCHES</strong><span>SELECT TO LOAD</span></div>
+      <div class="synth-preset-buttons" id="synthPresetButtons"></div>
     </div>
 
     <div class="synth-patch-toolbar fx-module-black">
@@ -51,26 +76,32 @@
     <div class="synth-layers-grid" id="synth3LayersContainer"><!-- generado por synth.js --></div>
   </div>
 
+  <div class="fx-routing-access"><button type="button" class="red-rect-btn" onclick="openModal('modalFxSends')">FX SEND MATRIX · AJUSTAR ENVIOS POR CAPA</button></div>
   <div data-include="/partials/keyboard.html"></div>
 </div>
 
 <!-- Modales compartidos -->
 <div data-include="/partials/modal-voice.html"></div>
+<div data-include="/partials/modal-fx-sends.html"></div>
+<div data-include="/partials/modal-organ-effects.html"></div>
 <div data-include="/partials/modal-browser.html"></div>
 
 <!-- JS: módulos compartidos (el orden importa: core primero, app al final) -->
-<script src="/js/core.js"></script>
-<script src="/js/include.js"></script>
-<script src="/js/knobs.js"></script>
-<script src="/js/eq.js"></script>
-<script src="/js/fx.js"></script>
-<script src="/js/programs.js"></script>
-<script src="/js/library.js"></script>
-<script src="/js/synth.js"></script>
-<script src="/js/organ.js"></script>
-<script src="/js/keyboard.js"></script>
-<script src="/js/sync.js"></script>
-<script src="/js/polling.js"></script>
-<script src="/js/app.js"></script>
+<script src="/js/core.js?v=7.0"></script>
+<script src="/js/include.js?v=7.0"></script>
+<script src="/js/knobs.js?v=7.0"></script>
+<script src="/js/eq.js?v=7.0"></script>
+<script src="/js/fx.js?v=7.0"></script>
+<script src="/js/fx-sends.js?v=7.0"></script>
+<script src="/js/programs.js?v=7.0"></script>
+<script src="/js/library.js?v=7.0"></script>
+<script src="/js/synth.js?v=7.0"></script>
+<script src="/js/organ.js?v=7.0"></script>
+<script src="/js/keyboard.js?v=7.0"></script>
+<script src="/js/sync.js?v=7.0"></script>
+<script src="/js/polling.js?v=7.0"></script>
+<script src="/js/icons.js?v=7.0"></script>
+<script src="/js/dashboard.js?v=7.0"></script>
+<script src="/js/app.js?v=7.0"></script>
 </body>
 </html>

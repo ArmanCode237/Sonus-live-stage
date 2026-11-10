@@ -12,11 +12,13 @@
 <link rel="stylesheet" href="/css/layout.css">
 <link rel="stylesheet" href="/css/topbar.css">
 <link rel="stylesheet" href="/css/components.css">
-<link rel="stylesheet" href="/css/console.css">
+<link rel="stylesheet" href="/css/console.css?v=7.0">
 <link rel="stylesheet" href="/css/drawbars.css">
 <link rel="stylesheet" href="/css/piano.css">
 <link rel="stylesheet" href="/css/keyboard.css">
-<link rel="stylesheet" href="/css/modals.css">
+<link rel="stylesheet" href="/css/modals.css?v=7.0">
+<link rel="stylesheet" href="/css/nord-hardware.css">
+<link rel="stylesheet" href="/css/fx-sends.css">
 </head>
 <body data-page="main">
 
@@ -33,28 +35,28 @@
         <div class="mod-pill-header">
           <button class="mod-led-btn on" id="led_eqEnabled" onclick="toggleEffect('eqEnabled')" aria-label="Activar o desactivar EQ"></button>
           <span>EQ PIANO · 5 BAND</span>
-          <button class="expand-btn" onclick="openModal('modalEq')">⤢ EDIT</button>
+          <button class="expand-btn" onclick="openModal('modalEq')"><span data-ui-icon="expand"></span> EDIT</button>
         </div>
         <div class="eq-main-bands">
           <div class="eq-main-band">
-            <div class="eq-main-band-label"><label for="eqMainSlider0">BASS · 60 Hz</label><output id="eqMainValue0">+0.0 dB</output></div>
-            <input type="range" id="eqMainSlider0" min="-15" max="15" step="0.1" value="0" oninput="adjustMainEqGain(0, this.value)" aria-label="Ganancia BASS · 60 Hz">
+            <div class="eq-main-band-label"><strong>BASS</strong><small>60 Hz</small><output id="eqMainValue0">+0.0 dB</output></div>
+            <div class="knob-cell eq-gain-knob" data-id="eqGain0" data-min="-15" data-max="15" data-val="0" data-log="0" data-unit="dB" data-label="GAIN" data-small="1" data-step-size="0.1"></div>
           </div>
           <div class="eq-main-band">
-            <div class="eq-main-band-label"><label for="eqMainSlider1">LOW MID · 250 Hz</label><output id="eqMainValue1">+0.0 dB</output></div>
-            <input type="range" id="eqMainSlider1" min="-15" max="15" step="0.1" value="0" oninput="adjustMainEqGain(1, this.value)" aria-label="Ganancia LOW MID · 250 Hz">
+            <div class="eq-main-band-label"><strong>LOW MID</strong><small>250 Hz</small><output id="eqMainValue1">+0.0 dB</output></div>
+            <div class="knob-cell eq-gain-knob" data-id="eqGain1" data-min="-15" data-max="15" data-val="0" data-log="0" data-unit="dB" data-label="GAIN" data-small="1" data-step-size="0.1"></div>
           </div>
           <div class="eq-main-band">
-            <div class="eq-main-band-label"><label for="eqMainSlider2">MID · 1 kHz</label><output id="eqMainValue2">+0.0 dB</output></div>
-            <input type="range" id="eqMainSlider2" min="-15" max="15" step="0.1" value="0" oninput="adjustMainEqGain(2, this.value)" aria-label="Ganancia MID · 1 kHz">
+            <div class="eq-main-band-label"><strong>MID</strong><small>1 kHz</small><output id="eqMainValue2">+0.0 dB</output></div>
+            <div class="knob-cell eq-gain-knob" data-id="eqGain2" data-min="-15" data-max="15" data-val="0" data-log="0" data-unit="dB" data-label="GAIN" data-small="1" data-step-size="0.1"></div>
           </div>
           <div class="eq-main-band">
-            <div class="eq-main-band-label"><label for="eqMainSlider3">HI MID · 4 kHz</label><output id="eqMainValue3">+0.0 dB</output></div>
-            <input type="range" id="eqMainSlider3" min="-15" max="15" step="0.1" value="0" oninput="adjustMainEqGain(3, this.value)" aria-label="Ganancia HI MID · 4 kHz">
+            <div class="eq-main-band-label"><strong>HI MID</strong><small>4 kHz</small><output id="eqMainValue3">+0.0 dB</output></div>
+            <div class="knob-cell eq-gain-knob" data-id="eqGain3" data-min="-15" data-max="15" data-val="0" data-log="0" data-unit="dB" data-label="GAIN" data-small="1" data-step-size="0.1"></div>
           </div>
           <div class="eq-main-band">
-            <div class="eq-main-band-label"><label for="eqMainSlider4">TREBLE · 12 kHz</label><output id="eqMainValue4">+0.0 dB</output></div>
-            <input type="range" id="eqMainSlider4" min="-15" max="15" step="0.1" value="0" oninput="adjustMainEqGain(4, this.value)" aria-label="Ganancia TREBLE · 12 kHz">
+            <div class="eq-main-band-label"><strong>TREBLE</strong><small>12 kHz</small><output id="eqMainValue4">+0.0 dB</output></div>
+            <div class="knob-cell eq-gain-knob" data-id="eqGain4" data-min="-15" data-max="15" data-val="0" data-log="0" data-unit="dB" data-label="GAIN" data-small="1" data-step-size="0.1"></div>
           </div>
         </div>
         <div class="eq-footer"><span>LOW</span><span>PARAMETRIC 5-BAND</span><span>HIGH</span></div>
@@ -67,13 +69,45 @@
         <div class="mod-pill-header red-pill">
           <button class="mod-led-btn on"></button>
           <span>SOUND BANK</span>
-          <span>NPNO / NSMP4</span>
+        </div>
+                <select class="quick-cat-select" id="quickCatSelect" onchange="onQuickCategoryChange(this.value)" style="display: none;">
+          <option value="ALL">Todos los sonidos</option><option value="FAV">Favoritos</option>
+          <option value="Acoustic Pianos">Acoustic Pianos</option>
+          <option value="Electric Pianos">Electric Pianos</option>
+          <option value="Accordion & Organ">Accordion & Organ</option>
+          <option value="Xylophone & Mallets">Xylophone & Mallets</option>
+          <option value="Strings, Brass & Pads">Strings, Brass & Pads</option>
+          <option value="Synth & Misc Samples">Synth & Misc Samples</option>
+          <option value="Pads & Atmospheres">Pads & Atmospheres</option>
+          <option value="Synth Leads">Synth Leads</option>
+          <option value="Bass & Sub">Bass & Sub</option>
+          <option value="Plucks & Arpeggios">Plucks & Arpeggios</option>
+          <option value="Bells & Chimes">Bells & Chimes</option>
+          <option value="Brass">Brass</option>
+          <option value="Strings">Strings</option>
+          <option value="Choirs & Vocals">Choirs & Vocals</option>
+          <option value="Guitars & Plucked">Guitars & Plucked</option>
+          <option value="Drums & Percussion">Drums & Percussion</option>
+          <option value="Ambient & Textures">Ambient & Textures</option>
+          <option value="Sound Effects">Sound Effects</option>
+          <option value="Programs">Programs</option>
+        </select>
+
+        <div class="seven-seg-box">
+          <div class="seven-seg-num" id="modelIndexNum">1</div>
+          <div class="seven-seg-label">SOUND NO.</div>
         </div>
 
-        <div class="piano-mixer" aria-label="Mezclador de tres capas de piano">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <button class="step-arrow" onclick="stepLibrary(-1)">◀</button>
+          <button class="expand-btn" style="padding:5px 8px;" onclick="openModal('modalBrowser')">BROWSER</button>
+          <button class="step-arrow" onclick="stepLibrary(1)">▶</button>
+        </div>
+
+        <div class="piano-mixer" aria-label="Mezclador de cinco capas de piano">
           <div class="piano-mixer-head">
             <button type="button" class="mod-led-btn on" id="led_pianoEnabled" onclick="toggleEffect('pianoEnabled')" title="Encender / apagar piano" aria-label="Encender o apagar módulo piano"></button>
-            <strong>PIANO · 3 LAYERS</strong>
+            <strong>PIANO · 5 LAYERS</strong>
             <div class="knob-cell" data-id="pianoVolume" data-min="0" data-max="1.5" data-val="1" data-log="0" data-unit="%" data-label="MASTER" data-small="1"></div>
           </div>
           <div class="piano-layer-list">
@@ -85,8 +119,8 @@
                 <button type="button" class="piano-layer-clear" onclick="clearPianoLayer(0)" title="Descargar muestra capa 1" aria-label="Vaciar capa 1">×</button>
               </div>
               <div class="piano-layer-volume">
-                <input type="range" id="pianoLayerSlider0" min="0" max="1.5" step="0.01" value="1" oninput="changePianoLayerVolume(0,this.value)" aria-label="Volumen capa 1">
-                <output id="pianoLayerVal0">100%</output>
+                <div class="piano-layer-level-caption">LEVEL <output id="pianoLayerVal0">100%</output></div>
+                <div class="knob-cell piano-level-knob" data-id="pianoLayerVol0" data-min="0" data-max="1.5" data-val="1" data-log="0" data-unit="%" data-label="L1 LEVEL" data-small="1" data-step-size="0.01"></div>
               </div>
             </div>
             <div class="piano-layer-row" id="pianoLayerRow1">
@@ -97,8 +131,8 @@
                 <button type="button" class="piano-layer-clear" onclick="clearPianoLayer(1)" title="Descargar muestra capa 2" aria-label="Vaciar capa 2">×</button>
               </div>
               <div class="piano-layer-volume">
-                <input type="range" id="pianoLayerSlider1" min="0" max="1.5" step="0.01" value="0.75" oninput="changePianoLayerVolume(1,this.value)" aria-label="Volumen capa 2">
-                <output id="pianoLayerVal1">75%</output>
+                <div class="piano-layer-level-caption">LEVEL <output id="pianoLayerVal1">75%</output></div>
+                <div class="knob-cell piano-level-knob" data-id="pianoLayerVol1" data-min="0" data-max="1.5" data-val="0.75" data-log="0" data-unit="%" data-label="L2 LEVEL" data-small="1" data-step-size="0.01"></div>
               </div>
             </div>
             <div class="piano-layer-row" id="pianoLayerRow2">
@@ -109,35 +143,42 @@
                 <button type="button" class="piano-layer-clear" onclick="clearPianoLayer(2)" title="Descargar muestra capa 3" aria-label="Vaciar capa 3">×</button>
               </div>
               <div class="piano-layer-volume">
-                <input type="range" id="pianoLayerSlider2" min="0" max="1.5" step="0.01" value="0.75" oninput="changePianoLayerVolume(2,this.value)" aria-label="Volumen capa 3">
-                <output id="pianoLayerVal2">75%</output>
+                <div class="piano-layer-level-caption">LEVEL <output id="pianoLayerVal2">75%</output></div>
+                <div class="knob-cell piano-level-knob" data-id="pianoLayerVol2" data-min="0" data-max="1.5" data-val="0.75" data-log="0" data-unit="%" data-label="L3 LEVEL" data-small="1" data-step-size="0.01"></div>
+              </div>
+            </div>
+            <div class="piano-layer-row" id="pianoLayerRow3">
+              <div class="piano-layer-top">
+                <button type="button" class="piano-layer-selector" id="pianoLayerSelect3" onclick="selectPianoLayer(3)" aria-label="Seleccionar capa de piano 4">L4</button>
+                <button type="button" class="mod-led-btn " id="pianoLayerLed3" onclick="togglePianoLayer(3)" aria-label="Activar o desactivar capa 4"></button>
+                <span class="piano-layer-name" id="pianoLayerName3" title="Sin sonido">VACÍA</span>
+                <button type="button" class="piano-layer-clear" onclick="clearPianoLayer(3)" title="Descargar muestra capa 4" aria-label="Vaciar capa 4">×</button>
+              </div>
+              <div class="piano-layer-volume">
+                <div class="piano-layer-level-caption">LEVEL <output id="pianoLayerVal3">75%</output></div>
+                <div class="knob-cell piano-level-knob" data-id="pianoLayerVol3" data-min="0" data-max="1.5" data-val="0.75" data-log="0" data-unit="%" data-label="L4 LEVEL" data-small="1" data-step-size="0.01"></div>
+              </div>
+            </div>
+            <div class="piano-layer-row" id="pianoLayerRow4">
+              <div class="piano-layer-top">
+                <button type="button" class="piano-layer-selector" id="pianoLayerSelect4" onclick="selectPianoLayer(4)" aria-label="Seleccionar capa de piano 5">L5</button>
+                <button type="button" class="mod-led-btn " id="pianoLayerLed4" onclick="togglePianoLayer(4)" aria-label="Activar o desactivar capa 5"></button>
+                <span class="piano-layer-name" id="pianoLayerName4" title="Sin sonido">VACÍA</span>
+                <button type="button" class="piano-layer-clear" onclick="clearPianoLayer(4)" title="Descargar muestra capa 5" aria-label="Vaciar capa 5">×</button>
+              </div>
+              <div class="piano-layer-volume">
+                <div class="piano-layer-level-caption">LEVEL <output id="pianoLayerVal4">75%</output></div>
+                <div class="knob-cell piano-level-knob" data-id="pianoLayerVol4" data-min="0" data-max="1.5" data-val="0.75" data-log="0" data-unit="%" data-label="L5 LEVEL" data-small="1" data-step-size="0.01"></div>
               </div>
             </div>
           </div>
-          <div class="piano-mixer-hint" id="pianoLayerHint">BROWSER → cargar en L1</div>
+          <div class="piano-mixer-tools">
+            <button type="button" class="red-rect-btn" onclick="openPianoSampleEditor()">CONFIGURAR ENV</button>
+            <span class="piano-mixer-hint" id="pianoLayerHint">BROWSER → cargar en L1</span>
+          </div>
         </div>
 
-        <select class="quick-cat-select" id="quickCatSelect" onchange="onQuickCategoryChange(this.value)">
-          <option value="ALL">📁 Todos los Sonidos</option>
-          <option value="FAV">★ Favoritos</option>
-          <option value="Acoustic Pianos">🎹 Acoustic Pianos</option>
-          <option value="Electric Pianos">⚡ Electric Pianos</option>
-          <option value="Accordion & Organ">🪗 Accordion & Organ</option>
-          <option value="Xylophone & Mallets">🔔 Xylophone & Mallets</option>
-          <option value="Strings, Brass & Pads">🎻 Strings, Brass & Pads</option>
-          <option value="Synth & Misc Samples">🎛 Synth & Misc Samples</option>
-        </select>
 
-        <div class="seven-seg-box">
-          <div class="seven-seg-num" id="modelIndexNum">1</div>
-          <div class="seven-seg-label">SOUND #</div>
-        </div>
-
-        <div style="display:flex; align-items:center; gap:6px;">
-          <button class="step-arrow" onclick="stepLibrary(-1)">◀</button>
-          <button class="expand-btn" style="padding:5px 8px;" onclick="openModal('modalBrowser')">BROWSER</button>
-          <button class="step-arrow" onclick="stepLibrary(1)">▶</button>
-        </div>
 
         <div class="prog-slot-wrap" onclick="toggleSoftRelease()">
           <span class="prog-slot-num">SOFT RELEASE</span>
@@ -151,8 +192,39 @@
 
     <!-- COLUMNA 3: CONSOLA CENTRAL -->
     <div class="center-console">
-      <div class="nord-center-lcd">
-        <div class="lcd-sample-name" id="lcdSampleName">No Sound Loaded</div>
+      <div class="lcd-frame">
+        <div class="lcd-bezel-title"><span>PROGRAM DISPLAY</span><span class="lcd-screen-led">LIVE STAGE</span></div>
+        <div class="nord-center-lcd" aria-label="Pantalla de estado del instrumento">
+          <div class="lcd-meta-line"><span>PROGRAM <b id="lcdProgramNumber">01</b></span><span>STAGE PERFORMANCE</span></div>
+          <div class="lcd-program-title" id="lcdProgramName" title="Programa actual">LIVE PERFORMANCE</div>
+          <div class="lcd-screen-separator"></div>
+          <div class="lcd-active-engines" aria-label="Instrumentos activos en el programa">
+            <div class="lcd-instrument" id="lcdVoicePiano" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M7 5v8m5-8v8m5-8v8M6 13h12M8 5v8h3V5m4 0v8h3V5"/></svg>
+              <span class="lcd-instrument-type">PIANO</span><strong id="lcdPianoPreset">NO SAMPLE</strong>
+            </div>
+            <div class="lcd-instrument" id="lcdVoiceSynth" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12h3l3-7 4 14 4-11 3 4h3"/></svg>
+              <span class="lcd-instrument-type">SYNTH</span><strong id="lcdSynthPreset">ANALOG</strong>
+            </div>
+            <div class="lcd-instrument" id="lcdVoiceOrgan" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M5 8h14M5 13h14M8 8v5m5-5v5m4 0v4"/></svg>
+              <span class="lcd-instrument-type">ORGAN</span><strong id="lcdOrganPreset">B3 TONEWHEEL</strong>
+            </div>
+            <span class="lcd-no-engine" id="lcdNoEngines" hidden>NO ACTIVE INSTRUMENTS</span>
+          </div>
+          <div class="lcd-screen-bottom">
+            <span>PIANO <b id="lcdPianoLayers">1/5</b></span>
+            <span>SYNTH <b id="lcdSynthLayers">2/3</b></span>
+            <span>VOICES <b id="lcdVoiceCount">0</b></span>
+          </div>
+        </div>
+      </div>
+      <div class="midi-performance-status" aria-live="off"><span>MOD WHEEL <b id="modWheelView">0%</b></span><span>PITCH BEND <b id="pitchBendView">CENTER</b></span></div>
+      <div class="center-engine-strip" aria-label="Estado de motores de sonido">
+        <div class="engine-readout" id="lcdEnginePiano"><span class="engine-indicator"></span><span>PIANO</span><strong id="lcdPianoStatus">ON</strong></div>
+        <div class="engine-readout" id="lcdEngineSynth"><span class="engine-indicator"></span><span>SYNTH</span><strong id="lcdSynthStatus">OFF</strong></div>
+        <div class="engine-readout" id="lcdEngineOrgan"><span class="engine-indicator"></span><span>ORGAN</span><strong id="lcdOrganStatus">OFF</strong></div>
       </div>
 
       <div class="center-mid-controls">
@@ -167,6 +239,7 @@
 
         <div style="display:flex; gap:10px; align-items:center;">
           <button class="red-rect-btn" id="btnStore" onclick="toggleStoreMode()">STORE</button>
+          <button class="red-rect-btn init-performance-btn" id="btnInit" onclick="confirmInitProgram()">INIT</button>
           <button class="red-rect-btn" id="btnTouch" onclick="cycleTouch()">TOUCH: NORM</button>
         </div>
 
@@ -179,6 +252,27 @@
           <span class="knob-title">OCTAVE</span>
         </div>
       </div>
+
+      <section class="center-performance-mixer" aria-label="Mezclador rápido de los tres motores">
+        <div class="performance-mixer-heading"><strong>PERFORMANCE MIX</strong><span>THREE ENGINE BUS / LIVE</span></div>
+        <div class="performance-mixer-lanes">
+          <div class="performance-lane" id="mainMixPiano">
+            <div class="performance-lane-top"><span>PIANO</span><button type="button" class="performance-lane-power" onclick="toggleEffect('pianoEnabled')" aria-label="Encender o apagar piano">POWER</button></div>
+            <div class="performance-level-numeral" id="mainPianoMixValue">100%</div>
+            <div class="performance-level-track"><span id="mainPianoMixBar"></span></div>
+          </div>
+          <div class="performance-lane" id="mainMixSynth">
+            <div class="performance-lane-top"><span>SYNTH</span><button type="button" class="performance-lane-power" onclick="toggleEffect('synthEnabled')" aria-label="Encender o apagar sintetizador">POWER</button></div>
+            <div class="performance-level-numeral" id="mainSynthMixValue">80%</div>
+            <div class="performance-level-track"><span id="mainSynthMixBar"></span></div>
+          </div>
+          <div class="performance-lane" id="mainMixOrgan">
+            <div class="performance-lane-top"><span>ORGAN</span><button type="button" class="performance-lane-power" onclick="toggleEffect('organEnabled')" aria-label="Encender o apagar órgano">POWER</button></div>
+            <div class="performance-level-numeral" id="mainOrganMixValue">80%</div>
+            <div class="performance-level-track"><span id="mainOrganMixBar"></span></div>
+          </div>
+        </div>
+      </section>
 
       <div class="programs-bank-wrap">
         <span class="knob-title" style="letter-spacing:1.5px; color:#fff;">PROGRAMS (1–8 USER PRESETS)</span>
@@ -193,11 +287,11 @@
 
     <!-- COLUMNA 4: MINI-CARDS SYNTH Y ÓRGANO -->
     <div class="col-stack">
-      <div class="slate-module">
+      <div class="slate-module main-synth-module">
         <div class="mod-pill-header red-pill">
           <button class="mod-led-btn" id="led_synthEnabled" onclick="toggleEffect('synthEnabled')"></button>
           <span>SYNTH 3-LAYER</span>
-          <button class="expand-btn" onclick="goToPage('synth')">⤢ PAGE</button>
+          <button class="expand-btn" onclick="goToPage('synth')"><span data-ui-icon="expand"></span> EDIT</button>
         </div>
 
         <div style="display:flex; align-items:center; gap:6px; width:100%; justify-content:center;">
@@ -217,23 +311,24 @@
           <div class="knob-cell" data-id="synthMacroCutoff" data-min="0.1" data-max="2.0" data-val="1.0" data-log="0" data-unit="%" data-label="TIMBRE" data-small="1"></div>
         </div>
 
-        <button class="red-rect-btn" style="width:100%; font-size:9px;" onclick="goToPage('synth')">🎛 EDITAR 3 CAPAS</button>
+        <button class="red-rect-btn" style="width:100%; font-size:9px;" onclick="goToPage('synth')"><span data-ui-icon="sliders"></span> EDITAR 3 CAPAS</button>
       </div>
 
-      <div class="fx-module-black">
+      <div class="fx-module-black main-organ-module">
         <div class="mod-pill-header">
           <button class="mod-led-btn" id="led_organEnabled" onclick="toggleEffect('organEnabled')"></button>
           <span>ORGAN B3/VOX</span>
-          <button class="expand-btn" onclick="goToPage('organ')">⤢ PAGE</button>
+          <button class="expand-btn" onclick="goToPage('organ')"><span data-ui-icon="expand"></span> EDIT</button>
         </div>
 
-        <div style="display:flex; gap:8px; align-items:center;">
+        <div class="main-organ-controls">
           <div class="knob-cell" data-id="organVolume" data-min="0" data-max="1.5" data-val="0.75" data-log="0" data-unit="%" data-label="ORGAN VOL" data-small="1"></div>
-          <div style="display:flex; flex-direction:column; gap:5px;">
-            <span class="mini-mode-pill" id="pillRotaryMain" onclick="toggleOrganRotary()">ROTARY: SLOW</span>
-            <button class="expand-btn" onclick="goToPage('organ')">⛪ IR A ÓRGANO</button>
-          </div>
+          <button type="button" class="mini-mode-pill" id="pillRotaryMain" onclick="toggleOrganRotary()">ROTARY: SLOW</button>
         </div>
+        <div class="main-organ-deck-label"><span>HARMONIC DRAWBARS</span><span>0 — 8</span></div>
+        <div id="mainOrganDrawbars" class="main-organ-drawbars" aria-label="Nueve drawbars del órgano"></div>
+        <button type="button" class="organ-detail-button expand-btn" onclick="openModal('modalOrganEffects')">ORGAN FX</button>
+        <button class="organ-detail-button expand-btn" onclick="goToPage('organ')"><span data-ui-icon="sliders"></span> ORGAN CONTROL</button>
       </div>
     </div>
 
@@ -242,7 +337,7 @@
       <div class="fx-module-black" style="justify-content:space-between; gap:6px;">
         <div class="mod-pill-header red-pill">
           <span>MASTER FX RACK</span>
-          <button class="expand-btn" onclick="openModal('modalFxRack')">⤢ EXPAND RACK</button>
+          <button class="expand-btn" onclick="openModal('modalFxRack')"><span data-ui-icon="expand"></span> RACK</button>
         </div>
 
         <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; width:100%; background:#14171c; padding:6px; border-radius:8px; border:1px solid #262b33;">
@@ -296,7 +391,8 @@
           <span class="mini-mode-pill" id="revType_3" onclick="selectReverbType(3)">SHIMMER</span>
         </div>
 
-        <button class="red-rect-btn" style="width:100%; font-size:9.5px;" onclick="openModal('modalFxRack')">🎚 ABRIR RACK DE EFECTOS</button>
+        <button class="red-rect-btn" style="width:100%; font-size:9.5px;" onclick="openModal('modalFxSends')"><span data-ui-icon="sliders"></span> ENVÍOS POR CAPA</button>
+        <button class="expand-btn" style="width:100%;" onclick="openModal('modalFxRack')">AJUSTAR RACK DE EFECTOS</button>
       </div>
     </div>
 
@@ -308,23 +404,38 @@
 <!-- Modales compartidos -->
 <div data-include="/partials/modal-fxrack.html"></div>
 <div data-include="/partials/modal-voice.html"></div>
+<div data-include="/partials/modal-fx-sends.html"></div>
+<div data-include="/partials/modal-piano-sample.html"></div>
+<div data-include="/partials/modal-organ-effects.html"></div>
 <div data-include="/partials/modal-eq.html"></div>
 <div data-include="/partials/modal-browser.html"></div>
 
+<div class="modal-backdrop" id="modalProgramStore" role="dialog" aria-modal="true" aria-label="Guardar programa">
+ <section class="modal-window program-store-window">
+  <header class="sample-editor-header"><div><span class="panel-eyebrow">LIVE PERFORMANCE / MEMORY</span><h2>STORE <em>PROGRAM</em></h2><p>Los 8 programas guardan todos los módulos, capas y efectos.</p></div><button class="expand-btn" onclick="closeModal('modalProgramStore')">CERRAR ×</button></header>
+  <div class="program-store-form"><label>DESTINATION SLOT <select id="programStoreSlot"><option value="0">PROGRAM 01</option><option value="1">PROGRAM 02</option><option value="2">PROGRAM 03</option><option value="3">PROGRAM 04</option><option value="4">PROGRAM 05</option><option value="5">PROGRAM 06</option><option value="6">PROGRAM 07</option><option value="7">PROGRAM 08</option></select></label><label>PROGRAM NAME <input type="text" id="programStoreName" maxlength="48" placeholder="Nombre del programa"></label></div>
+  <p id="programStoreWarning" class="sample-editor-note">Guardar sobrescribirá únicamente el programa seleccionado.</p>
+  <div class="program-store-actions"><button class="expand-btn" onclick="closeModal('modalProgramStore')">CANCEL</button><button class="red-rect-btn" onclick="commitProgramStore()">STORE PROGRAM</button></div>
+ </section>
+</div>
 <!-- JS: módulos compartidos (el orden importa: core primero, app al final) -->
 <script src="/js/core.js"></script>
 <script src="/js/include.js"></script>
 <script src="/js/knobs.js"></script>
 <script src="/js/eq.js"></script>
 <script src="/js/fx.js"></script>
+<script src="/js/fx-sends.js"></script>
 <script src="/js/programs.js"></script>
 <script src="/js/library.js"></script>
 <script src="/js/synth.js"></script>
 <script src="/js/organ.js"></script>
 <script src="/js/piano.js"></script>
+<script src="/js/piano-sample-editor.js"></script>
 <script src="/js/keyboard.js"></script>
 <script src="/js/sync.js"></script>
 <script src="/js/polling.js"></script>
+<script src="/js/icons.js"></script>
+<script src="/js/dashboard.js"></script>
 <script src="/js/app.js"></script>
 </body>
 </html>
