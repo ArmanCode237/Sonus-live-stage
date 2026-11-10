@@ -3,12 +3,13 @@
 // main panel's 8 complete-performance programs.
 const SYNTH_WAVES = [
   [0, 'SAW'], [1, 'PULSE'], [2, 'TRI'], [3, 'SINE'], [4, 'SUPERSAW'],
-  [5, 'NOISE'], [6, 'WT'], [8, 'JUNO DCO'], [9, 'JUPITER DUAL']
+  [5, 'NOISE'], [6, 'WT'], [7, 'HARD SYNC'], [8, 'JUNO DCO'], [9, 'JUPITER DUAL'],
+  [10, '2-OP FM'], [11, 'SUPERPULSE'], [12, 'RING MOD'], [13, 'VOX CHOIR'], [14, 'WAVEFOLDER']
 ];
-const SYNTH_FILTER_LABELS = ['LP', 'HP', 'BP'];
+const SYNTH_FILTER_LABELS = ['LP', 'HP', 'BP', 'NOTCH'];
 const SYNTH_OSC2_WAVES = ['SAW', 'PULSE', 'TRI'];
 const SYNTH_LFO_WAVES = ['SINE', 'TRI', 'SAW', 'SQUARE'];
-const SYNTH_PRESET_COUNT = 48;
+const SYNTH_PRESET_COUNT = 120;
 
 function synthKnob(id, min, max, unit, label, log = false, step = false) {
   return `<div class="knob-cell" data-id="${id}" data-min="${min}" data-max="${max}"
@@ -28,10 +29,10 @@ function buildSynthPresetButtons() {
   const direct=$('synthFactoryDirectSelect');
   if(direct && direct.options.length<=1) {
     for(let id=1;id<=SYNTH_PRESET_COUNT;id++)
-      direct.add(new Option(`${String(id).padStart(2,'0')} — ${SYNTH_PRESET_NAMES[id] || `Preset ${id}`}`,String(id)));
+      direct.add(new Option(`${String(id).padStart(3,'0')} — ${SYNTH_PRESET_NAMES[id] || `Preset ${id}`}`,String(id)));
     direct.onchange=()=>{ if(direct.value) selectSynthPreset(Number(direct.value)); };
   }
-  const categories=['ALL','KEYS','PADS','BRASS','BASS','LEADS','SAWS','STRINGS','BELLS'];
+  const categories=['ALL','BRASS','LEADS','KEYS','POLYKEYS','PADS','STRINGS','BASS','BELLS','SAWS'];
   const pills=$('synthCategoryPills');
   if(pills && !pills.children.length){
     categories.forEach(category=>{
@@ -56,13 +57,13 @@ function buildSynthPresetButtons() {
     b.className='mini-mode-pill factory-program-tile'+(id===state.synthPresetId?' active':'');
     b.dataset.family=family;
     b.id=`synthPreBtn_${id}`;b.title=`${family} · ${name}`;
-    const num=document.createElement('span');num.className='factory-num';num.textContent=String(id).padStart(2,'0');
+    const num=document.createElement('span');num.className='factory-num';num.textContent=String(id).padStart(3,'0');
     const label=document.createElement('span');label.className='factory-label';label.textContent=name;
     const badge=document.createElement('small');badge.className='factory-category';badge.textContent=family;
     b.append(num,label,badge);b.onclick=()=>selectSynthPreset(id);
     box.appendChild(b);matches++;
   }
-  const output=$('synthFactoryResultCount');if(output)output.textContent=`${matches} / 48 PATCHES`;
+  const output=$('synthFactoryResultCount');if(output)output.textContent=`${matches} / 120 PATCHES`;
 }
 // Paneles visuales por capa: OSC / FILTER / ENVELOPES / VOICE.
 // No se modifica ningún identificador de parámetro (L1_..., L2_..., L3_...).
@@ -90,8 +91,14 @@ function updateSynthWavePreview(layer,wave) {
     4:'M 4 48 L 21 16 L 21 48 L 38 16 L 38 48 L 55 16 L 55 48 L 72 16 L 72 48 L 89 16 L 89 48 L 106 16 L 106 48 L 123 16 L 123 48 L 140 16',
     5:'M 4 30 L 12 16 L 19 42 L 26 24 L 35 53 L 43 22 L 54 35 L 62 13 L 74 46 L 82 25 L 94 51 L 108 20 L 117 33 L 127 18 L 140 47',
     6:'M 4 38 L 12 23 L 22 45 L 32 17 L 42 32 L 54 21 L 65 45 L 74 20 L 84 30 L 92 15 L 104 39 L 113 21 L 123 45 L 140 27',
+    7:'M 4 48 L 72 16 L 4 48 L 72 16 L 140 48',
     8:'M 4 48 L 40 16 L 40 48 L 74 16 L 74 48 L 108 16 L 108 48 L 140 16',
-    9:'M 4 45 L 30 18 L 30 48 L 48 24 L 66 48 L 91 16 L 91 48 L 116 20 L 140 45'
+    9:'M 4 45 L 30 18 L 30 48 L 48 24 L 66 48 L 91 16 L 91 48 L 116 20 L 140 45',
+    10:'M 4 32 C 15 10,25 50,35 32 S 55 10,65 32 S 85 50,95 32 S 115 10,140 32',
+    11:'M 4 48 L 4 15 L 25 15 L 25 48 L 50 48 L 50 15 L 75 15 L 75 48 L 100 48 L 100 15 L 140 48',
+    12:'M 4 32 L 35 8 L 72 56 L 105 12 L 140 32',
+    13:'M 4 35 C 18 15,36 15,50 35 S 85 55,100 35 S 122 15,140 35',
+    14:'M 4 24 L 38 52 L 72 12 L 106 52 L 140 24'
   };
   const path=$(`synthWavePath_${layer}`);
   if(path)path.setAttribute('d',wavePaths[wave]||wavePaths[0]);
@@ -217,7 +224,7 @@ let synthFactoryRequestSequence = 0;
 let synthFactoryRequestQueue = Promise.resolve();
 let synthFactoryPendingId = null;
 let synthFactoryStatusLast = null;
-const SYNTH_FACTORY_API_EXPECTED = 2;
+const SYNTH_FACTORY_API_EXPECTED = 3;
 
 function setSynthFactoryEngineStatus(message,isError=false) {
   const el=$('synthFactoryEngineStatus');
@@ -225,20 +232,20 @@ function setSynthFactoryEngineStatus(message,isError=false) {
 }
 async function fetchSynthFactoryStatus() {
   const r=await fetch('/api/synth/factory/status',{cache:'no-store',headers:{'Cache-Control':'no-cache'}});
-  if(r.status===404) throw new Error('MOTOR_ANTIGUO: la instancia en el puerto 8080 no ofrece la API de V6.2');
+  if(r.status===404) throw new Error('MOTOR_ANTIGUO: el ejecutable en 8080 no ofrece la API actual');
   if(!r.ok) throw new Error(`HTTP ${r.status} al leer el estado del motor`);
   const obj=await r.json();
-  if(!obj.ok || obj.apiVersion!==SYNTH_FACTORY_API_EXPECTED || obj.maxFactoryPresets!==48)
+  if(!obj.ok || obj.apiVersion!==SYNTH_FACTORY_API_EXPECTED || obj.maxFactoryPresets!==120)
     throw new Error(`Versión incompatible: ${obj.build || 'desconocida'} (API ${obj.apiVersion || '?'})`);
   synthFactoryStatusLast=obj;
-  setSynthFactoryEngineStatus(`${obj.build} · Preset ${String(obj.presetId).padStart(2,'0')} · ${obj.enabledLayers} capas · Motor activo: ${obj.synthEnabled?'SÍ':'NO'}`);
+  setSynthFactoryEngineStatus(`${obj.build} · Preset ${String(obj.presetId).padStart(3,'0')} · ${obj.enabledLayers} capas · Motor activo: ${obj.synthEnabled?'SÍ':'NO'}`);
   return obj;
 }
 async function verifySynthFactoryStatus(manual=false) {
   try {
     const status=await fetchSynthFactoryStatus();
     if(synthFactoryPendingId===null) showSynthPreset(status.presetId);
-    if(manual) setSynthPresetStatus(`Motor verificado: preset ${String(status.presetId).padStart(2,'0')} · ${status.build}`);
+    if(manual) setSynthPresetStatus(`Motor verificado: preset ${String(status.presetId).padStart(3,'0')} · ${status.build}`);
     return status;
   } catch(error) {
     setSynthFactoryEngineStatus(error.message,true);
@@ -258,9 +265,9 @@ function showSynthPreset(id) {
   const name = SYNTH_PRESET_NAMES[actual] || `Preset ${actual}`;
   setText('synthPresetNameMain',name);
   setText('synthScreenPatch',name);
-  setText('synthScreenNumber',String(actual).padStart(2,'0'));
+  setText('synthScreenNumber',String(actual).padStart(3,'0'));
   setText('synthFeaturedName',name);
-  setText('synthFeaturedNumber',String(actual).padStart(2,'0')+' / 48');
+  setText('synthFeaturedNumber',String(actual).padStart(3,'0')+' / 120');
   setText('synthFeaturedCategory',SYNTH_PRESET_CATEGORIES[actual] || 'ANALOG');
   // IMPORTANT: only change CSS classes, never replace the buttons here.
   for (let i = 1; i <= SYNTH_PRESET_COUNT; i++) setActive(`synthPreBtn_${i}`,i===actual);
@@ -306,12 +313,14 @@ function selectSynthPreset(id) {
   }
   const serial = ++synthFactoryRequestSequence;
   synthFactoryPendingId = requested;
-  setSynthPresetStatus(`Cargando ${String(requested).padStart(2,'0')} · ${SYNTH_PRESET_NAMES[requested]}…`);
+  setSynthPresetStatus(`Cargando ${String(requested).padStart(3,'0')} · ${SYNTH_PRESET_NAMES[requested]}…`);
   // Serialize requests: clicking two patches quickly must leave the LAST one active.
   synthFactoryRequestQueue = synthFactoryRequestQueue.catch(() => {}).then(async () => {
     if (serial !== synthFactoryRequestSequence) return false;
     try {
       const result = await requestSynthFactoryPreset(requested);
+
+      // Successful POST is verified against the active engine below.
       const confirmed = Number(result.params?.synthPresetId ?? result.presetId);
       if (confirmed !== requested) {
         // Reflect the sound that the engine actually kept, not a false choice.
@@ -320,7 +329,7 @@ function selectSynthPreset(id) {
           if (result.params && typeof syncFromServerParams === 'function') syncFromServerParams(result.params);
           if (Number.isInteger(confirmed)) showSynthPreset(confirmed);
         }
-        throw new Error(`El motor devolvió el preset ${Number.isFinite(confirmed) ? confirmed : 'desconocido'} en lugar del ${requested}. Comprueba que recompilaste el C++ de V6.`);
+        throw new Error(`El motor devolvió el preset ${Number.isFinite(confirmed) ? confirmed : 'desconocido'} en lugar del ${requested}. Comprueba que recompilaste el C++ de V8.`);
       }
       // An HTTP 200 is NOT proof that the audio engine actually retained the patch.
       // Confirm the live parameter state through an independent request.
@@ -347,11 +356,11 @@ function selectSynthPreset(id) {
       if (typeof updateModLeds === 'function') updateModLeds();
       const audible = observed && (observed.synthMasterVol <= 0.001 || observed.enabledLayers === 0);
       if (audible)
-        setSynthPresetStatus(`Cargado ${String(confirmed).padStart(2,'0')}, pero no habrá sonido: revisa MASTER y capas activas.`,true);
+        setSynthPresetStatus(`Cargado ${String(confirmed).padStart(3,'0')}, pero no habrá sonido: revisa MASTER y capas activas.`,true);
       else if (!observed)
-        setSynthPresetStatus(`Recibido ${String(confirmed).padStart(2,'0')} · ${SYNTH_PRESET_NAMES[confirmed]}. Verificación no disponible: motor antiguo.`,true);
+        setSynthPresetStatus(`Recibido ${String(confirmed).padStart(3,'0')} · ${SYNTH_PRESET_NAMES[confirmed]}. Verificación no disponible: motor antiguo.`,true);
       else
-        setSynthPresetStatus(`Motor confirmado: ${String(confirmed).padStart(2,'0')} · ${SYNTH_PRESET_NAMES[confirmed]}`);
+        setSynthPresetStatus(`Motor confirmado: ${String(confirmed).padStart(3,'0')} · ${SYNTH_PRESET_NAMES[confirmed]}`);
       return true;
     } catch (error) {
       if (serial === synthFactoryRequestSequence) {
@@ -375,6 +384,16 @@ function setSynthLfoWave(wave,silent=false) {
   SYNTH_LFO_WAVES.forEach((_,i)=>setActive(`synthLfoWave_${i}`,i===wave));
   if(!silent) sendParam('synthLfoWave',wave);
 }
+function setSynthVoiceMode(mode,silent=false) {
+  mode=Math.max(0,Math.min(2,Number(mode)||0));state.synthVoiceMode=mode;
+  for(let i=0;i<3;i++)setActive(`synthVoiceMode_${i}`,i===mode);
+  if(!silent)sendParam('synthVoiceMode',mode);
+}
+function setSynthGlideMode(mode,silent=false) {
+  mode=Number(mode)===0?0:1;state.synthGlideMode=mode;
+  for(let i=0;i<2;i++)setActive(`synthGlideMode_${i}`,i===mode);
+  if(!silent)sendParam('synthGlideMode',mode);
+}
 function buildSynthGlobalControls() {
   const box=$('synthGlobalControls');
   if(!box) return;
@@ -384,6 +403,17 @@ function buildSynthGlobalControls() {
     <div class="synth-global-controls">
       ${synthKnob('synthMasterVol',0,1.5,'%','MASTER')}
       ${synthKnob('synthMacroCutoff',0.1,2,'','VCF MACRO')}
+      ${synthKnob('synthPortamento',0,2,'s','PORTAMENTO')}
+      ${synthKnob('synthSlide',-12,12,'st','PITCH SLIDE')}
+      <div class="synth-global-lfo synth-performance-modes">
+        <span class="synth-subtitle">VOICE / GLIDE</span>
+        <div class="mode-pills-row">
+          ${['POLY','MONO','LEGATO'].map((w,i)=>`<button type="button" class="mini-mode-pill" id="synthVoiceMode_${i}" onclick="setSynthVoiceMode(${i})">${w}</button>`).join('')}
+        </div>
+        <div class="mode-pills-row">
+          ${['ALWAYS','LEGATO ONLY'].map((w,i)=>`<button type="button" class="mini-mode-pill" id="synthGlideMode_${i}" onclick="setSynthGlideMode(${i})">${w}</button>`).join('')}
+        </div>
+      </div>
       ${synthKnob('synthLfoRate',0.05,30,'Hz','LFO RATE',true)}
       ${synthKnob('synthLfoDepth',0,1,'%','LFO DEPTH')}
       ${synthKnob('synthLfoPitch',0,200,'ct','LFO PITCH',false,true)}
@@ -397,6 +427,8 @@ function buildSynthGlobalControls() {
     </div>`;
   setSynthLfoEnabled(true);
   setSynthLfoWave(state.synthLfoWave,true);
+  setSynthVoiceMode(state.synthVoiceMode,true);
+  setSynthGlideMode(state.synthGlideMode,true);
 }
 
 function setSynthPresetStatus(message,isError=false) {
@@ -420,7 +452,7 @@ async function refreshSynthUserPresets(selected) {
     box.replaceChildren(new Option('— MIS PRESETS —',''));
     (Array.isArray(patches)?patches:[]).forEach(p => box.add(new Option(p.name,p.name)));
     if(selected) box.value=selected;
-  }catch(e){setSynthPresetStatus(`Error de biblioteca: ${e.message}`,true);}
+  }catch(e){setSynthPresetStatus(`Error de biblioteca: ${e.message}`,true);_}
 }
 async function saveSynthUserPreset(){
   const box=$('synthUserPresetSelect');

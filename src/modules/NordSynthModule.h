@@ -71,6 +71,8 @@ struct SynthPolyVoice {
     float filterA2 = 0.0f;
     float filterA3 = 0.0f;
     double freq = 440.0;
+    double targetFreq = 440.0;
+    float slidePitch = 0.0f;
     double phase1 = 0.0;
     double phase2 = 0.0;
     double phase3 = 0.0;
@@ -93,6 +95,10 @@ public:
     SynthLayerConfig cfg;
     float performancePitchBendSemis = 0.f;
     float performanceModWheel = 0.f;
+    int voiceMode = 0;
+    float glideSeconds = 0.0f;
+    int glideMode = 1;
+    float slideSemis = 0.0f;
     std::array<SynthPolyVoice, SYNTH_MAX_VOICES_PER_LAYER> voices{};
 
     void init(float sr);
@@ -110,6 +116,7 @@ private:
     float smoothedCutoff_ = 8500.0f;
     float smoothedQ_ = 0.85f;
     double pwmPhase_ = 0.0;
+    double lastNoteFrequency_ = 0.0;
     const std::vector<Wavetable>* wtBank_ = nullptr;
 
     inline float polyBLEP(double t, double dt);
@@ -124,6 +131,12 @@ public:
     int   synthPresetId = 1;
     float synthMasterVol = 0.8f;
     float synthMacroCutoff = 1.0f;
+    int synthVoiceMode = 0;
+    float synthPortamento = 0.0f;
+    int synthGlideMode = 1;
+    float synthSlide = 0.0f;
+    struct HeldNote { int rawKey, playedKey, velocity; };
+    std::vector<HeldNote> monoHeldNotes;
     std::array<SingleSynthLayer, 3> layers;
 
     std::array<SynthLFO, SYNTH_NUM_LFOS> lfos{};

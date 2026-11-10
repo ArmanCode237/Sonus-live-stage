@@ -62,6 +62,8 @@ function syncFromServerParams(p) {
     shimmerLowCutHz: p.shimmerLowCutHz, shimmerHighCutHz: p.shimmerHighCutHz,
     shimmerModRateHz: p.shimmerModRateHz, shimmerModDepth: p.shimmerModDepth,
     synthMasterVol: p.synthMasterVol, synthMacroCutoff: p.synthMacroCutoff,
+    synthVoiceMode:p.synthVoiceMode,synthPortamento:p.synthPortamento,
+    synthGlideMode:p.synthGlideMode,synthSlide:p.synthSlide,
     synthLfoRate: p.synthLfoRate, synthLfoDepth: p.synthLfoDepth,
     synthLfoPitch: p.synthLfoPitch, synthLfoCutoff: p.synthLfoCutoff,
     organVolume: p.organVolume, organDrive: p.organDrive,
@@ -89,6 +91,8 @@ function syncFromServerParams(p) {
     }
   }
 
+  if (p.synthVoiceMode !== undefined && typeof setSynthVoiceMode==='function') setSynthVoiceMode(p.synthVoiceMode,true);
+  if (p.synthGlideMode !== undefined && typeof setSynthGlideMode==='function') setSynthGlideMode(p.synthGlideMode,true);
   if (p.synthPresetId !== undefined && typeof showSynthPreset === 'function') showSynthPreset(p.synthPresetId);
 
   if (p.synthLfoEnabled !== undefined) {

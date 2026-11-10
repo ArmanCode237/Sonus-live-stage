@@ -21,8 +21,94 @@ const SOUND_GROUPS = [
   'Bass Electric', 'Bass Synth', 'Leads Mono', 'Leads Poly', 'Plucked Synth',
   'Percussive Keys', 'Glockenspiel', 'Vibraphone', 'Marimba', 'Programs'
 ];
-const SYNTH_PRESET_NAMES = ["", "Juno Warm Pad", "Jupiter Brass", "Jupiter Lead", "Crystal Pluck", "Juno Strings", "Deep Analog Bass", "PWM Motion", "Jupiter Poly", "Analog Keys", "Glass Bells", "Motion Pad", "Vintage Brass", "Neo Poly Keys", "Dyno Analog", "Soft Tines", "Juno Comp", "Air EP", "Wide Spark", "Velvet Cloud", "Slow PWM", "Warm Ensemble", "Atmosphere", "Dark Cinema", "Poly Horizon", "Classic Poly Brass", "Jupiter Stab", "Soft Horns", "Bright Brass", "Synth Section", "Power Brass", "Rubber Bass", "Sub Foundation", "DCO Punch", "Acid Pulse", "Deep Stack", "Grit Bass", "Mono Vector", "Pulse Solo", "Classic Pro", "Octave Lead", "Resonant Edge", "Bright Solo", "Stereo Saw", "Hyper Poly", "Wide 80s", "Unison Rise", "Air Saw", "Stadium Saw"];
-const SYNTH_PRESET_CATEGORIES = ["", "PADS", "BRASS", "LEADS", "KEYS", "STRINGS", "BASS", "PADS", "KEYS", "KEYS", "BELLS", "PADS", "BRASS", "KEYS", "KEYS", "KEYS", "KEYS", "KEYS", "KEYS", "PADS", "PADS", "PADS", "PADS", "PADS", "PADS", "BRASS", "BRASS", "BRASS", "BRASS", "BRASS", "BRASS", "BASS", "BASS", "BASS", "BASS", "BASS", "BASS", "LEADS", "LEADS", "LEADS", "LEADS", "LEADS", "LEADS", "SAWS", "SAWS", "SAWS", "SAWS", "SAWS", "SAWS"];
+
+// Catálogo de las 15 formas de onda del motor NordSynthModule (waveType 0..14)
+const SYNTH_WAVE_NAMES = [
+  "0: Sawtooth (PolyBLEP)",
+  "1: Pulse / PWM",
+  "2: Triangle",
+  "3: Pure Sine",
+  "4: SuperSaw (3x)",
+  "5: Color Noise",
+  "6: Wavetable Morph",
+  "7: Hard Sync Osc",
+  "8: Juno DCO Mix",
+  "9: Jupiter Dual VCO",
+  "10: 2-Op FM / DX",
+  "11: SuperPulse (3x PWM)",
+  "12: CS-80 RingMod",
+  "13: Formant Choir Vox",
+  "14: West-Coast Folder"
+];
+
+// 120 Presets de fábrica (índice 0 vacío para alinear IDs 1..120)
+const SYNTH_PRESET_NAMES = [
+  "",
+  // 001 - 012: Core Factory Bank
+  "Juno Warm Pad", "Jupiter 80s Brass", "Jupiter Unison Lead", "Crystal Pluck",
+  "Juno Strings", "Deep Analog Bass", "PWM Motion", "Jupiter Poly Synth",
+  "Analog Keys", "Glass FM Bells", "Soft Motion Pad", "Vintage Brass Section",
+  // 013 - 024: Brass & Horn Sections
+  "OB-Xa Jump Brass", "CS-80 Toto Brass", "Prophet-5 Poly Brass", "DX7 FM Brass Stabs",
+  "Warm Horn Section", "Oberheim Wide Brass", "Funky Bite Brass", "Cinema Low Brass",
+  "Sync Bite Brass", "Neo-Soul Velvet Brass", "Octave Ensemble Brass", "Analog Fanfare Brass",
+  // 025 - 036: Synth Leads
+  "Minimoog Fat Lead", "Prophet Hard Sync Lead", "Chick Fusion FM Lead", "Lucky Modular Lead",
+  "Nord Sync Screamer", "Sub-Octave Funk Lead", "Anthem SuperSaw Lead", "Soft Sine Whistle",
+  "Prog Fifths Lead", "West-Coast Folder Lead", "Talking Formant Lead", "CS-80 RingMod Lead",
+  // 037 - 048: Keys, EP & Organs
+  "DX7 Full Tines EP", "Warm Rhodes Synth EP", "Wurli Reed Keys", "Funky D6 Clavinet",
+  "Jazz Drawbar Organ", "Rock B3 Drive Organ", "Farfisa Combo Organ", "Cathedral Pipe Organ",
+  "Lo-Fi Tape Keys", "Crystal Bell EP Stack", "FM Dyno Road Keys", "Hybrid Stage Keys",
+  // 049 - 060: PolyKeys & Poly Synths
+  "Prophet-5 PolyComp", "Juno-106 Chorus Poly", "Jupiter-8 Fifths Poly", "OB-8 Warm PolyKeys",
+  "PPG Wave Digital Poly", "80s Pop Pluck Poly", "Future SuperPoly", "Synthwave Retro Poly",
+  "Glass Marimba PolyKey", "House Organ Chord Poly", "Analog Harpsi Poly", "Lush 3-Layer PolyKey",
+  // 061 - 072: Pads & Choirs
+  "Blade Runner CS Pad", "Heaven Vox Choir Pad", "Shimmer Crystal Pad", "Dark Abyss Drone Pad",
+  "Oberheim Velvet Pad", "Sweeping Bandpass Pad", "High-Pass Air Pad", "Fifth Harmony Space Pad",
+  "Glass Cathedral Pad", "Warm Sub-Analog Pad", "Evolving Dual-VCF Pad", "Borealis Dream Pad",
+  // 073 - 084: Strings & Ensembles
+  "Arp Solina Strings", "VP-330 Vocoder Strings", "Jupiter-8 Lush Strings", "Mellotron Tape Strings",
+  "Chamber Synth Strings", "Marcato Fast Strings", "Octave Cello & Violin", "High Shimmer Strings",
+  "Vintage Bow Ensemble", "Dark Dramatic Strings", "Hybrid PWM Strings", "Wide Disco Strings",
+  // 085 - 096: Synth Basses
+  "Moog Taurus Pedals", "Reese SuperPulse Bass", "Chameleon 80s Funk Bass", "DX7 Solid Slap Bass",
+  "SH-101 Acid Reso Bass", "Juno Sub-Octave Bass", "Cyberpunk Folder Bass", "Deep House Organ Bass",
+  "Synthwave Driving Bass", "Unison Monster Bass", "Fretless Warm Bass", "Clean 808 Sub Bass",
+  // 097 - 108: Plucks, Bells & Mallets
+  "D-50 Fantasia Bell", "Pizzicato Synth Pluck", "Prog House Pluck", "Kalimba Tine Mallet",
+  "Tubular Church Bells", "Vibraphone Warm Mallet", "Ethereal Harp Pluck", "Celesta Music Box",
+  "FM Metallic Perc Pluck", "Island Steel Drum", "Oriental Koto Pluck", "Nylon Synth Guitar",
+  // 109 - 120: Hybrids, Cinematic & Stage Stacks
+  "Worship Brass & Strings", "Pad & Bell Shimmer", "Zimmer Epic Braaam", "80s Soundtrack Stack",
+  "Choir & Strings Symphony", "Sync Lead & Sub Stack", "PolyKeys & Warm Pad", "Gospel Organ & Brass",
+  "Sci-Fi RingMod Texture", "Analog Wind & Surf FX", "Euphoria SuperSaw Stack", "Grand Finale Orchestra"
+];
+
+const SYNTH_PRESET_CATEGORIES = [
+  "",
+  // 001 - 012: Core Factory Bank
+  "PADS", "BRASS", "LEADS", "BELLS", "STRINGS", "BASS", "PADS", "POLYKEYS", "KEYS", "BELLS", "PADS", "BRASS",
+  // 013 - 024: Brass & Horn Sections
+  "BRASS", "BRASS", "BRASS", "BRASS", "BRASS", "BRASS", "BRASS", "BRASS", "BRASS", "BRASS", "BRASS", "BRASS",
+  // 025 - 036: Synth Leads
+  "LEADS", "LEADS", "LEADS", "LEADS", "LEADS", "LEADS", "LEADS", "LEADS", "LEADS", "LEADS", "LEADS", "LEADS",
+  // 037 - 048: Keys, EP & Organs
+  "KEYS", "KEYS", "KEYS", "KEYS", "KEYS", "KEYS", "KEYS", "KEYS", "KEYS", "KEYS", "KEYS", "KEYS",
+  // 049 - 060: PolyKeys & Poly Synths
+  "POLYKEYS", "POLYKEYS", "POLYKEYS", "POLYKEYS", "POLYKEYS", "POLYKEYS", "POLYKEYS", "POLYKEYS", "POLYKEYS", "POLYKEYS", "POLYKEYS", "POLYKEYS",
+  // 061 - 072: Pads & Choirs
+  "PADS", "PADS", "PADS", "PADS", "PADS", "PADS", "PADS", "PADS", "PADS", "PADS", "PADS", "PADS",
+  // 073 - 084: Strings & Ensembles
+  "STRINGS", "STRINGS", "STRINGS", "STRINGS", "STRINGS", "STRINGS", "STRINGS", "STRINGS", "STRINGS", "STRINGS", "STRINGS", "STRINGS",
+  // 085 - 096: Synth Basses
+  "BASS", "BASS", "BASS", "BASS", "BASS", "BASS", "BASS", "BASS", "BASS", "BASS", "BASS", "BASS",
+  // 097 - 108: Plucks, Bells & Mallets
+  "BELLS", "BELLS", "BELLS", "BELLS", "BELLS", "BELLS", "BELLS", "BELLS", "BELLS", "BELLS", "BELLS", "BELLS",
+  // 109 - 120: Hybrids, Cinematic & Stage Stacks
+  "SAWS", "PADS", "BRASS", "SAWS", "STRINGS", "LEADS", "POLYKEYS", "BRASS", "PADS", "PADS", "SAWS", "SAWS"
+];
 
 const state = {
   pianoEnabled: true, pianoVolume: 1.0,
@@ -49,6 +135,7 @@ const state = {
   shimmerModRateHz: 0.45, shimmerModDepth: 0.25,
   shimmerPitchMode: 1, shimmerReverbMode: 2, shimmerColorMode: 1,
   synthEnabled: false, synthPresetId: 1, synthMasterVol: 0.80, synthMacroCutoff: 1.0,
+  synthVoiceMode:0, synthPortamento:0, synthGlideMode:1, synthSlide:0,
   synthLfoEnabled: false, synthLfoWave: 0, synthLfoRate: 4.5,
   synthLfoDepth: 0, synthLfoPitch: 0, synthLfoCutoff: 0,
   organEnabled: false, organModel: 0, organVolume: 0.80, organRotaryFast: false, organDrive: 0.12,
@@ -106,11 +193,8 @@ for (let i = 1; i <= 3; i++) {
 }
 [1, 1, 1, 0, 0, 0, 0, 0, 0].forEach((v, d) => { state[`drawbar${d}`] = v; });
 
-// ============================================================================
-
 // ----------------------------------------------------------------------------
-// Utilidades DOM seguras: las páginas no comparten todos los elementos,
-// por eso NUNCA se accede con getElementById(...).prop sin comprobar.
+// Utilidades DOM seguras
 // ----------------------------------------------------------------------------
 function $(id) { return document.getElementById(id); }
 function setText(id, text) { const el = $(id); if (el) el.innerText = text; }
@@ -118,8 +202,6 @@ function setActive(id, on) { const el = $(id); if (el) el.classList.toggle('acti
 
 // ----------------------------------------------------------------------------
 // Envío de parámetros a C++ (POST /api/param)
-//   - Si el servidor devuelve `params` (p. ej. al cambiar synthPresetId) se
-//     sincroniza la UI con ellos.
 // ----------------------------------------------------------------------------
 function sendParam(id, value) {
   const numVal = Number(value);
@@ -138,7 +220,7 @@ function sendParam(id, value) {
 }
 
 // ----------------------------------------------------------------------------
-// Navegación entre páginas (cada página es un HTML independiente)
+// Navegación entre páginas
 // ----------------------------------------------------------------------------
 const PAGE_URLS = { main: '/', synth: '/synth', organ: '/organ' };
 function goToPage(page) { window.location.href = PAGE_URLS[page] || '/'; }
@@ -151,7 +233,7 @@ function openSettingsWindow() {
 // Modales
 // ----------------------------------------------------------------------------
 function openModal(id) {
-  if (id === 'modalRev') id = 'modalFxRack';          // alias antiguo
+  if (id === 'modalRev') id = 'modalFxRack';
   const el = $(id);
   if (!el) return;
   el.classList.add('open');

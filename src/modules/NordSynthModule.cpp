@@ -53,6 +53,7 @@ void SingleSynthLayer::init(float sr) {
 void SingleSynthLayer::reset() {
     filter.reset();
     pwmPhase_ = 0.0;
+    lastNoteFrequency_ = 0.0;
     for (auto& v : voices) {
         v.active = false;
         v.env = 0.0f;
@@ -90,6 +91,21 @@ void SingleSynthLayer::noteOn(int rawKey, int playedKey, int velocity) {
     double keyOffset = (static_cast<double>(playedKey) - 60.0) * static_cast<double>(cfg.keyTrack);
     double pitchNote = 60.0 + keyOffset + cfg.octave * 12.0 + cfg.semitones + (cfg.detuneCents / 100.0);
     double baseFreq = 440.0 * std::pow(2.0, (pitchNote - 69.0) / 12.0);
+    if (voiceMode != 0) {
+        bool reused = false;
+        for (auto& v : voices) {
+            if (!v.active || !v.keyHeld) continue;
+            v.rawKey=rawKey;v.playedKey=playedKey;v.targetFreq=baseFreq;
+            v.slidePitch=slideSemis;
+            v.velNorm=vNorm;v.velGain=velAmp;
+            if (voiceMode == 1) { v.stage=1; /* attack from current level, no discontinuity */ }
+            reused=true;
+        }
+        if (reused) {lastNoteFrequency_=baseFreq;return;}
+    }
+    const double startFreq = (glideSeconds>0.001f && glideMode==0 && lastNoteFrequency_>0.0)
+                                ? lastNoteFrequency_ : baseFreq;
+    lastNoteFrequency_=baseFreq;
 
     for (int u = 0; u < unison; ++u) {
         SynthPolyVoice* target = nullptr;
@@ -126,7 +142,9 @@ void SingleSynthLayer::noteOn(int rawKey, int playedKey, int velocity) {
         target->filterIc1 = target->filterIc2 = target->highpassState = 0.0f;
         target->filterA1 = 1.0f; target->filterA2 = target->filterA3 = 0.0f;
         target->cutoffSmooth = std::clamp(cfg.cutoffHz, 40.0f, 18000.0f);
-        target->freq = baseFreq;
+        target->freq = startFreq;
+        target->targetFreq = baseFreq;
+        target->slidePitch = slideSemis;
 
         if (unison > 1) {
             float t = static_cast<float>(u) / static_cast<float>(unison - 1) - 0.5f;
@@ -215,6 +233,9 @@ void SingleSynthLayer::renderLayer(float* mixL, float* mixR, unsigned int numFra
     }
 
     const float bendRatio = std::pow(2.f, performancePitchBendSemis / 12.f);
+    const float glideAlpha = glideSeconds < 0.001f ? 1.0f :
+        1.0f-std::exp(-1.0f/(std::max(.001f,glideSeconds)*sr));
+    const float slideDecay = std::exp(-1.0f/(.15f*sr));
     for (unsigned int n = 0; n < numFrames; ++n) {
         pwmPhase_ += std::clamp(cfg.pwmRateHz, 0.05f, 12.0f) / sr;
         if (pwmPhase_ >= 1.0) pwmPhase_ -= 1.0;
@@ -248,9 +269,11 @@ void SingleSynthLayer::renderLayer(float* mixL, float* mixR, unsigned int numFra
             }
             if (!v.active) continue;
 
+            v.freq += (v.targetFreq - v.freq) * glideAlpha;
+            v.slidePitch *= slideDecay;
             const float vibCents = performanceModWheel * 30.f *
                 std::sin(2.f*PI_F*static_cast<float>(pwmPhase_) * (5.2f / std::max(0.05f,cfg.pwmRateHz)));
-            const double performanceRatio = bendRatio * std::pow(2.f,vibCents/1200.f);
+            const double performanceRatio = bendRatio * std::pow(2.f,(vibCents/100.f+v.slidePitch)/12.f);
             const double inc = std::clamp(v.freq * v.detuneMult * pitchLfo * performanceRatio / sr,
                                           0.0000001, 0.45);
             const double inc2 = std::clamp(inc * osc2Ratio, 0.0000001, 0.45);
@@ -286,6 +309,46 @@ void SingleSynthLayer::renderLayer(float* mixL, float* mixR, unsigned int numFra
                 case 6:
                     osc = readWavetable(cfg.wavetableIdx, v.phase1);
                     break;
+                case 7: { // hard sync: reset slave phase on master wrap
+                    const double slaveInc = std::min(.45, inc * (2.0 + 0.5*osc2Ratio));
+                    osc = saw(v.phase2, slaveInc);
+                    v.phase2 += slaveInc;
+                    if (v.phase1 + inc >= 1.0) v.phase2 = 0.0;
+                    v.phase2 -= std::floor(v.phase2);
+                    break;
+                }
+                case 10: { // two-operator FM with controlled index
+                    const float carrier = static_cast<float>(2.0 * PI_F * v.phase1);
+                    const float modulator = std::sin(2.0f*PI_F*static_cast<float>(v.phase2));
+                    osc = std::sin(carrier + (1.0f + osc2Level*4.0f)*modulator) * .78f;
+                    v.phase2 += std::min(.45, inc * std::max(1.0f,osc2Ratio*2.0f));
+                    v.phase2 -= std::floor(v.phase2);
+                    break;
+                }
+                case 11: { // antialiased triple pulse
+                    osc = (pulse(v.phase1,inc,pw) +
+                           .78f*pulse(v.phase2,std::min(.45,inc*1.008),pw) +
+                           .78f*pulse(v.phase3,inc*.992,pw)) * .39f;
+                    v.phase2=std::fmod(v.phase2+inc*1.008,1.0);
+                    v.phase3=std::fmod(v.phase3+inc*.992,1.0);
+                    break;
+                }
+                case 12: { // ring modulation
+                    osc = saw(v.phase1,inc) * std::sin(2.0f*PI_F*static_cast<float>(v.phase2));
+                    v.phase2=std::fmod(v.phase2+std::min(.45,inc*osc2Ratio*1.5),1.0);
+                    break;
+                }
+                case 13: { // vocal-formant additive oscillator, bounded harmonics
+                    const float p=2.0f*PI_F*static_cast<float>(v.phase1);
+                    osc = (.35f*std::sin(p)+.45f*std::sin(2*p)+.26f*std::sin(3*p)
+                           +.15f*std::sin(5*p)+.10f*std::sin(7*p))*.72f;
+                    break;
+                }
+                case 14: { // wavefolder with smooth nonlinear folding
+                    const float x=1.0f+2.0f*osc2Level;
+                    osc = std::sin(x*2.7f*std::sin(2.0f*PI_F*static_cast<float>(v.phase1)))*.75f;
+                    break;
+                }
                 case 8: { // Juno style: simultaneously mix saw, PWM pulse, sub and noise
                     const float sub = pulse(v.phaseSub, inc * 0.5, 0.50f);
                     osc = analogNorm * (sawLevel * saw(v.phase1, inc) +
@@ -349,6 +412,7 @@ void SingleSynthLayer::renderLayer(float* mixL, float* mixR, unsigned int numFra
             float filtered = lp;
             if (cfg.filterType == 1) filtered = input - resonanceK * bp - lp;
             if (cfg.filterType == 2) filtered = bp;
+            if (cfg.filterType == 3) filtered = input - resonanceK * bp; // true notch = LP + HP
             const float amp = filtered * v.env * v.velGain * v.unisonScale * layerGain;
             sumL += amp * v.panGainL;
             sumR += amp * v.panGainR;
@@ -450,7 +514,7 @@ void NordSynthModule::updateLFOsAndEnvs(unsigned int numFrames, float sr) {
 }
 
 void NordSynthModule::loadBuiltInSynthPreset(int presetId) {
-    synthPresetId = std::clamp(presetId, 1, 48);
+    synthPresetId = std::clamp(presetId, 1, 120);
 
     if (synthPresetId == 1) { // 1: Warm Pad
         layers[0].cfg = {true, 4, 0.80f, -0.20f, 0, 0, -6.0f, 4800.0f, 0.8f, 0.18f, 2.2f, 0.85f, 0.95f,
@@ -582,10 +646,11 @@ void NordSynthModule::loadBuiltInSynthPreset(int presetId) {
     }
     // Expanded factory bank 13–48, six families × six independently voiced variations.
     // Different IDs alter filter, oscillators, envelope and stereo layering (not just names).
-    if (synthPresetId >= 13) {
-        const int family = (synthPresetId - 13) / 6; // keys, pads, brass, bass, leads, saws
-        const int variant = (synthPresetId - 13) % 6;
-        const float v = static_cast<float>(variant);
+    if (synthPresetId >= 13 && synthPresetId <= 48) {
+        // Match the catalogue's actual families (12 Brass, 12 Leads, 12 Keys).
+        const int family = synthPresetId <= 24 ? 2 : (synthPresetId <= 36 ? 4 : 0);
+        const int variant = (synthPresetId - 13) % 12;
+        const float v = static_cast<float>(variant % 6) + (variant >= 6 ? 0.65f : 0.0f);
         for (auto& layer : layers) layer.cfg = SynthLayerConfig{};
         auto& a = layers[0].cfg;
         a.enabled = true; a.volume = .72f; a.pan = 0.f;
@@ -662,16 +727,131 @@ void NordSynthModule::loadBuiltInSynthPreset(int presetId) {
             if (variant==5) { c.enabled=true; c.waveType=8; c.octave=-1; c.volume=.2f; c.releaseSec=1.6f; }
             break;
         }
+        // The second half of each 12-patch family has a distinct oscillator colour.
+        if (variant >= 6) {
+            a.resonanceQ += .30f;
+            a.osc2Level = .20f + .03f*(variant-6);
+            a.drive = .05f + .025f*(variant-6);
+            if (b.enabled) b.detuneCents += 3.f;
+        }
+        // Sound-specific oscillator designs matching named presets.
+        if (synthPresetId == 16 || synthPresetId == 27 || synthPresetId == 37 || synthPresetId == 47)
+            a.waveType = 10; // FM brass/lead/tines
+        if (synthPresetId == 26 || synthPresetId == 29) a.waveType = 7; // sync lead
+        if (synthPresetId == 34) a.waveType = 14; // wavefolder lead
+        if (synthPresetId == 35 || synthPresetId == 41 || synthPresetId == 44) a.waveType = 13; // formant/organ
+        if (synthPresetId == 36) a.waveType = 12; // ring modulation
+    }
+
+    // Expansion 49..120: twelve identifiable patches in each sound family.
+    // Unlike the old clamp(48), every patch has its own oscillator/filter/envelope configuration.
+    if (synthPresetId >= 49) {
+        const int group = (synthPresetId - 49) / 12; // POLY, PAD, STRINGS, BASS, BELLS, HYBRID
+        const int variant = (synthPresetId - 49) % 12;
+        const float t = static_cast<float>(variant) / 11.0f;
+        for (auto& layer : layers) layer.cfg = SynthLayerConfig{};
+        auto& a = layers[0].cfg;
+        auto& b = layers[1].cfg;
+        auto& c = layers[2].cfg;
+        a.enabled = true; a.volume = .78f; a.resonanceQ = .78f + .65f*t;
+        a.filterKeyTrack = .35f; a.velToCutoff = .40f;
+        a.osc2Detune = 3.f + variant * 1.9f;
+        a.cutoffHz = 2600.f + variant * 390.f;
+        a.attackSec = .012f; a.decaySec = .55f; a.sustainLevel = .65f; a.releaseSec = .48f;
+        switch (group) {
+        case 0: // Poly keys: analog poly, PPG, organ key, glass, 3-layer sound.
+            a.waveType = (variant==4 ? 6 : (variant==8 ? 10 : (variant==9 ? 13 : 8)));
+            a.attackSec = .002f; a.decaySec = .20f + t*.60f;
+            a.sustainLevel = .18f + .40f*t; a.releaseSec = .22f+t*.54f;
+            a.osc2Level = .3f; a.filterEnvAmt = .25f;
+            b=a; b.enabled=true; b.volume=.26f; b.pan=.35f; a.pan=-.35f;
+            b.waveType=(variant%3==0 ? 3 : (variant%3==1 ? 9 : 2));
+            b.octave=(variant==2 || variant==11 ? 1 : 0);
+            if (variant==11 || variant==4) {c=a; c.enabled=true; c.waveType=3; c.octave=1; c.volume=.16f;}
+            break;
+        case 1: // Pads / choirs / formant drones / sweeping filters.
+            a.waveType = (variant==1 || variant==8 ? 13 : (variant==2 ? 10 : 8));
+            a.attackSec=.18f+t*.95f; a.releaseSec=2.1f+t*2.0f;
+            a.decaySec=1.8f; a.sustainLevel=.82f;
+            a.cutoffHz=1450.f+t*4200.f; a.pwmDepth=.15f+t*.16f;
+            a.pwmRateHz=.10f+t*.37f; a.filterEnvAmt=.19f;
+            a.filterType=(variant==5 ? 2 : variant==6 ? 1 : 0);
+            b=a; b.enabled=true; b.pan=.49f; a.pan=-.49f;
+            b.detuneCents=6.f+variant; b.volume=.47f;
+            if (variant%3==2) {c=a;c.enabled=true;c.waveType=3;c.octave=-1;c.volume=.17f;c.attackSec=.8f;}
+            break;
+        case 2: // Strings / Solina / synthetic ensembles.
+            a.waveType=(variant==3 ? 13 : 8); a.pulseLevel=.76f;
+            a.pwmDepth=.19f+t*.18f; a.pwmRateHz=.19f+t*.31f;
+            a.attackSec=.025f+t*.28f; a.releaseSec=1.3f+t*1.0f;
+            a.sustainLevel=.78f; a.cutoffHz=1800.f+t*5500.f;
+            b=a; b.enabled=true; b.pan=.45f; a.pan=-.45f;
+            b.detuneCents=8.f+t*11.f; b.volume=.50f;
+            if (variant==6 || variant==11) {c=a;c.enabled=true;c.octave=-1;c.volume=.20f;}
+            break;
+        case 3: // Deep bass / Reese / FM / pulse / sub.
+            a.waveType=(variant==2 || variant==5 ? 10 : (variant==1 ? 11 : 9));
+            a.subLevel=.55f+t*.35f; a.pulseLevel=.4f;
+            a.osc2Level=.40f; a.cutoffHz=260.f+t*1300.f;
+            a.attackSec=.002f; a.decaySec=.22f+t*.35f;
+            a.sustainLevel=.55f; a.releaseSec=.12f+t*.21f;
+            a.filterEnvAmt=.56f+t*.31f; a.drive=.08f+t*.17f;
+            if (variant==1 || variant==6) {b=a;b.enabled=true;b.waveType=11;b.volume=.27f;b.detuneCents=13.f;}
+            break;
+        case 4: // Bells / mallets / plucked FM / wavefolder.
+            a.waveType=(variant%4==0 ? 14 : (variant%4==1 ? 10 : (variant%4==2 ? 6 : 12)));
+            a.attackSec=.002f; a.decaySec=.36f+t*2.15f;
+            a.sustainLevel=.012f; a.releaseSec=.35f+t*1.55f;
+            a.cutoffHz=4500.f+t*9100.f; a.filterEnvAmt=.16f;
+            b=a; b.enabled=(variant%3!=0); b.volume=.28f; b.pan=.31f;
+            b.octave=1; b.waveType=3; a.pan=-.12f;
+            if (variant==8 || variant==11) {c=a;c.enabled=true;c.volume=.11f;c.octave=2;c.waveType=3;}
+            break;
+        default: // Hybrid stage stacks: saw / brass / leads / cinematic.
+            a.waveType=(variant%4==0 ? 4 : variant%4==1 ? 9 : variant%4==2 ? 7 : 14);
+            a.cutoffHz=2200.f+t*8500.f;
+            a.attackSec=(variant%3==1 ? .30f : .006f);
+            a.releaseSec=(variant%3==1 ? 2.0f : .45f+t*.7f);
+            a.filterEnvAmt=.38f+t*.29f;
+            a.unisonVoices=2+(variant%3); a.unisonDetune=7.f+t*13.f;
+            a.unisonSpread=.35f+t*.30f; a.osc2Level=.57f;
+            b=a; b.enabled=true; b.volume=.38f; b.pan=.39f;
+            b.detuneCents=5.f+t*9.f; a.pan=-.39f;
+            if (variant%3==2) {c=a;c.enabled=true;c.volume=.18f;c.octave=-1;c.waveType=8;}
+            break;
+        }
     }
     for (auto& l : layers) l.reset();
 }
 
 void NordSynthModule::noteOn(int rawKey, int playedKey, int velocity) {
     if (!synthEnabled) return;
-    for (auto& l : layers) l.noteOn(rawKey, playedKey, velocity);
+    if (synthVoiceMode != 0) {
+        monoHeldNotes.erase(std::remove_if(monoHeldNotes.begin(),monoHeldNotes.end(),
+            [rawKey](const HeldNote& n){return n.rawKey==rawKey;}),monoHeldNotes.end());
+        monoHeldNotes.push_back({rawKey,playedKey,velocity});
+    }
+    for (auto& l : layers) {
+        l.voiceMode=synthVoiceMode;
+        l.glideSeconds=synthPortamento;
+        l.glideMode=synthGlideMode;
+        l.slideSemis=synthSlide;
+        l.noteOn(rawKey, playedKey, velocity);
+    }
 }
 
 void NordSynthModule::noteOff(int rawKey, bool pedalDown) {
+    if (synthVoiceMode != 0) {
+        const bool current=!monoHeldNotes.empty() && monoHeldNotes.back().rawKey==rawKey;
+        monoHeldNotes.erase(std::remove_if(monoHeldNotes.begin(),monoHeldNotes.end(),
+            [rawKey](const HeldNote& n){return n.rawKey==rawKey;}),monoHeldNotes.end());
+        if (!current) return; // only the highest-priority held key owns the voice
+        if (!monoHeldNotes.empty()) {
+            const auto n=monoHeldNotes.back();
+            for (auto& l:layers) l.noteOn(n.rawKey,n.playedKey,n.velocity);
+            return;
+        }
+    }
     for (auto& l : layers) l.noteOff(rawKey, pedalDown);
 }
 
@@ -680,6 +860,7 @@ void NordSynthModule::setSustain(bool down) {
 }
 
 void NordSynthModule::allNotesOff() {
+    monoHeldNotes.clear();
     for (auto& l : layers) l.reset();
 }
 

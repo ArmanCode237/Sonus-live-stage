@@ -12,11 +12,11 @@
 <link rel="stylesheet" href="/css/layout.css">
 <link rel="stylesheet" href="/css/topbar.css">
 <link rel="stylesheet" href="/css/components.css">
-<link rel="stylesheet" href="/css/console.css?v=7.0">
+<link rel="stylesheet" href="/css/console.css?v=8.1">
 <link rel="stylesheet" href="/css/drawbars.css">
 <link rel="stylesheet" href="/css/keyboard.css">
-<link rel="stylesheet" href="/css/modals.css?v=7.0">
-<link rel="stylesheet" href="/css/synth.css?v=7.0">
+<link rel="stylesheet" href="/css/modals.css?v=8.1">
+<link rel="stylesheet" href="/css/synth.css?v=8.1">
 <link rel="stylesheet" href="/css/nord-hardware.css">
 <link rel="stylesheet" href="/css/fx-sends.css">
 <link rel="stylesheet" href="/css/piano.css">
@@ -32,28 +32,45 @@
     <div class="synth-hero">
       <div class="synth-hero-identity"><span class="panel-eyebrow">STAGE ENGINE / SYNTH SECTION</span>
         <h2>ANALOG <span>SYNTHESIZER</span></h2>
-        <p>JUNO / JUPITER ARCHITECTURE <span class="hero-divider"></span> THREE INDEPENDENT VOICES</p>
+        <p>JUNO / JUPITER / FM / SYNC ARCHITECTURE <span class="hero-divider"></span> THREE INDEPENDENT VOICES</p>
         <div class="synth-power-row"><button class="mod-led-btn" id="ledPage_synthEnabled" onclick="toggleEffect('synthEnabled')" aria-label="Encender o apagar sintetizador"></button><strong>SYNTH ON / OFF</strong></div>
       </div>
       <div class="synth-hero-screen" aria-label="Pantalla del sintetizador">
-        <div class="synth-screen-line"><span>FACTORY PATCH</span><span>PRG <strong id="synthScreenNumber">01</strong> / 48</span></div>
+        <div class="synth-screen-line"><span>FACTORY PATCH</span><span>PRG <strong id="synthScreenNumber">001</strong> / 120</span></div>
         <div id="synthScreenPatch" class="synth-screen-patch">Juno Warm Pad</div>
-        <div class="synth-screen-line footer"><span>3 LAYER ANALOG</span><span>DCO → VCF → VCA</span></div>
+        <div class="synth-screen-line footer"><span>3 LAYER HYBRID</span><span>OSC → VCF → VCA</span></div>
       </div>
       <a class="wrench-btn synth-back" href="/"><span data-ui-icon="arrow-left"></span> MAIN PANEL</a>
     </div>
-    <div class="synth-factory-bank" aria-label="48 sonidos de fábrica del sintetizador">
+    <div class="synth-factory-bank" aria-label="120 sonidos de fábrica del sintetizador">
       <div class="synth-bank-label"><b>FACTORY</b><span>PATCH SELECT</span></div>
       <div class="synth-factory-intro"><div><span class="panel-eyebrow">SYNTHESIS SOUND LIBRARY</span>
         <h3>PATCH <em>EXPLORER</em></h3><p>Selecciona una familia y carga el sonido directamente en el motor.</p></div>
-        <div class="synth-library-counter"><strong>48</strong><small>FACTORY SOUNDS</small></div></div>
+        <div class="synth-library-counter"><strong>120</strong><small>FACTORY SOUNDS</small></div></div>
       <div class="synth-factory-spotlight" aria-live="polite"><div class="synth-spotlight-art">
         <svg viewBox="0 0 180 60" aria-hidden="true"><path d="M1 33L14 33L14 9L29 9L29 49L43 49L43 26L58 26L58 10L70 10L70 52L85 52L85 20L99 20L99 39L115 39L115 12L131 12L131 46L145 46L145 22L158 22L158 35L179 35" /></svg>
-      </div><div class="synth-spotlight-details"><span class="synth-spotlight-kicker">ACTIVE FACTORY PATCH <b id="synthFeaturedNumber">01 / 48</b></span>
+      </div><div class="synth-spotlight-details"><span class="synth-spotlight-kicker">ACTIVE FACTORY PATCH <b id="synthFeaturedNumber">001 / 120</b></span>
         <strong id="synthFeaturedName">Juno Warm Pad</strong><span id="synthFeaturedCategory">PADS</span></div>
         <div class="synth-spotlight-led" aria-hidden="true"></div></div>
       <div class="synth-category-tabs" id="synthCategoryPills" role="group" aria-label="Familias de sonido"></div>
-      <div class="synth-factory-toolbar"><label>CATEGORY <select id="synthFactoryCategory" onchange="buildSynthPresetButtons()"><option value="ALL">ALL FAMILIES</option><option>KEYS</option><option>PADS</option><option>BRASS</option><option>BASS</option><option>LEADS</option><option>SAWS</option><option>STRINGS</option><option>BELLS</option></select></label><label>SEARCH <input id="synthFactorySearch" type="search" placeholder="Buscar patch…" oninput="buildSynthPresetButtons()"></label><output id="synthFactoryResultCount">48 / 48 PATCHES</output></div>
+      <div class="synth-factory-toolbar">
+        <label>CATEGORY
+          <select id="synthFactoryCategory" onchange="buildSynthPresetButtons()">
+            <option value="ALL">ALL FAMILIES</option>
+            <option value="BRASS">BRASS</option>
+            <option value="LEADS">LEADS</option>
+            <option value="KEYS">KEYS</option>
+            <option value="POLYKEYS">POLYKEYS</option>
+            <option value="PADS">PADS</option>
+            <option value="STRINGS">STRINGS</option>
+            <option value="BASS">BASS</option>
+            <option value="BELLS">BELLS</option>
+            <option value="SAWS">SAWS</option>
+          </select>
+        </label>
+        <label>SEARCH <input id="synthFactorySearch" type="search" placeholder="Buscar patch…" oninput="buildSynthPresetButtons()"></label>
+        <output id="synthFactoryResultCount">120 / 120 PATCHES</output>
+      </div>
       <div class="synth-factory-direct">
         <label for="synthFactoryDirectSelect">SELECCIÓN DIRECTA</label>
         <select id="synthFactoryDirectSelect" class="quick-cat-select" aria-label="Seleccionar preset de fábrica"><option value="">Selecciona un sonido...</option></select>
@@ -87,21 +104,21 @@
 <div data-include="/partials/modal-browser.html"></div>
 
 <!-- JS: módulos compartidos (el orden importa: core primero, app al final) -->
-<script src="/js/core.js?v=7.0"></script>
-<script src="/js/include.js?v=7.0"></script>
-<script src="/js/knobs.js?v=7.0"></script>
-<script src="/js/eq.js?v=7.0"></script>
-<script src="/js/fx.js?v=7.0"></script>
-<script src="/js/fx-sends.js?v=7.0"></script>
-<script src="/js/programs.js?v=7.0"></script>
-<script src="/js/library.js?v=7.0"></script>
-<script src="/js/synth.js?v=7.0"></script>
-<script src="/js/organ.js?v=7.0"></script>
-<script src="/js/keyboard.js?v=7.0"></script>
-<script src="/js/sync.js?v=7.0"></script>
-<script src="/js/polling.js?v=7.0"></script>
-<script src="/js/icons.js?v=7.0"></script>
-<script src="/js/dashboard.js?v=7.0"></script>
-<script src="/js/app.js?v=7.0"></script>
+<script src="/js/core.js?v=8.1"></script>
+<script src="/js/include.js?v=8.1"></script>
+<script src="/js/knobs.js?v=8.1"></script>
+<script src="/js/eq.js?v=8.1"></script>
+<script src="/js/fx.js?v=8.1"></script>
+<script src="/js/fx-sends.js?v=8.1"></script>
+<script src="/js/programs.js?v=8.1"></script>
+<script src="/js/library.js?v=8.1"></script>
+<script src="/js/synth.js?v=8.1"></script>
+<script src="/js/organ.js?v=8.1"></script>
+<script src="/js/keyboard.js?v=8.1"></script>
+<script src="/js/sync.js?v=8.1"></script>
+<script src="/js/polling.js?v=8.1"></script>
+<script src="/js/icons.js?v=8.1"></script>
+<script src="/js/dashboard.js?v=8.1"></script>
+<script src="/js/app.js?v=8.1"></script>
 </body>
 </html>

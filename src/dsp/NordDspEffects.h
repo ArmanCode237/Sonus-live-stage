@@ -411,10 +411,12 @@ public:
         fbLowCut_.reset();
         fbHighCut_.reset();
         fbReturnL_ = fbReturnR_ = 0.0f;
+        pitchReturnSmoothL_ = pitchReturnSmoothR_ = 0.0f;
 
         dcBlockerL_x1_ = dcBlockerL_y1_ = 0.0f;
         dcBlockerR_x1_ = dcBlockerR_y1_ = 0.0f;
         lfoPhase_ = 0.0f;
+        pitchLpCoef_ = 1.0f - std::exp(-2.0f*PI_F*4400.0f/sr_);
 
         setParams(mix_, shiftSt_, feedback_, diffusion_, size_,
                   lowCutHz_, highCutHz_, modRateHz_, modDepth_,
@@ -442,6 +444,10 @@ public:
         // Difusión estilo Golden Ratio (0.618 -> 0.78) para crear el ataque envolvente ("Bloom")
         apCoef_ = 0.25f + diffusion_ * 0.50f;
         pitchRatio_ = std::pow(2.0, static_cast<double>(shiftSt_) / 12.0);
+        pitchReturnGain_ = 0.22f + std::pow(feedback_,0.75f)*0.37f;
+        tankDecay_ = 0.80f + std::pow(feedback_,0.52f)*0.182f;
+        if (revMode_ == ReverbMode::BigStereo) tankDecay_ = std::min(0.993f,tankDecay_+0.012f);
+        if (revMode_ == ReverbMode::SmallStereo) tankDecay_ *= 0.94f;
 
         fbLowCut_.setHighPass(sr_, lowCutHz_, 0.707f);
         const float hcQ = (color_ == ColorMode::Dark) ? 0.55f : 0.707f;
@@ -504,9 +510,7 @@ public:
         const float modExcursion = (8.0f + modDepth_ * 34.0f) * (sr_ / 44100.0f);
 
         // Curva de Decay Atmosférico: mapea feedback_ (0..0.98) a una ganancia de sostenimiento real (0.82..0.992)
-        float tankDecay = 0.80f + std::pow(feedback_, 0.52f) * 0.182f;
-        if (revMode_ == ReverbMode::BigStereo)    tankDecay = std::min(0.993f, tankDecay + 0.012f);
-        if (revMode_ == ReverbMode::SmallStereo)  tankDecay *= 0.94f;
+        const float tankDecay = tankDecay_; // computed when the parameter changes, never per sample
 
         const float dampCoef = (color_ == ColorMode::Dark) ? 0.34f : 0.16f;
 
@@ -569,8 +573,8 @@ public:
 
             // Alternar polaridad fina de inyección para evitar cancelación de fase
             float sign = (i & 1) ? 1.0f : -1.0f;
-            float nextInL = (diffL * 0.45f) + (fbReturnR_ * 0.42f * sign) + fbTankL;
-            float nextInR = (diffR * 0.45f) + (fbReturnL_ * 0.42f * sign) + fbTankR;
+            float nextInL = (diffL * 0.50f) + (fbReturnR_ * 0.24f * sign) + fbTankL;
+            float nextInR = (diffR * 0.50f) + (fbReturnL_ * 0.24f * sign) + fbTankR;
 
             combL_[i][combPosL_[i]] = softSaturate(nextInL);
             combR_[i][combPosR_[i]] = softSaturate(nextInR);
@@ -584,8 +588,9 @@ public:
         float tankOutR = (yR[1] + yR[3] + yR[5] + yR[7] - yR[0] * 0.5f + yL[2] * 0.35f) * 0.38f;
 
         // 6. PITCH SHIFTER DE 4 GRANOS EN CUADRATURA DENTRO DEL LAZO DE FEEDBACK
-        grainBufL_[grainWritePos_] = tankOutL + diffL * 0.30f;
-        grainBufR_[grainWritePos_] = tankOutR + diffR * 0.30f;
+        // Pitch shift only the diffuse tail, never the percussive input transient.
+        grainBufL_[grainWritePos_] = tankOutL;
+        grainBufR_[grainWritePos_] = tankOutR;
 
         float shiftedL = tankOutL;
         float shiftedR = tankOutR;
@@ -604,8 +609,8 @@ public:
                     phR -= std::floor(phR);
 
                     // Ganancia 0.36f compensa la pérdida de coherencia de fase entre los 4 granos superpuestos
-                    float winL = 0.36f * (1.0f - std::cos(2.0f * PI_F * static_cast<float>(phL)));
-                    float winR = 0.36f * (1.0f - std::cos(2.0f * PI_F * static_cast<float>(phR)));
+                    float winL = 0.25f * (1.0f - std::cos(2.0f * PI_F * static_cast<float>(phL)));
+                    float winR = 0.25f * (1.0f - std::cos(2.0f * PI_F * static_cast<float>(phR)));
 
                     double rPosL = static_cast<double>(grainWritePos_) - (phL * maxSpan);
                     while (rPosL < 0.0) rPosL += static_cast<double>(grainSize_);
@@ -645,8 +650,8 @@ public:
                 phasorDownR_ += stepDownBase * 1.0015;
                 phasorDownR_ -= std::floor(phasorDownR_);
 
-                shiftedL = upL * 0.78f + dnL * 0.58f;
-                shiftedR = upR * 0.78f + dnR * 0.58f;
+                shiftedL = upL * 0.72f + dnL * 0.22f;
+                shiftedR = upR * 0.72f + dnR * 0.22f;
             } else {
                 shiftedL = upL;
                 shiftedR = upR;
@@ -659,15 +664,18 @@ public:
         fbLowCut_.processStereo(shiftedL, shiftedR);
         fbHighCut_.processStereo(shiftedL, shiftedR);
 
-        float shimmerLoopGain = 0.45f + std::pow(feedback_, 0.65f) * 0.52f;
-        if (revMode_ == ReverbMode::BigStereo) shimmerLoopGain *= 1.12f;
-
-        fbReturnL_ = softSaturate(shiftedL * shimmerLoopGain);
-        fbReturnR_ = softSaturate(shiftedR * shimmerLoopGain);
+        // Keep regenerated harmonics quieter than the unshifted tank. A 1-pole
+        // low-pass removes granular zipper/alias brightness in the feedback loop.
+        const float pitchLp = pitchLpCoef_;
+        pitchReturnSmoothL_ += pitchLp*(shiftedL-pitchReturnSmoothL_);
+        pitchReturnSmoothR_ += pitchLp*(shiftedR-pitchReturnSmoothR_);
+        const float shimmerLoopGain = pitchReturnGain_;
+        fbReturnL_ = softSaturate(pitchReturnSmoothL_*shimmerLoopGain);
+        fbReturnR_ = softSaturate(pitchReturnSmoothR_*shimmerLoopGain);
 
         // 8. DIFUSIÓN TARDÍA DE SALIDA (Crea el efecto "Bloom" envolvente)
-        float outL = tankOutL * 0.85f + shiftedL * 0.75f;
-        float outR = tankOutR * 0.85f + shiftedR * 0.75f;
+        float outL = tankOutL * 0.96f + shiftedL * 0.32f;
+        float outR = tankOutR * 0.96f + shiftedR * 0.32f;
 
         const float outApGain = 0.618f; // Proporción áurea para máxima densidad suave
         for (int i = 0; i < 4; ++i) {
@@ -693,8 +701,8 @@ public:
         if (revMode_ != ReverbMode::Mono) {
             float mid  = (cleanL + cleanR) * 0.5f;
             float side = (cleanL - cleanR) * 0.5f;
-            float widthBoost = (revMode_ == ReverbMode::BigStereo) ? 1.72f :
-                               (revMode_ == ReverbMode::MediumStereo ? 1.48f : 1.25f);
+            float widthBoost = (revMode_ == ReverbMode::BigStereo) ? 1.38f :
+                               (revMode_ == ReverbMode::MediumStereo ? 1.25f : 1.12f);
             side *= widthBoost;
             cleanL = mid + side;
             cleanR = mid - side;
@@ -748,6 +756,8 @@ private:
 
     StereoBiquad fbLowCut_, fbHighCut_;
     float fbReturnL_ = 0.0f, fbReturnR_ = 0.0f;
+    float pitchReturnSmoothL_ = 0.0f, pitchReturnSmoothR_ = 0.0f;
+    float pitchLpCoef_ = 0.4f, pitchReturnGain_ = 0.45f, tankDecay_ = 0.94f;
 
     float dcBlockerL_x1_ = 0.0f, dcBlockerL_y1_ = 0.0f;
     float dcBlockerR_x1_ = 0.0f, dcBlockerR_y1_ = 0.0f;
@@ -833,10 +843,10 @@ public:
         // Source stereo is preserved, while early reflections cross-feed softly.
         const size_t er1=static_cast<size_t>(0.008f*sr_);
         const size_t er2=static_cast<size_t>(0.018f*sr_);
-        float earlyL=0.30f*preL_[(read+sz-er1)%sz]+0.17f*preR_[(read+sz-er2)%sz];
-        float earlyR=0.30f*preR_[(read+sz-er1)%sz]+0.17f*preL_[(read+sz-er2)%sz];
+        float earlyL=0.40f*preL_[(read+sz-er1)%sz]+0.19f*preR_[(read+sz-er2)%sz];
+        float earlyR=0.40f*preR_[(read+sz-er1)%sz]+0.19f*preL_[(read+sz-er2)%sz];
         prePos_=(prePos_+1)%sz;
-        const float difCoef=(type==1)?0.72f:0.62f;
+        const float difCoef=(type==0)?0.52f:(type==1?0.74f:0.67f);
         for(int i=0;i<4;i++){
             inL=allpass(inL,preDiffL_[i],pdPosL_[i],difCoef);
             inR=allpass(inR,preDiffR_[i],pdPosR_[i],difCoef);
@@ -874,25 +884,28 @@ public:
             float vfbL=(dampL_[i]-hsL)*fbL;
             float vfbR=(dampR_[i]-hsR)*fbR;
             const float sign=(i&1)?-1.0f:1.0f;
-            tankL_[i][tankPosL_[i]]=std::clamp(inL*0.21f*sign+vfbL*0.96f+vfbR*0.04f,-6.0f,6.0f);
-            tankR_[i][tankPosR_[i]]=std::clamp(inR*0.21f*sign+vfbR*0.96f+vfbL*0.04f,-6.0f,6.0f);
+            tankL_[i][tankPosL_[i]]=std::clamp(inL*0.36f*sign+vfbL*0.94f+vfbR*0.06f,-6.0f,6.0f);
+            tankR_[i][tankPosR_[i]]=std::clamp(inR*0.36f*sign+vfbR*0.94f+vfbL*0.06f,-6.0f,6.0f);
             tankPosL_[i]=(tankPosL_[i]+1)%tankL_[i].size();
             tankPosR_[i]=(tankPosR_[i]+1)%tankR_[i].size();
             wetL+=vL[i]*sign;
             wetR+=vR[i]*((i&2)?1.0f:-1.0f);
         }
-        wetL=wetL*0.19f+earlyL*0.24f;
-        wetR=wetR*0.19f+earlyR*0.24f;
+        // Stronger diffuse tail, clearer early reflections; keep wet return independent of dry.
+        const float tailGain=(type==0?0.31f:(type==1?0.47f:0.42f));
+        wetL=wetL*tailGain+earlyL*(type==0?0.48f:0.29f);
+        wetR=wetR*tailGain+earlyR*(type==0?0.48f:0.29f);
         for(int i=0;i<4;i++){
-            wetL=allpass(wetL,outDiffL_[i],odPosL_[i],0.55f);
-            wetR=allpass(wetR,outDiffR_[i],odPosR_[i],0.55f);
+            const float g=(type==0?0.43f:(type==1?0.69f:0.60f));
+            wetL=allpass(wetL,outDiffL_[i],odPosL_[i],g);
+            wetR=allpass(wetR,outDiffR_[i],odPosR_[i],g);
         }
         const float cleanL=wetL-dcXL_+0.995f*dcYL_;
         const float cleanR=wetR-dcXR_+0.995f*dcYR_;
         dcXL_=wetL;dcYL_=cleanL;dcXR_=wetR;dcYR_=cleanR;
         // Keep legacy dry-gain contract used by wet-only AUX subtraction in NordPianoEngine.
-        L=dryL*(1.0f-mix*0.28f)+cleanL*(mix*0.72f);
-        R=dryR*(1.0f-mix*0.28f)+cleanR*(mix*0.72f);
+        L=dryL*(1.0f-mix*0.28f)+cleanL*(mix*1.02f);
+        R=dryR*(1.0f-mix*0.28f)+cleanR*(mix*1.02f);
     }
 private:
     static float readDelay(const std::vector<float>& b,size_t write,float delay){

@@ -17,7 +17,7 @@ function updateMainDashboard(serverState) {
   const first=loaded[0]?.source?.name || 'NO SAMPLE LOADED';
   const extra=loaded.length>1 ? `  +${loaded.length-1} LAYER${loaded.length>2?'S':''}` : '';
   setText('lcdPianoPreset',first+extra);
-  const synthId=Math.max(1,Math.min(48,Number(state.synthPresetId)||1));
+  const synthId=Math.max(1,Math.min(120,Number(state.synthPresetId)||1));
   setText('lcdSynthPreset',typeof SYNTH_PRESET_NAMES!=='undefined' ? SYNTH_PRESET_NAMES[synthId] || 'ANALOG PATCH' : 'ANALOG PATCH');
   setText('lcdOrganPreset',typeof ORGAN_MODELS!=='undefined' ? ORGAN_MODELS[state.organModel] || 'B3 TONEWHEEL' : 'B3 TONEWHEEL');
   [['Piano',state.pianoEnabled],['Synth',state.synthEnabled],['Organ',state.organEnabled]].forEach(([name,on])=>{

@@ -76,7 +76,7 @@ struct EqBandParams {
 // 29 parámetros originales + extensiones analógicas compatibles con presets antiguos
 struct SynthLayerConfig {
     bool enabled = false;
-    int waveType = 0;           // 0=Saw, 1=Square, 2=Triangle, 3=Sine, 4=SuperSaw, 5=Noise, 6=Wavetable, 7=Sample
+    int waveType = 0;           // 0=Saw, 1=Pulse, 2=Triangle, 3=Sine, 4=SuperSaw, 5=Noise, 6=Wavetable, 7=HardSync, 8=DCO, 9=Dual, 10=FM, 11=SuperPulse, 12=Ring, 13=Formant, 14=Folder
     float volume = 0.75f;
     float pan = 0.0f;
     int octave = 0;             // -2 a +2
@@ -99,7 +99,7 @@ struct SynthLayerConfig {
     float velToAmp = 1.0f;      // 0.0 a 2.0
     int wavetableIdx = 0;       // 0 a 5
     std::string samplePath = "";
-    int filterType = 0;         // 0=LP, 1=HP, 2=BP
+    int filterType = 0;         // 0=LP, 1=HP, 2=BP, 3=Notch
     float filterEnvAmt = 0.0f;  // -1.0 a +1.0
     float filterKeyTrack = 0.5f;
     float filtAttackSec = 0.01f;
@@ -201,6 +201,10 @@ struct SynthPresetParams {
     int synthPresetId = 1;
     float synthMasterVol = 0.80f;
     float synthMacroCutoff = 1.0f;
+    int synthVoiceMode = 0;      // 0 poly, 1 mono/retrigger, 2 mono legato
+    float synthPortamento = 0.0f; // seconds
+    int synthGlideMode = 1;      // 0 always, 1 only when keys overlap
+    float synthSlide = 0.0f;     // transient pitch scoop, semitones
     SynthLayerConfig synthLayers[3];
     SynthLfoPatch synthLfos[4];
     SynthEnvelopePatch synthEnvelopes[3];

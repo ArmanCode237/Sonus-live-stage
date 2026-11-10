@@ -105,20 +105,24 @@ void WorkstationHost::registerAllParameters() {
     registry_.registerParam("shimmerReverbMode", 0.0f, 3.0f, [this](float v) { setShimmerReverbMode(static_cast<int>(v)); });
     registry_.registerParam("shimmerColorMode", 0.0f, 1.0f, [this](float v) { setShimmerColorMode(static_cast<int>(v)); });
 
-    // Módulo 2: Synth 3-Layers
+    // Módulo 2: Synth 3-Layers (Ampliado a 120 Presets y 15 Formas de Onda: 0..14)
     registry_.registerParam("synthEnabled", 0.0f, 1.0f, [this](float v) { multiSynth_.synthEnabled = (v >= 0.5f); });
-    registry_.registerParam("synthPresetId", 1.0f, 48.0f, [this](float v) { multiSynth_.loadBuiltInSynthPreset(static_cast<int>(v)); });
+    registry_.registerParam("synthPresetId", 1.0f, 120.0f, [this](float v) { multiSynth_.loadBuiltInSynthPreset(std::clamp(static_cast<int>(std::lround(v)), 1, 120)); });
     registry_.registerParam("synthMasterVol", 0.0f, 1.5f, [this](float v) { multiSynth_.synthMasterVol = v; });
     registry_.registerParam("synthMacroCutoff", 0.1f, 2.0f, [this](float v) { multiSynth_.synthMacroCutoff = v; });
+    registry_.registerParam("synthVoiceMode",0.f,2.f,[this](float v){multiSynth_.synthVoiceMode=std::clamp(static_cast<int>(std::lround(v)),0,2);multiSynth_.allNotesOff();});
+    registry_.registerParam("synthPortamento",0.f,2.f,[this](float v){multiSynth_.synthPortamento=v;});
+    registry_.registerParam("synthGlideMode",0.f,1.f,[this](float v){multiSynth_.synthGlideMode=std::clamp(static_cast<int>(std::lround(v)),0,1);});
+    registry_.registerParam("synthSlide",-12.f,12.f,[this](float v){multiSynth_.synthSlide=v;});
 
     for (int l = 0; l < 3; ++l) {
         std::string p = "L" + std::to_string(l + 1) + "_";
         registry_.registerParam(p + "en",     0.0f, 1.0f,    [this, l](float v) { multiSynth_.layers[l].cfg.enabled = (v >= 0.5f); });
-        registry_.registerParam(p + "wave",   0.0f, 9.0f,    [this, l](float v) { multiSynth_.layers[l].cfg.waveType = std::clamp(static_cast<int>(v), 0, 9); });
+        registry_.registerParam(p + "wave",   0.0f, 14.0f,   [this, l](float v) { multiSynth_.layers[l].cfg.waveType = std::clamp(static_cast<int>(std::lround(v)), 0, 14); });
         registry_.registerParam(p + "vol",    0.0f, 1.5f,    [this, l](float v) { multiSynth_.layers[l].cfg.volume = v; });
         registry_.registerParam(p + "pan",   -1.0f, 1.0f,    [this, l](float v) { multiSynth_.layers[l].cfg.pan = v; });
-        registry_.registerParam(p + "oct",   -2.0f, 2.0f,    [this, l](float v) { multiSynth_.layers[l].cfg.octave = std::clamp(static_cast<int>(v), -2, 2); });
-        registry_.registerParam(p + "semi", -12.0f, 12.0f,   [this, l](float v) { multiSynth_.layers[l].cfg.semitones = std::clamp(static_cast<int>(v), -12, 12); });
+        registry_.registerParam(p + "oct",   -2.0f, 2.0f,    [this, l](float v) { multiSynth_.layers[l].cfg.octave = std::clamp(static_cast<int>(std::lround(v)), -2, 2); });
+        registry_.registerParam(p + "semi", -12.0f, 12.0f,   [this, l](float v) { multiSynth_.layers[l].cfg.semitones = std::clamp(static_cast<int>(std::lround(v)), -12, 12); });
         registry_.registerParam(p + "det",  -50.0f, 50.0f,   [this, l](float v) { multiSynth_.layers[l].cfg.detuneCents = v; });
         registry_.registerParam(p + "cut",   40.0f, 20000.0f,[this, l](float v) { multiSynth_.layers[l].cfg.cutoffHz = v; });
         registry_.registerParam(p + "res",    0.5f, 12.0f,   [this, l](float v) { multiSynth_.layers[l].cfg.resonanceQ = v; });
@@ -127,34 +131,34 @@ void WorkstationHost::registerAllParameters() {
         registry_.registerParam(p + "sus",    0.0f, 1.0f,    [this, l](float v) { multiSynth_.layers[l].cfg.sustainLevel = v; });
         registry_.registerParam(p + "rel",    0.02f, 6.0f,   [this, l](float v) { multiSynth_.layers[l].cfg.releaseSec = v; });
 
-        registry_.registerParam(p + "unison",   1.0f, 8.0f, [this, l](float v) { multiSynth_.layers[l].cfg.unisonVoices = std::clamp(static_cast<int>(v), 1, 8); });
+        registry_.registerParam(p + "unison",   1.0f, 8.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.unisonVoices = std::clamp(static_cast<int>(std::lround(v)), 1, 8); });
         registry_.registerParam(p + "uniDet",   0.0f, 50.0f, [this, l](float v) { multiSynth_.layers[l].cfg.unisonDetune = v; });
         registry_.registerParam(p + "uniSprd",  0.0f, 1.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.unisonSpread = v; });
         registry_.registerParam(p + "phase",    0.0f, 1.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.phaseOffset = v; });
         registry_.registerParam(p + "keyTrk",   0.0f, 2.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.keyTrack = v; });
         registry_.registerParam(p + "velCut",   0.0f, 1.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.velToCutoff = v; });
         registry_.registerParam(p + "velAmp",   0.0f, 2.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.velToAmp = v; });
-        registry_.registerParam(p + "wtIdx",    0.0f, 63.0f, [this, l](float v) { multiSynth_.layers[l].cfg.wavetableIdx = std::clamp(static_cast<int>(v), 0, 63); });
-        registry_.registerParam(p + "filtType", 0.0f, 2.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.filterType = std::clamp(static_cast<int>(v), 0, 2); });
+        registry_.registerParam(p + "wtIdx",    0.0f, 63.0f, [this, l](float v) { multiSynth_.layers[l].cfg.wavetableIdx = std::clamp(static_cast<int>(std::lround(v)), 0, 63); });
+        registry_.registerParam(p + "filtType", 0.0f, 3.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.filterType = std::clamp(static_cast<int>(std::lround(v)), 0, 3); });
         registry_.registerParam(p + "filtEnv", -1.0f, 1.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.filterEnvAmt = v; });
         registry_.registerParam(p + "filtKT",   0.0f, 1.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.filterKeyTrack = v; });
         registry_.registerParam(p + "fAtk",     0.001f, 4.0f,[this, l](float v) { multiSynth_.layers[l].cfg.filtAttackSec = v; });
         registry_.registerParam(p + "fDec",     0.005f, 10.0f,[this, l](float v) { multiSynth_.layers[l].cfg.filtDecaySec = v; });
         registry_.registerParam(p + "fSus",     0.0f, 1.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.filtSustainLvl = v; });
         registry_.registerParam(p + "fRel",     0.005f, 10.0f,[this, l](float v) { multiSynth_.layers[l].cfg.filtReleaseSec = v; });
-        registry_.registerParam(p + "saw", 0.0f, 1.0f, [this, l](float v) { multiSynth_.layers[l].cfg.sawLevel = v; });
-        registry_.registerParam(p + "pulse", 0.0f, 1.0f, [this, l](float v) { multiSynth_.layers[l].cfg.pulseLevel = v; });
-        registry_.registerParam(p + "pw", 0.05f, 0.95f, [this, l](float v) { multiSynth_.layers[l].cfg.pulseWidth = v; });
+        registry_.registerParam(p + "saw",      0.0f, 1.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.sawLevel = v; });
+        registry_.registerParam(p + "pulse",    0.0f, 1.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.pulseLevel = v; });
+        registry_.registerParam(p + "pw",       0.05f, 0.95f,[this, l](float v) { multiSynth_.layers[l].cfg.pulseWidth = v; });
         registry_.registerParam(p + "pwmDepth", 0.0f, 0.45f, [this, l](float v) { multiSynth_.layers[l].cfg.pwmDepth = v; });
-        registry_.registerParam(p + "pwmRate", 0.05f, 12.0f, [this, l](float v) { multiSynth_.layers[l].cfg.pwmRateHz = v; });
-        registry_.registerParam(p + "sub", 0.0f, 1.0f, [this, l](float v) { multiSynth_.layers[l].cfg.subLevel = v; });
-        registry_.registerParam(p + "noise", 0.0f, 1.0f, [this, l](float v) { multiSynth_.layers[l].cfg.noiseLevel = v; });
-        registry_.registerParam(p + "osc2", 0.0f, 1.0f, [this, l](float v) { multiSynth_.layers[l].cfg.osc2Level = v; });
-        registry_.registerParam(p + "osc2Det", -50.0f, 50.0f, [this, l](float v) { multiSynth_.layers[l].cfg.osc2Detune = v; });
-        registry_.registerParam(p + "osc2Semi", -12.0f, 12.0f, [this, l](float v) { multiSynth_.layers[l].cfg.osc2Semitones = std::clamp(static_cast<int>(v), -12, 12); });
-        registry_.registerParam(p + "osc2Wave", 0.0f, 2.0f, [this, l](float v) { multiSynth_.layers[l].cfg.osc2Wave = std::clamp(static_cast<int>(v), 0, 2); });
-        registry_.registerParam(p + "hpf", 20.0f, 6000.0f, [this, l](float v) { multiSynth_.layers[l].cfg.highpassHz = v; });
-        registry_.registerParam(p + "drive", 0.0f, 1.0f, [this, l](float v) { multiSynth_.layers[l].cfg.drive = v; });
+        registry_.registerParam(p + "pwmRate",  0.05f, 12.0f,[this, l](float v) { multiSynth_.layers[l].cfg.pwmRateHz = v; });
+        registry_.registerParam(p + "sub",      0.0f, 1.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.subLevel = v; });
+        registry_.registerParam(p + "noise",    0.0f, 1.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.noiseLevel = v; });
+        registry_.registerParam(p + "osc2",     0.0f, 1.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.osc2Level = v; });
+        registry_.registerParam(p + "osc2Det", -50.0f, 50.0f,[this, l](float v) { multiSynth_.layers[l].cfg.osc2Detune = v; });
+        registry_.registerParam(p + "osc2Semi",-12.0f, 12.0f,[this, l](float v) { multiSynth_.layers[l].cfg.osc2Semitones = std::clamp(static_cast<int>(std::lround(v)), -12, 12); });
+        registry_.registerParam(p + "osc2Wave", 0.0f, 2.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.osc2Wave = std::clamp(static_cast<int>(std::lround(v)), 0, 2); });
+        registry_.registerParam(p + "hpf",      20.0f, 6000.0f, [this, l](float v) { multiSynth_.layers[l].cfg.highpassHz = v; });
+        registry_.registerParam(p + "drive",    0.0f, 1.0f,  [this, l](float v) { multiSynth_.layers[l].cfg.drive = v; });
     }
 
     // Módulo 3: Órgano
@@ -311,6 +315,10 @@ void WorkstationHost::applySynthPresetJson(const json& p) {
     multiSynth_.synthEnabled = p.value("synthEnabled", multiSynth_.synthEnabled);
     multiSynth_.synthMasterVol = p.value("synthMasterVol", multiSynth_.synthMasterVol);
     multiSynth_.synthMacroCutoff = p.value("synthMacroCutoff", multiSynth_.synthMacroCutoff);
+    multiSynth_.synthVoiceMode = std::clamp(p.value("synthVoiceMode",multiSynth_.synthVoiceMode),0,2);
+    multiSynth_.synthPortamento = std::clamp(p.value("synthPortamento",multiSynth_.synthPortamento),0.f,2.f);
+    multiSynth_.synthGlideMode = std::clamp(p.value("synthGlideMode",multiSynth_.synthGlideMode),0,1);
+    multiSynth_.synthSlide = std::clamp(p.value("synthSlide",multiSynth_.synthSlide),-12.f,12.f);
     if (p.contains("layers") && p["layers"].is_array()) {
         for (size_t i = 0; i < std::min<size_t>(3, p["layers"].size()); ++i) {
             const auto& lp = p["layers"][i];

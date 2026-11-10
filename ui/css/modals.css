@@ -72,7 +72,34 @@
 .row-group-select { background: #161b24; color: #93c5fd; border: 1px solid #334155; border-radius: 4px; padding: 3px 6px; font-size: 11px; cursor: pointer; }
 
 /* V7 independent organ ensemble controls */
-.organ-ensemble-group{grid-column:1/-1;border-top:2px solid #b42630;background:linear-gradient(145deg,#273035,#192227);}
-.organ-ensemble-heading{display:flex;align-items:center;justify-content:space-between;gap:8px;}
-.organ-ensemble-knobs{display:grid;grid-template-columns:repeat(auto-fit,minmax(85px,1fr));gap:10px;justify-items:center;}
-.organ-ensemble-knobs .knob-cell{max-width:110px;min-width:0;}
+.organ-ensemble-group {
+    grid-column: 1/-1;
+    border-top: 2px solid #b42630;
+    background: linear-gradient(145deg, #273035, #192227);
+    /* Añadimos un poco de padding para que las knobs no toquen los bordes */
+    padding: 15px; 
+}
+
+.organ-ensemble-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 15px; /* Espacio entre el título y las perillas */
+}
+
+.organ-ensemble-knobs {
+    display: flex;
+    flex-wrap: wrap;       
+    gap: 10px;             
+    justify-content: center; 
+    align-items: center;   
+}
+
+/* CORRECCIÓN AQUÍ: */
+.organ-ensemble-knobs .knob-cell {
+    width: 85px;           /* Ancho fijo para que todas sean iguales (como en tu primer código) */
+    min-width: 85px;       /* Evita que se encojan (reemplaza el min-width: 0) */
+    max-width: 110px;      /* Límite máximo si el contenido interno es muy grande */
+    flex-shrink: 0;        /* Clave: Le dice a Flexbox "NO encojas este elemento, mejor salta de fila" */
+}

@@ -769,6 +769,8 @@ json serializeParams(const SynthPresetParams& p) {
         {"synthPresetId", p.synthPresetId},
         {"synthMasterVol", p.synthMasterVol},
         {"synthMacroCutoff", p.synthMacroCutoff},
+        {"synthVoiceMode",p.synthVoiceMode},{"synthPortamento",p.synthPortamento},
+        {"synthGlideMode",p.synthGlideMode},{"synthSlide",p.synthSlide},
         {"synthLayers", synthLayersArr},
         {"synthLfos", synthLfoArr},
         {"synthEnvelopes", synthEnvArr},
@@ -934,6 +936,10 @@ SynthPresetParams deserializeParams(const json& j, const SynthPresetParams& fall
     p.synthPresetId     = j.value("synthPresetId", p.synthPresetId);
     p.synthMasterVol    = j.value("synthMasterVol", p.synthMasterVol);
     p.synthMacroCutoff  = j.value("synthMacroCutoff", p.synthMacroCutoff);
+    p.synthVoiceMode = j.value("synthVoiceMode", p.synthVoiceMode);
+    p.synthPortamento = j.value("synthPortamento",p.synthPortamento);
+    p.synthGlideMode = j.value("synthGlideMode",p.synthGlideMode);
+    p.synthSlide = j.value("synthSlide",p.synthSlide);
     p.synthLfoEnabled = j.value("synthLfoEnabled", p.synthLfoEnabled);
     p.synthLfoWave = j.value("synthLfoWave", p.synthLfoWave);
     p.synthLfoRate = j.value("synthLfoRate", p.synthLfoRate);
@@ -1544,8 +1550,8 @@ int main(int argc, char* argv[]) {
     // previous executable can still own :8080 after the new binary was compiled.
     // The browser should never claim a factory patch was loaded based only on the
     // HTTP POST; this GET reads the actual active engine parameters.
-    constexpr int kFactoryPresetCount = 48;
-    const std::string factoryBuild = "Live Stage V6.2 / Factory API 2";
+    constexpr int kFactoryPresetCount = 120;
+    const std::string factoryBuild = "Live Stage V8 / Factory API 3 (120 audio patches)";
     auto factoryState = [&]() {
         const auto p = engine.getCurrentParams();
         json layerTimbres = json::array();
@@ -1560,7 +1566,7 @@ int main(int argc, char* argv[]) {
         }
         return json({
             {"ok", true}, {"build", factoryBuild},
-            {"apiVersion", 2}, {"maxFactoryPresets", kFactoryPresetCount},
+            {"apiVersion", 3}, {"maxFactoryPresets", kFactoryPresetCount},
             {"presetId", p.synthPresetId}, {"synthEnabled", p.synthEnabled},
             {"synthMasterVol", p.synthMasterVol},
             {"enabledLayers", enabledLayers}, {"layerTimbres", layerTimbres},
@@ -1578,14 +1584,13 @@ int main(int argc, char* argv[]) {
         const auto body = json::parse(req.body, nullptr, false);
         if (!body.is_object() || !body.contains("id") || !body["id"].is_number_integer()) {
             res.status = 400;
-            res.set_content(R"({"ok":false,"error":"Se requiere un id entero de 1 a 48"})", "application/json");
+            res.set_content(R"({"ok":false,"error":"Se requiere un id entero de 1 a 120"})", "application/json");
             return;
         }
         const int id = body["id"].get<int>();
         if (id < 1 || id > kFactoryPresetCount) {
             res.status = 400;
-            // Observa la palabra "json" añadida como delimitador
-            res.set_content(R"json({"ok":false,"error":"Preset fuera de rango (1 a 48)"})json", "application/json");
+            res.set_content(R"json({"ok":false,"error":"Preset fuera de rango (1 a 120)"})json", "application/json");
             return;
         }
         const bool changed = engine.applyParamById("synthPresetId", static_cast<float>(id), false);
@@ -1675,6 +1680,10 @@ int main(int argc, char* argv[]) {
                 {"synthEnabled", engine.getSynthEnabled()},
                 {"synthMasterVol", engine.getSynthMasterVol()},
                 {"synthMacroCutoff", engine.getSynthMacroCutoff()},
+                {"synthVoiceMode",engine.getCurrentParams().synthVoiceMode},
+                {"synthPortamento",engine.getCurrentParams().synthPortamento},
+                {"synthGlideMode",engine.getCurrentParams().synthGlideMode},
+                {"synthSlide",engine.getCurrentParams().synthSlide},
                 {"layers", engine.getSynthLayersJson()},
                 {"lfos", engine.getSynthLFOsJson()},
                 {"envelopes", engine.getSynthEnvelopesJson()}

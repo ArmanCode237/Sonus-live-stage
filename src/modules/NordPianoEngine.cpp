@@ -196,6 +196,10 @@ void NordPianoEngine::applyPreset(const SynthPresetParams& p) {
     multiSynth_.synthPresetId = p.synthPresetId;
     multiSynth_.synthMasterVol = p.synthMasterVol;
     multiSynth_.synthMacroCutoff = p.synthMacroCutoff;
+    multiSynth_.synthVoiceMode = p.synthVoiceMode;
+    multiSynth_.synthPortamento = p.synthPortamento;
+    multiSynth_.synthGlideMode = p.synthGlideMode;
+    multiSynth_.synthSlide = p.synthSlide;
     for (int i = 0; i < 3; ++i) {
         multiSynth_.layers[i].cfg = p.synthLayers[i];
     }
@@ -378,6 +382,10 @@ SynthPresetParams NordPianoEngine::getCurrentParams() const {
     p.synthPresetId = multiSynth_.synthPresetId;
     p.synthMasterVol = multiSynth_.synthMasterVol;
     p.synthMacroCutoff = multiSynth_.synthMacroCutoff;
+    p.synthVoiceMode = multiSynth_.synthVoiceMode;
+    p.synthPortamento = multiSynth_.synthPortamento;
+    p.synthGlideMode = multiSynth_.synthGlideMode;
+    p.synthSlide = multiSynth_.synthSlide;
     for (int i = 0; i < 3; ++i) {
         p.synthLayers[i] = multiSynth_.layers[i].cfg;
     }
