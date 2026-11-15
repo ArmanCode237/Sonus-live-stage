@@ -1,2 +1,15 @@
 build
+build-*/
 samples
+A-archivos_no_usados
+history
+*.log
+improveRef
+
+
+# MT-32 ROM dumps are Roland firmware: never commit them
+roms
+roms/*
+!roms/mt32/
+roms/mt32/*
+!roms/mt32/LEEME.txt

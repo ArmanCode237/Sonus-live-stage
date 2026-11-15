@@ -1,0 +1,25 @@
+#pragma once
+// Common includes for the HTTP route translation units.
+#include "app/StageApp.h"
+#include "app/HardwareManager.h"
+#include "core/LibraryPathRelocation.h"
+#include "loaders/BankLoader.h"
+#include "loaders/DecodedSampleCache.h"
+#include "loaders/InstrumentPool.h"
+#include "loaders/SampleLibraryManager.h"
+#include "loaders/Sf2Loader.h"
+#include <algorithm>
+#include <atomic>
+#include <cctype>
+#include <chrono>
+#include <cmath>
+#include <fstream>
+#include <functional>
+#include <iomanip>
+#include <iostream>
+#include <optional>
+#include <random>
+#include <set>
+#include <sstream>
+#include <stdexcept>
+#include <thread>

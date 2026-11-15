@@ -1,5 +1,6 @@
 #include "NsmpLoader.h"
 #include "BankLoader.h"
+#include "NsmpRegionDecoder.h"
 #include <atomic>
 #include <fstream>
 #include <iostream>
@@ -53,11 +54,7 @@ struct NsmpSectionInfo {
     size_t endOffset = 0;
 };
 
-struct NsmpMark {
-    uint32_t word = 0;
-    uint32_t sample = 0;
-    bool loopDecay = false;
-};
+using NsmpMark = NsmpStreamMarker;
 
 struct DecodedNw1Stroke {
     std::vector<int32_t> chL;
@@ -343,7 +340,51 @@ bool NsmpLoader::loadNsmpNative(const std::string& filePath, PianoInstrument& ou
     outInstrument.name = instName;
     outInstrument.formatType = "NORD SAMPLE (" + ext + ")";
     outInstrument.sourcePath = filePath;
+    outInstrument.sampleUnison={};outInstrument.sampleVibrato={};
+    outInstrument.repeatAlternateCounts.fill(0);
+    outInstrument.repeatAlternateKeys={};
     outInstrument.strokes.clear();
+
+    // Codec-4 per-key alternates and voicing. The serialized parameter units
+    // are preserved, not projected onto guessed synth/FX controls.
+    if (codec == 4) for (const auto& sec : sections) {
+        if (sec.tag.size() >= 3 && sec.tag.substr(sec.tag.size()-3) == "map") {
+            const size_t rows = sec.payloadOffset + 6;
+            if (rows + 128*10 + 31 <= sec.endOffset) {
+                if (bytes[rows+6] != 0xff) for (size_t key=0;key<128;++key) {
+                    const size_t at=rows+key*10+6;
+                    const uint8_t a=bytes[at], b=bytes[at+1], c=bytes[at+2], d=bytes[at+3];
+                    auto& count=outInstrument.repeatAlternateCounts[key];
+                    auto& dest=outInstrument.repeatAlternateKeys[key];
+                    if(a<128 && a!=key && (c==a || d==a))dest[count++]=a;
+                    if(b<128 && b!=key && b!=a && (c==b || d==b) && count<2)dest[count++]=b;
+                }
+                const size_t at=rows+128*10;
+                auto& meta=outInstrument.sampleUnison;
+                meta.available=true;meta.mode=bytes[at];meta.topKey=bytes[at+1];
+                for(int k=0;k<4;++k)meta.detuneRaw[k]=readU16BE_N(&bytes[at+2+2*k]);
+                for(int k=0;k<3;++k)meta.pan[k]=bytes[at+10+k];
+                for(int k=0;k<4;++k){
+                    meta.voiceCounts[k]=bytes[at+13+k];
+                    meta.gainRaw[k]=readU24BE_N(&bytes[at+17+3*k]);
+                }
+                meta.randomStrokeMode=bytes[at+29];
+                meta.blockRandomSustPed=bytes[at+30];
+            }
+            break;
+        }
+    }
+    if(codec == 4)for(const auto& sec:sections){
+        if(sec.tag.size()>=3 && sec.tag.substr(sec.tag.size()-3)=="sty" && sec.size==108){
+            const size_t at=sec.payloadOffset+95;
+            if(bytes[at]<=1){
+                outInstrument.sampleVibrato.available=true;
+                outInstrument.sampleVibrato.enabled=bytes[at]!=0;
+                for(int k=0;k<9;++k)outInstrument.sampleVibrato.raw[k]=bytes[at+1+k];
+            }
+            break;
+        }
+    }
 
     int strokeIdx = 0;
     for (const auto* stkSec : stkSections) {
@@ -404,39 +445,28 @@ bool NsmpLoader::loadNsmpNative(const std::string& filePath, PianoInstrument& ou
         int32_t maxPeak = 1;
         for (int32_t v : decoded.chL) maxPeak = std::max(maxPeak, std::abs(v));
         for (int32_t v : decoded.chR) maxPeak = std::max(maxPeak, std::abs(v));
-        float scale = 1.0f / std::max<float>(8192.0f, static_cast<float>(maxPeak) * 1.15f);
-
-        s.audioL.resize(s.frames);
-        s.audioR.resize(s.frames);
+        const float scale = 1.0f / std::max<float>(12000.0f, static_cast<float>(maxPeak) * 1.18f);
+        const float packing = std::max(1.f, float(maxPeak)/32767.f);
+        s.sampleScale=scale*packing;
+        s.pcmL.resize(s.frames);
+        s.pcmR.resize(s.frames);
         for (uint32_t i = 0; i < s.frames; ++i) {
-            s.audioL[i] = static_cast<float>(decoded.chL[i]) * scale;
-            s.audioR[i] = static_cast<float>(decoded.chR[i]) * scale;
+            s.pcmL[i] = static_cast<int16_t>(std::lrint(std::clamp(float(decoded.chL[i])/packing,-32768.f,32767.f)));
+            s.pcmR[i] = static_cast<int16_t>(std::lrint(std::clamp(float(decoded.chR[i])/packing,-32768.f,32767.f)));
         }
 
-        if (pOff + 0x31 <= sEnd && !decoded.marks.empty()) {
-            uint32_t u1 = readU32BE_N(&bytes[pOff + 0x12]);
-            uint32_t u3 = readU32BE_N(&bytes[pOff + 0x24]);
-            uint32_t u4 = readU32BE_N(&bytes[pOff + 0x2d]);
-            if (u1 <= u3 && u3 < u4) {
-                uint32_t loopBeginWord = u3 - u1;
-                uint32_t endWord = u4 - u1;
-                int32_t shift = static_cast<int32_t>(decoded.marks.back().word) - static_cast<int32_t>(endWord);
-                for (const auto& mk : decoded.marks) {
-                    if (static_cast<int32_t>(mk.word) == static_cast<int32_t>(loopBeginWord) + shift ||
-                        mk.word == loopBeginWord) {
-                        uint32_t lStart = mk.sample / std::max(1, decoded.channelCount);
-                        if (lStart + 32 < s.frames) {
-                            s.loop.hasLoop = true;
-                            s.loop.start = lStart;
-                            s.loop.end = s.frames;
-                            s.loop.length = s.frames - lStart;
-                            s.decayCoef = 0.999996f;
-                        }
-                        break;
-                    }
-                }
+        const auto regions=decodeNsmpRegions(bytes.data()+pOff,sEnd-pOff,
+            s.frames,decoded.channelCount,decoded.marks);
+        if(regions.headerValid){
+            s.explicitOneShot=regions.oneShot;
+            s.alternateStartFrame=regions.alternateStart;
+            if(regions.hasLoop){
+                s.loop={true,false,regions.loopStart,s.frames-regions.loopStart,s.frames};
+                s.decayCoef=regions.decayCoef;
+                s.loopDecayDbPerS=regions.decayDbPerSecond;
             }
         }
+        s.readyFrames->store(s.frames,std::memory_order_release);
         outInstrument.strokes.push_back(std::move(s));
     }
 
@@ -454,8 +484,8 @@ bool NsmpLoader::loadNsmpNative(const std::string& filePath, PianoInstrument& ou
 
     outInstrument.zoneCount = static_cast<int>(outInstrument.strokes.size());
     size_t totalFloats = 0;
-    for (const auto& st : outInstrument.strokes) totalFloats += st.audioL.size() + st.audioR.size();
-    outInstrument.memoryMB = static_cast<double>(totalFloats * sizeof(float)) / (1024.0 * 1024.0);
+    for (const auto& st : outInstrument.strokes) totalFloats += st.pcmL.size() + st.pcmR.size();
+    outInstrument.memoryMB = static_cast<double>(totalFloats * sizeof(int16_t)) / (1024.0 * 1024.0);
 
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t0).count();
     outStatusMsg = "Nord Sample decodificado: " + outInstrument.name +
@@ -487,8 +517,8 @@ bool NsmpLoader::loadNsmpFallback(const std::string& filePath, PianoInstrument& 
         s.hikey = (k + 3 > 108) ? 127 : (k + 1);
         s.frames = frames;
         s.sampleRate = sr;
-        s.audioL.resize(frames);
-        s.audioR.resize(frames);
+        s.pcmL.resize(frames);
+        s.pcmR.resize(frames);
 
         double f0 = 440.0 * std::pow(2.0, (k - 69.0) / 12.0);
         double period = sr / f0;
@@ -497,6 +527,7 @@ bool NsmpLoader::loadNsmpFallback(const std::string& filePath, PianoInstrument& 
         s.decayCoef = 0.999995f;
 
         int maxH = std::min(16, static_cast<int>((sr * 0.42) / f0));
+        s.sampleScale=1.f/32768.f;
         for (uint32_t n = 0; n < frames; ++n) {
             float L = 0.0f, R = 0.0f;
             for (int h = 1; h <= maxH; ++h) {
@@ -504,12 +535,13 @@ bool NsmpLoader::loadNsmpFallback(const std::string& filePath, PianoInstrument& 
                 L += static_cast<float>(std::sin(2.0 * 3.141592653589793 * (f0 * h) * n / sr + h * 0.4)) * amp;
                 R += static_cast<float>(std::sin(2.0 * 3.141592653589793 * (f0 * h * 1.001) * n / sr + h * 1.1)) * amp;
             }
-            s.audioL[n] = L * 0.25f;
-            s.audioR[n] = R * 0.25f;
+            s.pcmL[n] = static_cast<int16_t>(std::lrint(std::clamp(L*0.25f,-1.f,1.f)*32767.f));
+            s.pcmR[n] = static_cast<int16_t>(std::lrint(std::clamp(R*0.25f,-1.f,1.f)*32767.f));
         }
+        s.readyFrames->store(s.frames,std::memory_order_release);
         outInstrument.strokes.push_back(std::move(s));
     }
-    outInstrument.memoryMB = (outInstrument.strokes.size() * frames * 2 * sizeof(float)) / (1024.0 * 1024.0);
+    outInstrument.memoryMB = (outInstrument.strokes.size() * frames * 2 * sizeof(int16_t)) / (1024.0 * 1024.0);
     outStatusMsg = "Sample Synth cargado: " + outInstrument.name;
     return true;
 }

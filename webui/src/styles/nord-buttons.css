@@ -1,0 +1,288 @@
+/* LIVE STAGE — HARDWARE BUTTON FINISH · aesthetic-only · 2026-11-14
+   Reference: blue metallic, silver-grey and red stage-instrument fascia,
+   with concave black/ivory rocker caps and individual indicator lamps.
+   Deliberately no styles for the eight PROGRAM pads (.pad/.pads).
+   No component markup, event handlers, parameters or dimensions changed. */
+
+:root {
+  --nord-blue: #305264;
+  --nord-blue-light: #56798a;
+  --nord-blue-dark: #19313d;
+  --nord-metal: #aebbc3;
+  --nord-metal-light: #e2e7e9;
+  --nord-metal-dark: #667781;
+  --nord-black: #101214;
+  --nord-black-edge: #060708;
+  --nord-red: #ba1c29;
+  --nord-red-hi: #e33c45;
+  --nord-red-shade: #67121c;
+  --nord-button-rim: #58717e;
+  --nord-lamp-ring: #13181b;
+}
+:root[data-theme="studio"] {
+  --nord-blue: #304b60;
+  --nord-blue-light: #5c7a90;
+  --nord-blue-dark: #1b2e3d;
+  --nord-button-rim: #708c9e;
+  --nord-red: #c83c4b;
+  --nord-red-hi: #ed6570;
+}
+
+/* Black rocker, metallic perimeter and slightly inset, convex rubber thumb.
+   These rules affect the reusable hardware Btn, including ROTARY SLOW/FAST. */
+:is(.btn.hwbtn, .view--main .btn.hwbtn) .hwbtn__cap {
+  isolation: isolate;
+  border-radius: 6px;
+  border: 1px solid #050708;
+  background:
+    linear-gradient(90deg, #8e9ba326 0%, transparent 13%, transparent 86%, #0009 100%),
+    linear-gradient(178deg, #505b61 0%, #242b30 13%, #101416 53%, #060809 90%, #182027 100%);
+  box-shadow:
+    inset 0 1px 0 #f2f7f949,
+    inset 1px 0 0 #a0b2bb23,
+    inset -2px 0 2px #000c,
+    inset 0 -2px 0 #020304,
+    0 2px 0 #050709,
+    0 4px 0 #050608,
+    0 6px 9px #0009,
+    0 0 0 1px #6d83902e;
+  transition: transform .14s var(--ease), filter .14s var(--ease), box-shadow .14s var(--ease);
+}
+:is(.btn.hwbtn, .view--main .btn.hwbtn) .hwbtn__cap::before {
+  content: "";
+  position: absolute;
+  inset: 2px 3px 3px;
+  z-index: 0;
+  pointer-events: none;
+  border-radius: 5px;
+  border: 1px solid #a1aeb126;
+  box-shadow: inset 0 1px 0 #ffffff22, inset 0 -1px 2px #000;
+}
+:is(.btn.hwbtn, .view--main .btn.hwbtn) .hwbtn__cap::after {
+  content: "";
+  position: absolute;
+  left: 19%; right: 19%; bottom: -4px;
+  height: 2px;
+  border-radius: 50%;
+  background: linear-gradient(90deg, transparent, var(--nord-red) 50%, transparent);
+  opacity: .45;
+  pointer-events: none;
+}
+:is(.btn.hwbtn, .view--main .btn.hwbtn) .hwbtn__oval {
+  z-index: 1;
+  width: 73%;
+  height: 66%;
+  border-radius: 100px;
+  border: 1px solid #050607;
+  background:
+    linear-gradient(94deg,#0008,transparent 20%,transparent 82%,#0008),
+    linear-gradient(180deg,#474c4d 0%,#222629 13%,#181b1d 43%,#101315 74%,#050708 100%);
+  box-shadow:
+    inset 0 2px 1px #c3cbcc3d,
+    inset 0 -3px 3px #000e,
+    inset 1px 0 2px #ffffff18,
+    0 1px 0 #87939938,
+    0 2px 3px #0008;
+}
+:is(.btn.hwbtn, .view--main .btn.hwbtn) .hwbtn__label {
+  color: #d9e2e7;
+  font-weight: 800;
+  text-shadow: 0 1px 1px #000b;
+  transition: color .14s var(--ease);
+}
+:is(.btn.hwbtn:hover:not(:disabled), .view--main .btn.hwbtn:hover:not(:disabled)) .hwbtn__cap {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+  box-shadow:
+    inset 0 1px 0 #f2f7f96e,inset 1px 0 0 #a0b2bb30,inset -2px 0 2px #000c,
+    inset 0 -2px 0 #020304,0 3px 0 #050709,0 5px 0 #050608,
+    0 8px 13px #0009,0 0 0 1px #7895a15c;
+}
+:is(.btn.hwbtn:active:not(:disabled), .view--main .btn.hwbtn:active:not(:disabled)) .hwbtn__cap {
+  transform: translateY(2px);
+  filter: brightness(.87);
+  box-shadow: inset 0 3px 5px #000d,inset 0 1px 0 #ffffff24,
+    0 1px 0 #030404,0 2px 4px #0007,0 0 0 1px #50677245;
+}
+:is(.btn.hwbtn.is-active, .view--main .btn.hwbtn.is-active) .hwbtn__cap {
+  border-color: #566c74;
+  box-shadow: inset 0 1px 0 #ffffff4a,inset 0 -2px 2px #000a,
+    0 2px 0 #050608,0 4px 7px #0009,
+    0 0 0 1px #7299a14f,0 0 9px color-mix(in srgb,var(--led) 23%,transparent);
+}
+.btn.hwbtn.is-active .hwbtn__label { color: #fff; }
+
+/* The silver/ivory keycaps echo the light grey A/B controls in the photo. */
+:is(.btn--browse.hwbtn, .view--main .btn--browse.hwbtn) .hwbtn__cap {
+  background: linear-gradient(90deg,#ffffff4d,transparent 22%,transparent 76%,#0003),
+    linear-gradient(180deg,#e1e7e9 0%,#a9b7bf 20%,#758893 70%,#465662 100%);
+  border-color: #293740;
+  box-shadow: inset 0 1px 0 #fff9,inset 0 -2px 1px #2c3b49,
+    0 2px 0 #202b30,0 4px 7px #0009,0 0 0 1px #dce4e655;
+}
+:is(.btn--browse.hwbtn, .view--main .btn--browse.hwbtn) .hwbtn__oval {
+  border-color: #7e8c92;
+  background: linear-gradient(180deg,#f0f3f2 0%,#cbd4d5 28%,#a9b7bc 74%,#71838b 100%);
+  box-shadow: inset 0 1px 1px #fff,inset 0 -3px 3px #53626e65,
+    0 1px 0 #ffffff75,0 2px 3px #21303975;
+}
+.btn--browse.hwbtn .hwbtn__label { color: #dce9ef; }
+
+/* Red enamel is reserved for explicit primary and destructive actions. */
+:is(.btn--primary.hwbtn, .view--main .btn--primary.hwbtn) .hwbtn__cap {
+  border-color: #3b0b10;
+  background: linear-gradient(180deg,#ea6267,#bc2936 30%,#831723 76%,#4b0d14);
+  box-shadow: inset 0 1px 0 #ffb3b776,inset 0 -2px 0 #4a0b10,
+    0 2px 0 #27080b,0 4px 8px #000a,0 0 0 1px #f273764b;
+}
+:is(.btn--primary.hwbtn, .view--main .btn--primary.hwbtn) .hwbtn__oval { background:linear-gradient(180deg,#5e1b22,#300e13 55%,#15080b);border-color:#22080c; }
+.btn--primary.hwbtn .hwbtn__label { color:#ffe3e3; }
+.btn--danger.hwbtn .hwbtn__cap {
+  border-color:#2a080e;
+  background:linear-gradient(180deg,#a82d38,#6d1422 55%,#3a0a13);
+}
+.btn--danger.hwbtn .hwbtn__oval { background:linear-gradient(180deg,#451119,#1b090d); }
+
+/* Small LED inset into a metal ring; preserve existing ON/OFF colors/meaning. */
+:is(.btn.hwbtn, .view--main .btn.hwbtn) .hwbtn__led {
+  z-index: 3;
+  top: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--nord-lamp-ring);
+  border-radius: 50%;
+  box-shadow: inset 0 1px 2px #000e,0 0 0 1px #a9bbbf78;
+}
+:is(.btn.hwbtn, .view--main .btn.hwbtn) .hwbtn__led.is-on {
+  background: radial-gradient(circle at 40% 35%,#fff9,transparent 39%),var(--led);
+  box-shadow: 0 0 0 1px #aeb7ba,
+    0 0 5px var(--led),0 0 12px color-mix(in srgb,var(--led) 62%,transparent);
+}
+.view--main .rotary-btn.is-active .hwbtn__led.is-on {
+  background:radial-gradient(circle at 40% 35%,#fff9,transparent 39%),var(--green);
+  box-shadow:0 0 0 1px #aeb7ba,0 0 6px var(--green),0 0 12px #4cd9646b;
+}
+
+/* Standalone panel pushbuttons and stepped controls: a narrower black rocker. */
+.btn:not(.hwbtn):not(.btn--ghost), .icon-btn {
+  color: #e6edf0;
+  border: 1px solid #070b0e;
+  border-radius: 5px;
+  background: linear-gradient(145deg,#526b78 0%,#253640 9%,#1c252c 25%,#0b1014 75%,#07090b 100%);
+  box-shadow: inset 0 1px 0 #c7d6dc45,inset 1px 0 0 #ffffff0f,
+    inset 0 -2px 1px #030608,0 2px 0 #07090b,0 4px 7px #0007,
+    0 0 0 1px #7895a32f;
+  text-shadow: 0 1px 1px #000b;
+}
+.btn:not(.hwbtn):not(.btn--ghost):hover:not(:disabled), .icon-btn:hover:not(:disabled) {
+  color: #fff;
+  border-color: #223d4b;
+  background: linear-gradient(155deg,#71909d 0%,#344e5c 15%,#182732 66%,#0b141b);
+  box-shadow: inset 0 1px 0 #dfeaed63,0 2px 0 #07090b,0 5px 9px #0009;
+  transform: translateY(-1px);
+}
+.btn:not(.hwbtn):not(.btn--ghost):active:not(:disabled), .icon-btn:active:not(:disabled) {
+  transform: translateY(2px);
+  background: linear-gradient(180deg,#0b141a,#263843);
+  box-shadow: inset 0 2px 4px #000e,0 1px 0 #020405;
+}
+.btn:not(.hwbtn).btn--primary {
+  background:linear-gradient(180deg,#e65b63,#b41e2d 58%,#6a101b);
+  border-color:#57111a;
+  color:#fff;
+}
+.btn:not(.hwbtn).btn--danger {
+  background:linear-gradient(180deg,#ad3945,#711923 58%,#3e0c13);
+  border-color:#3a0b12;
+  color:#fff;
+}
+.btn:not(.hwbtn).is-active {
+  border-color:var(--nord-red-hi);
+  box-shadow:inset 0 1px 0 #f9e1e140,0 2px 0 #050608,
+    0 0 0 1px color-mix(in srgb,var(--nord-red-hi) 45%,transparent);
+}
+
+/* Photo-inspired oval switch; indicator is the same pseudo-element as before. */
+.led-switch, .rubber {
+  border: 1px solid #06090b;
+  border-radius: 6px;
+  background: linear-gradient(180deg,#56656c 0%,#252d31 20%,#11171a 65%,#080b0d 100%);
+  box-shadow: inset 0 1px 0 #ffffff64,inset 0 -2px 0 #030506,
+    0 2px 0 #060809,0 4px 7px #0008,0 0 0 1px #7e929c37;
+  transition: transform .13s var(--ease),filter .13s var(--ease),box-shadow .13s var(--ease);
+}
+.led-switch::before, .rubber::before {
+  width: 73%; height: 65%; border-radius: 30px;
+  border: 1px solid #030506;
+  background: linear-gradient(180deg,#44484b,#24272a 20%,#101316 74%,#07090a);
+  box-shadow: inset 0 1px 1px #e9eded38,inset 0 -2px 3px #000a,0 1px 2px #0009;
+}
+.led-switch::after {
+  z-index: 3;
+  width: 7px; height: 7px; top: 2px; right: 2px;
+  border: 1px solid #111619;
+  box-shadow: inset 0 1px 2px #000b,0 0 0 1px #b9c8cd55;
+}
+.led-switch.is-on::after {
+  background:radial-gradient(circle at 35% 28%,#fff8,transparent 40%),var(--led);
+  box-shadow:0 0 0 1px #adbcc0,0 0 6px var(--led),0 0 11px color-mix(in srgb,var(--led) 60%,transparent);
+}
+.led-switch:hover:not(:disabled), .rubber:hover:not(:disabled) { filter:brightness(1.17);transform:translateY(-1px); }
+.led-switch:active:not(:disabled), .rubber:active:not(:disabled) {
+  transform:translateY(2px);filter:brightness(.86);
+  box-shadow:inset 0 2px 3px #000c,0 1px 0 #030506;
+}
+.led-switch:disabled, .btn:disabled, .icon-btn:disabled {filter:saturate(.5);opacity:.43;}
+
+/* Tactile blue-steel keys for selection menus and module navigation.
+   Geometry, layout and pseudo-LED behavior remain those of existing tabs. */
+.tabs__tab, .subnav__item, .segmented__item {
+  border-color:#172b35;
+  background:linear-gradient(180deg,#3e5867,#243946 25%,#152832 85%,#10202a);
+  box-shadow:inset 0 1px 0 #bac8cc30,inset 0 -1px 0 #071017,0 2px 3px #0004;
+  color:#cbdbe2;
+  transition: background .14s var(--ease),transform .14s var(--ease),box-shadow .14s var(--ease),border-color .14s var(--ease),color .14s var(--ease);
+}
+.tabs__tab:hover:not(:disabled),.subnav__item:hover:not(:disabled),.segmented__item:hover:not(:disabled) {
+  background:linear-gradient(180deg,#58788b,#304d5f 40%,#1d3543);
+  border-color:#53758a;
+  color:#fff;
+}
+.tabs__tab.is-active,.subnav__item.is-active,.segmented__item.is-active {
+  color:#fff;
+  border-color:#7d939c;
+  background:linear-gradient(180deg,#536776,#324550 40%,#1d2b33);
+  box-shadow:inset 0 1px 0 #e0e6e44f,inset 0 -2px 2px #071219,
+    0 2px 0 #081117,0 0 0 1px #6885943d;
+}
+.tabs__tab:active:not(:disabled),.subnav__item:active:not(:disabled),.segmented__item:active:not(:disabled) {
+  transform:translateY(1px);box-shadow:inset 0 2px 4px #0009;
+}
+
+/* Special miniature keys and engraving on Perform and rack pages. */
+.edit-link, .layer-row__tag, .mixer-strip__select, .seq-step__rest {
+  border-radius:5px;
+  border:1px solid #1a313e;
+  background:linear-gradient(180deg,#547385,#2f4c5d 18%,#172c38 88%);
+  color:#f1f6f7;
+  box-shadow:inset 0 1px 0 #eff7fa4d,inset 0 -2px 0 #07121a,0 2px 4px #0006;
+  text-shadow:0 1px 1px #000a;
+}
+.layer-row.is-selected .layer-row__tag,.seq-step__rest[aria-pressed="true"] {
+  border-color:var(--nord-red-hi);
+  box-shadow:inset 0 1px 0 #eff7fa45,0 0 0 1px var(--nord-red-hi);
+}
+.led-choice__item.is-on {color:#f2f5f7;text-shadow:0 0 4px #ffffff24;}
+
+/* Keyboard-accessibility and stable animations. No changes to MAP attributes. */
+.btn:focus-visible,.icon-btn:focus-visible,.led-switch:focus-visible,.rubber:focus-visible,
+.tabs__tab:focus-visible,.subnav__item:focus-visible,.segmented__item:focus-visible,
+.layer-row__tag:focus-visible,.mixer-strip__select:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion:reduce) {
+  .btn.hwbtn .hwbtn__cap,.led-switch,.rubber,.btn:not(.hwbtn),.icon-btn,
+  .tabs__tab,.subnav__item,.segmented__item {transition:none;}
+}

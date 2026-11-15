@@ -1,5 +1,5 @@
 #pragma once
-#include "Nordtypes.h"
+#include "NordTypes.h"
 #include <string>
 
 namespace NordDSP {

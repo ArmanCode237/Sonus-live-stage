@@ -1,0 +1,20 @@
+{
+  "name": "Pipe Organ",
+  "factoryId": 7,
+  "params": {
+    "organModel": 7,
+    "organEnabled": true,
+    "organRotaryFast": false,
+    "drawbars": [
+      8,
+      8,
+      8,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  }
+}

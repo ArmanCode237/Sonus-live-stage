@@ -1,0 +1,7 @@
+DX7 factory library for Live Stage
+
+These 33 cartridges (32 voices each) are the built-in banks distributed with
+Dexed (https://github.com/asb2m10/dexed): "Dexed_01" by the Dexed project and
+the "SynprezFM" collection by Synprez, made freely available with Dexed.
+They are DX7 sysex voice data, played by the msfa engine (third_party/msfa).
+Live Stage is a private, non-commercial project; credit belongs to the authors.

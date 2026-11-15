@@ -1,0 +1,38 @@
+{
+  "name": "live-stage-webui",
+  "private": true,
+  "version": "30.0.0",
+  "type": "module",
+  "description": "Live Stage control surface (React). Built into ../ui/app and served by the C++ host.",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc -b",
+    "test": "vitest run",
+    "preview": "vite preview",
+    "smoke": "node scripts/smoke.mjs",
+    "smoke:shimmer": "node scripts/shimmer-smoke.mjs",
+    "smoke:ws": "node scripts/ws-smoke.mjs",
+    "smoke:synth": "node scripts/synth-v31-smoke.mjs",
+    "smoke:synth-library": "node scripts/synth-library-smoke.mjs",
+    "smoke:mappings": "node scripts/mapping-smoke.mjs",
+    "smoke:piano-sounds": "node scripts/piano-sound-smoke.mjs",
+    "audit:layout": "node scripts/layout-audit.mjs",
+    "build:offline": "node scripts/offline-build.cjs",
+    "smoke:v323": "node scripts/v323-smoke.mjs"
+  },
+  "dependencies": {
+    "react": "18.3.1",
+    "react-dom": "18.3.1",
+    "react-router-dom": "6.28.0"
+  },
+  "devDependencies": {
+    "@types/react": "18.3.12",
+    "@types/react-dom": "18.3.1",
+    "@vitejs/plugin-react": "4.3.4",
+    "playwright-core": "^1.49.1",
+    "typescript": "5.6.3",
+    "vite": "5.4.11",
+    "vitest": "2.1.8"
+  }
+}

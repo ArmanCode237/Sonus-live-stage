@@ -1,0 +1,20 @@
+{
+  "name": "Tonewheel C3",
+  "factoryId": 1,
+  "params": {
+    "organModel": 1,
+    "organEnabled": true,
+    "organRotaryFast": false,
+    "drawbars": [
+      8,
+      8,
+      8,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  }
+}

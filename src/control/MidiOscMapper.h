@@ -3,6 +3,9 @@
 #include <string>
 #include <thread>
 #include <atomic>
+#include <unordered_map>
+#include <mutex>
+#include <nlohmann/json.hpp>
 
 namespace NordDSP {
 
@@ -17,6 +20,8 @@ public:
     int getOscPort() const { return oscPort_.load(); }
     bool isOscRunning() const { return oscRunning_.load(); }
     std::string getLastOscAddress() const;
+    // Mapped OSC addresses live in ControlMappings (scopes, learn). Unmapped
+    // "/param/<id>" or "/<id>" messages still write that parameter in raw units.
 
 private:
     void oscThreadLoop(int port);

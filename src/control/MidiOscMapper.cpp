@@ -1,6 +1,7 @@
 #include "MidiOscMapper.h"
 #include <iostream>
 #include <cstring>
+#include <cmath>
 
 #if defined(_WIN32)
 #include <winsock2.h>
@@ -97,39 +98,38 @@ void MidiOscMapper::oscThreadLoop(int port) {
 #endif
 }
 
-void MidiOscMapper::parseOscPacket(const char* buf, int len) {
-    if (buf[0] != '/') return;
-    std::string addr(buf);
+void MidiOscMapper::parseOscPacket(const char* data,int len){
+    // OSC padded strings are not necessarily terminated within UDP payload.
+    if(!data||len<8||data[0]!='/')return;
+    const auto size=static_cast<size_t>(len);
+    auto readString=[&](size_t& pos,std::string& value)->bool{
+        if(pos>=size)return false;
+        const size_t begin=pos;
+        while(pos<size&&data[pos]!='\0')++pos;
+        if(pos==size||pos-begin>255)return false;
+        value.assign(data+begin,pos-begin);
+        pos=(pos+4)&~size_t(3);
+        return pos<=size;
+    };
+    size_t at=0;std::string address,tags;
+    if(!readString(at,address)||!readString(at,tags)||tags.size()<2||tags[0]!=',')return;
+    if(at+4>size)return;
+    const auto readBE=[&](){return (uint32_t(uint8_t(data[at]))<<24)|
+        (uint32_t(uint8_t(data[at+1]))<<16)|(uint32_t(uint8_t(data[at+2]))<<8)|uint8_t(data[at+3]);};
+    const uint32_t raw=readBE();
+    float value=0;
+    if(tags[1]=='f'){std::memcpy(&value,&raw,sizeof(value));}
+    else if(tags[1]=='i'){int32_t signedValue;std::memcpy(&signedValue,&raw,sizeof(raw));value=float(signedValue);}
+    else return;
+    if(!std::isfinite(value))return;
     {
         std::lock_guard<std::mutex> lock(oscMutex_);
-        lastOscAddress_ = addr;
+        lastOscAddress_=address;
     }
-
-    size_t pos = ((addr.size() + 4) / 4) * 4;
-    if (pos >= static_cast<size_t>(len) || buf[pos] != ',') return;
-
-    char typeTag = buf[pos + 1];
-    size_t argPos = pos + 4;
-    if (argPos + 4 > static_cast<size_t>(len)) return;
-
-    float val = 0.0f;
-    if (typeTag == 'f') {
-        uint32_t be = (static_cast<uint8_t>(buf[argPos]) << 24) |
-                      (static_cast<uint8_t>(buf[argPos + 1]) << 16) |
-                      (static_cast<uint8_t>(buf[argPos + 2]) << 8) |
-                       static_cast<uint8_t>(buf[argPos + 3]);
-        std::memcpy(&val, &be, sizeof(float));
-    } else if (typeTag == 'i') {
-        int32_t be = (static_cast<uint8_t>(buf[argPos]) << 24) |
-                     (static_cast<uint8_t>(buf[argPos + 1]) << 16) |
-                     (static_cast<uint8_t>(buf[argPos + 2]) << 8) |
-                      static_cast<uint8_t>(buf[argPos + 3]);
-        val = static_cast<float>(be);
-    }
-
-    // Soporta direcciones OSC tipo "/param/cutoff" o directamente "/cutoff"
-    std::string paramId = (addr.rfind("/param/", 0) == 0) ? addr.substr(7) : addr.substr(1);
-    host_.applyParamById(paramId, val, false);
+    // Mapped addresses (any scope) receive normalised 0..1 values.
+    if(host_.getMappings().handleOsc(address,value))return;
+    // Direct addressing is always raw (unit values).
+    const std::string paramId=(address.rfind("/param/",0)==0)?address.substr(7):address.substr(1);
+    host_.applyParamById(paramId,value,false);
 }
-
 } // namespace NordDSP

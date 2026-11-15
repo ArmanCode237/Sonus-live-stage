@@ -1,0 +1,20 @@
+{
+  "name": "Vintage VX",
+  "factoryId": 2,
+  "params": {
+    "organModel": 2,
+    "organEnabled": true,
+    "organRotaryFast": false,
+    "drawbars": [
+      8,
+      8,
+      8,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  }
+}

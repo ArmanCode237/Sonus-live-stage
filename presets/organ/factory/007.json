@@ -1,0 +1,20 @@
+{
+  "name": "Gospel Organ",
+  "factoryId": 6,
+  "params": {
+    "organModel": 6,
+    "organEnabled": true,
+    "organRotaryFast": false,
+    "drawbars": [
+      8,
+      8,
+      8,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  }
+}

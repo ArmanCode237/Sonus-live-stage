@@ -1,30 +1,29 @@
 #pragma once
+// Catalogue of every writable engine parameter: ID → range and setter.
+// MIDI / OSC mappings live in control/ControlMappings (scopes, learn, pickup).
 #include <string>
 #include <unordered_map>
 #include <functional>
 #include <mutex>
 #include <atomic>
-#include <array>
 #include <algorithm>
+#include <vector>
 #include <nlohmann/json.hpp>
 
 namespace NordDSP {
 
-struct MidiMappingBinding {
-    std::string paramId;
-    float minVal = 0.0f;
-    float maxVal = 1.0f;
-    bool active = false;
-};
-
 class ParameterRegistry {
 public:
     using SetterFn = std::function<void(float)>;
+    using WriteObserver = std::function<void(const std::string&, float)>;
 
     void registerParam(const std::string& id, float minV, float maxV, SetterFn setter) {
         std::lock_guard<std::mutex> lock(mutex_);
         params_[id] = {minV, maxV, std::move(setter)};
     }
+
+    /** Set once at start-up (before any thread writes). Called after every successful write. */
+    void setWriteObserver(WriteObserver observer) { observer_ = std::move(observer); }
 
     bool setParamValue(const std::string& id, float value, bool isNormalized0to1 = false) {
         SetterFn fn;
@@ -40,83 +39,39 @@ public:
         }
         if (fn) {
             fn(finalVal);
+            valueRevision_.fetch_add(1,std::memory_order_relaxed);
+            if (observer_) observer_(id, finalVal);
             return true;
         }
         return false;
     }
 
-    void armMidiLearn(const std::string& paramId) {
+    nlohmann::json exportParameterCatalog() const {
         std::lock_guard<std::mutex> lock(mutex_);
-        learningParamId_ = paramId;
-        midiLearnActive_.store(true);
+        std::vector<std::string> ids;
+        ids.reserve(params_.size());
+        for (const auto& item : params_) ids.push_back(item.first);
+        std::sort(ids.begin(),ids.end());
+        nlohmann::json catalog=nlohmann::json::array();
+        for(const auto& id:ids){
+            const auto& parameter=params_.at(id);
+            catalog.push_back({{"id",id},{"min",parameter.minVal},{"max",parameter.maxVal}});
+        }
+        return catalog;
     }
 
-    void cancelMidiLearn() {
-        midiLearnActive_.store(false);
+    bool hasParam(const std::string& id) const {
+        std::lock_guard<std::mutex> lock(mutex_); return params_.count(id) != 0;
     }
-
-    bool handleMidiCC(int ccNumber, int ccValue127) {
-        if (ccNumber < 0 || ccNumber >= 128) return false;
-
-        if (midiLearnActive_.exchange(false)) {
-            std::lock_guard<std::mutex> lock(mutex_);
-            auto it = params_.find(learningParamId_);
-            if (it != params_.end()) {
-                ccBindings_[ccNumber] = {learningParamId_, it->second.minVal, it->second.maxVal, true};
-                lastLearnedCC_.store(ccNumber);
-            }
-        }
-
-        MidiMappingBinding binding;
-        SetterFn fn;
-        {
-            std::lock_guard<std::mutex> lock(mutex_);
-            binding = ccBindings_[ccNumber];
-            if (!binding.active) return false;
-            auto it = params_.find(binding.paramId);
-            if (it == params_.end()) return false;
-            fn = it->second.setter;
-        }
-
-        if (fn) {
-            float norm = std::clamp(static_cast<float>(ccValue127) / 127.0f, 0.0f, 1.0f);
-            float scaled = binding.minVal + norm * (binding.maxVal - binding.minVal);
-            fn(scaled);
-            return true;
-        }
-        return false;
-    }
-
-    nlohmann::json exportBindingsJson() {
+    bool paramRange(const std::string& id, float& minV, float& maxV) const {
         std::lock_guard<std::mutex> lock(mutex_);
-        nlohmann::json arr = nlohmann::json::array();
-        for (int cc = 0; cc < 128; ++cc) {
-            if (ccBindings_[cc].active) {
-                arr.push_back({
-                    {"cc", cc},
-                    {"paramId", ccBindings_[cc].paramId},
-                    {"min", ccBindings_[cc].minVal},
-                    {"max", ccBindings_[cc].maxVal}
-                });
-            }
-        }
-        return arr;
+        const auto it = params_.find(id);
+        if (it == params_.end()) return false;
+        minV = it->second.minVal; maxV = it->second.maxVal;
+        return true;
     }
 
-    void importBindingsJson(const nlohmann::json& arr) {
-        if (!arr.is_array()) return;
-        std::lock_guard<std::mutex> lock(mutex_);
-        for (const auto& item : arr) {
-            int cc = item.value("cc", -1);
-            std::string pid = item.value("paramId", "");
-            if (cc >= 0 && cc < 128 && !pid.empty() && params_.count(pid)) {
-                ccBindings_[cc] = {pid, params_[pid].minVal, params_[pid].maxVal, true};
-            }
-        }
-    }
-
-    int getLastLearnedCC() const { return lastLearnedCC_.load(); }
-    bool isLearning() const { return midiLearnActive_.load(); }
+    uint64_t valueRevision() const {return valueRevision_.load(std::memory_order_relaxed);}
 
 private:
     struct ParamEntry {
@@ -125,12 +80,10 @@ private:
         SetterFn setter;
     };
 
-    std::mutex mutex_;
+    mutable std::mutex mutex_;
     std::unordered_map<std::string, ParamEntry> params_;
-    std::array<MidiMappingBinding, 128> ccBindings_{};
-    std::string learningParamId_;
-    std::atomic<bool> midiLearnActive_{false};
-    std::atomic<int> lastLearnedCC_{-1};
+    WriteObserver observer_;
+    std::atomic<uint64_t> valueRevision_{0};
 };
 
 } // namespace NordDSP

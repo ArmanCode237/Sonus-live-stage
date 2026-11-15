@@ -1,0 +1,9862 @@
+[
+ {
+  "id": "L1_analog",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_atk",
+  "min": 0.0010000000474974513,
+  "max": 4.0
+ },
+ {
+  "id": "L1_cut",
+  "min": 40.0,
+  "max": 20000.0
+ },
+ {
+  "id": "L1_dec",
+  "min": 0.019999999552965164,
+  "max": 6.0
+ },
+ {
+  "id": "L1_det",
+  "min": -50.0,
+  "max": 50.0
+ },
+ {
+  "id": "L1_drive",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_en",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fAtk",
+  "min": 0.0010000000474974513,
+  "max": 4.0
+ },
+ {
+  "id": "L1_fDec",
+  "min": 0.004999999888241291,
+  "max": 10.0
+ },
+ {
+  "id": "L1_fRel",
+  "min": 0.004999999888241291,
+  "max": 10.0
+ },
+ {
+  "id": "L1_fSus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_filtEnv",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_filtKT",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_filtType",
+  "min": 0.0,
+  "max": 5.0
+ },
+ {
+  "id": "L1_fm4Algo",
+  "min": 0.0,
+  "max": 7.0
+ },
+ {
+  "id": "L1_fm4Fb",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fm4Vel",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fmIndex",
+  "min": 0.0,
+  "max": 8.0
+ },
+ {
+  "id": "L1_fmRatio",
+  "min": 0.25,
+  "max": 12.0
+ },
+ {
+  "id": "L1_fx0_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fx0_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "L1_fx0_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "L1_fx0_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fx0_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fx0_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "L1_fx0_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fx0_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "L1_fx1_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fx1_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "L1_fx1_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "L1_fx1_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fx1_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fx1_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "L1_fx1_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fx1_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "L1_fx2_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fx2_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "L1_fx2_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "L1_fx2_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fx2_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fx2_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "L1_fx2_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fx2_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "L1_fx3_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fx3_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "L1_fx3_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "L1_fx3_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fx3_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fx3_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "L1_fx3_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fx3_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "L1_fx4_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fx4_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "L1_fx4_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "L1_fx4_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fx4_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fx4_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "L1_fx4_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fx4_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "L1_fx5_damp",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fx5_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fx5_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "L1_fx5_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "L1_fx5_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fx5_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fx5_predelay",
+  "min": 0.0,
+  "max": 250.0
+ },
+ {
+  "id": "L1_fx5_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "L1_fx5_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_fx5_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "L1_fx5_type",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "L1_glideMode",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_hpf",
+  "min": 20.0,
+  "max": 6000.0
+ },
+ {
+  "id": "L1_keyHigh",
+  "min": 0.0,
+  "max": 127.0
+ },
+ {
+  "id": "L1_keyLow",
+  "min": 0.0,
+  "max": 127.0
+ },
+ {
+  "id": "L1_keyTrans",
+  "min": -24.0,
+  "max": 24.0
+ },
+ {
+  "id": "L1_keyTrk",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "L1_laMix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_laRing",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_lfoCutoff",
+  "min": -10000.0,
+  "max": 10000.0
+ },
+ {
+  "id": "L1_lfoDelay",
+  "min": 0.0,
+  "max": 5.0
+ },
+ {
+  "id": "L1_lfoDepth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_lfoEnabled",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_lfoFade",
+  "min": 0.0,
+  "max": 5.0
+ },
+ {
+  "id": "L1_lfoPan",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_lfoPitch",
+  "min": -1200.0,
+  "max": 1200.0
+ },
+ {
+  "id": "L1_lfoRate",
+  "min": 0.05000000074505806,
+  "max": 30.0
+ },
+ {
+  "id": "L1_lfoSync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_lfoVolume",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_lfoWave",
+  "min": 0.0,
+  "max": 5.0
+ },
+ {
+  "id": "L1_noise",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_oct",
+  "min": -2.0,
+  "max": 2.0
+ },
+ {
+  "id": "L1_op1Atk",
+  "min": 0.0010000000474974513,
+  "max": 8.0
+ },
+ {
+  "id": "L1_op1Dec",
+  "min": 0.009999999776482582,
+  "max": 20.0
+ },
+ {
+  "id": "L1_op1Level",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_op1Ratio",
+  "min": 0.5,
+  "max": 16.0
+ },
+ {
+  "id": "L1_op1Sus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_op2Atk",
+  "min": 0.0010000000474974513,
+  "max": 8.0
+ },
+ {
+  "id": "L1_op2Dec",
+  "min": 0.009999999776482582,
+  "max": 20.0
+ },
+ {
+  "id": "L1_op2Level",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_op2Ratio",
+  "min": 0.5,
+  "max": 16.0
+ },
+ {
+  "id": "L1_op2Sus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_op3Atk",
+  "min": 0.0010000000474974513,
+  "max": 8.0
+ },
+ {
+  "id": "L1_op3Dec",
+  "min": 0.009999999776482582,
+  "max": 20.0
+ },
+ {
+  "id": "L1_op3Level",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_op3Ratio",
+  "min": 0.5,
+  "max": 16.0
+ },
+ {
+  "id": "L1_op3Sus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_op4Atk",
+  "min": 0.0010000000474974513,
+  "max": 8.0
+ },
+ {
+  "id": "L1_op4Dec",
+  "min": 0.009999999776482582,
+  "max": 20.0
+ },
+ {
+  "id": "L1_op4Level",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_op4Ratio",
+  "min": 0.5,
+  "max": 16.0
+ },
+ {
+  "id": "L1_op4Sus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_osc2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_osc2Det",
+  "min": -50.0,
+  "max": 50.0
+ },
+ {
+  "id": "L1_osc2Semi",
+  "min": -12.0,
+  "max": 12.0
+ },
+ {
+  "id": "L1_osc2Wave",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "L1_pan",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_phase",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_portamento",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "L1_portamentoOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_pulse",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_pw",
+  "min": 0.05000000074505806,
+  "max": 0.949999988079071
+ },
+ {
+  "id": "L1_pwmDepth",
+  "min": 0.0,
+  "max": 0.44999998807907104
+ },
+ {
+  "id": "L1_pwmRate",
+  "min": 0.05000000074505806,
+  "max": 12.0
+ },
+ {
+  "id": "L1_rel",
+  "min": 0.019999999552965164,
+  "max": 6.0
+ },
+ {
+  "id": "L1_res",
+  "min": 0.5,
+  "max": 12.0
+ },
+ {
+  "id": "L1_saw",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_semi",
+  "min": -12.0,
+  "max": 12.0
+ },
+ {
+  "id": "L1_seqBpm",
+  "min": 30.0,
+  "max": 300.0
+ },
+ {
+  "id": "L1_seqGate",
+  "min": 0.05000000074505806,
+  "max": 1.0
+ },
+ {
+  "id": "L1_seqOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_seqStep0",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L1_seqStep1",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L1_seqStep10",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L1_seqStep11",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L1_seqStep12",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L1_seqStep13",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L1_seqStep14",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L1_seqStep15",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L1_seqStep2",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L1_seqStep3",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L1_seqStep4",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L1_seqStep5",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L1_seqStep6",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L1_seqStep7",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L1_seqStep8",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L1_seqStep9",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L1_seqSteps",
+  "min": 1.0,
+  "max": 16.0
+ },
+ {
+  "id": "L1_slide",
+  "min": -12.0,
+  "max": 12.0
+ },
+ {
+  "id": "L1_sub",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_sus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_synthType",
+  "min": 0.0,
+  "max": 4.0
+ },
+ {
+  "id": "L1_trBright",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_trDecay",
+  "min": 0.004999999888241291,
+  "max": 4.0
+ },
+ {
+  "id": "L1_trLevel",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_trType",
+  "min": 0.0,
+  "max": 7.0
+ },
+ {
+  "id": "L1_uniDet",
+  "min": 0.0,
+  "max": 50.0
+ },
+ {
+  "id": "L1_uniSprd",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_unison",
+  "min": 1.0,
+  "max": 8.0
+ },
+ {
+  "id": "L1_velAmp",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "L1_velCut",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_voiceMode",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "L1_vol",
+  "min": 0.0,
+  "max": 1.5
+ },
+ {
+  "id": "L1_wave",
+  "min": 0.0,
+  "max": 35.0
+ },
+ {
+  "id": "L1_wheelAmp",
+  "min": -24.0,
+  "max": 12.0
+ },
+ {
+  "id": "L1_wheelCutoff",
+  "min": -6.0,
+  "max": 6.0
+ },
+ {
+  "id": "L1_wheelMode",
+  "min": 0.0,
+  "max": 3.0
+ },
+ {
+  "id": "L1_wheelVibRate",
+  "min": 0.10000000149011612,
+  "max": 12.0
+ },
+ {
+  "id": "L1_wheelVibrato",
+  "min": 0.0,
+  "max": 200.0
+ },
+ {
+  "id": "L1_wheelWtMorph",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "L1_wtIdx",
+  "min": 0.0,
+  "max": 63.0
+ },
+ {
+  "id": "L1_wtMorph",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_analog",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_atk",
+  "min": 0.0010000000474974513,
+  "max": 4.0
+ },
+ {
+  "id": "L2_cut",
+  "min": 40.0,
+  "max": 20000.0
+ },
+ {
+  "id": "L2_dec",
+  "min": 0.019999999552965164,
+  "max": 6.0
+ },
+ {
+  "id": "L2_det",
+  "min": -50.0,
+  "max": 50.0
+ },
+ {
+  "id": "L2_drive",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_en",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fAtk",
+  "min": 0.0010000000474974513,
+  "max": 4.0
+ },
+ {
+  "id": "L2_fDec",
+  "min": 0.004999999888241291,
+  "max": 10.0
+ },
+ {
+  "id": "L2_fRel",
+  "min": 0.004999999888241291,
+  "max": 10.0
+ },
+ {
+  "id": "L2_fSus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_filtEnv",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_filtKT",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_filtType",
+  "min": 0.0,
+  "max": 5.0
+ },
+ {
+  "id": "L2_fm4Algo",
+  "min": 0.0,
+  "max": 7.0
+ },
+ {
+  "id": "L2_fm4Fb",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fm4Vel",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fmIndex",
+  "min": 0.0,
+  "max": 8.0
+ },
+ {
+  "id": "L2_fmRatio",
+  "min": 0.25,
+  "max": 12.0
+ },
+ {
+  "id": "L2_fx0_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fx0_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "L2_fx0_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "L2_fx0_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fx0_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fx0_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "L2_fx0_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fx0_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "L2_fx1_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fx1_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "L2_fx1_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "L2_fx1_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fx1_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fx1_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "L2_fx1_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fx1_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "L2_fx2_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fx2_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "L2_fx2_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "L2_fx2_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fx2_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fx2_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "L2_fx2_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fx2_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "L2_fx3_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fx3_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "L2_fx3_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "L2_fx3_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fx3_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fx3_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "L2_fx3_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fx3_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "L2_fx4_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fx4_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "L2_fx4_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "L2_fx4_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fx4_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fx4_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "L2_fx4_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fx4_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "L2_fx5_damp",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fx5_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fx5_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "L2_fx5_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "L2_fx5_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fx5_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fx5_predelay",
+  "min": 0.0,
+  "max": 250.0
+ },
+ {
+  "id": "L2_fx5_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "L2_fx5_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_fx5_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "L2_fx5_type",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "L2_glideMode",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_hpf",
+  "min": 20.0,
+  "max": 6000.0
+ },
+ {
+  "id": "L2_keyHigh",
+  "min": 0.0,
+  "max": 127.0
+ },
+ {
+  "id": "L2_keyLow",
+  "min": 0.0,
+  "max": 127.0
+ },
+ {
+  "id": "L2_keyTrans",
+  "min": -24.0,
+  "max": 24.0
+ },
+ {
+  "id": "L2_keyTrk",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "L2_laMix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_laRing",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_lfoCutoff",
+  "min": -10000.0,
+  "max": 10000.0
+ },
+ {
+  "id": "L2_lfoDelay",
+  "min": 0.0,
+  "max": 5.0
+ },
+ {
+  "id": "L2_lfoDepth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_lfoEnabled",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_lfoFade",
+  "min": 0.0,
+  "max": 5.0
+ },
+ {
+  "id": "L2_lfoPan",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_lfoPitch",
+  "min": -1200.0,
+  "max": 1200.0
+ },
+ {
+  "id": "L2_lfoRate",
+  "min": 0.05000000074505806,
+  "max": 30.0
+ },
+ {
+  "id": "L2_lfoSync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_lfoVolume",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_lfoWave",
+  "min": 0.0,
+  "max": 5.0
+ },
+ {
+  "id": "L2_noise",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_oct",
+  "min": -2.0,
+  "max": 2.0
+ },
+ {
+  "id": "L2_op1Atk",
+  "min": 0.0010000000474974513,
+  "max": 8.0
+ },
+ {
+  "id": "L2_op1Dec",
+  "min": 0.009999999776482582,
+  "max": 20.0
+ },
+ {
+  "id": "L2_op1Level",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_op1Ratio",
+  "min": 0.5,
+  "max": 16.0
+ },
+ {
+  "id": "L2_op1Sus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_op2Atk",
+  "min": 0.0010000000474974513,
+  "max": 8.0
+ },
+ {
+  "id": "L2_op2Dec",
+  "min": 0.009999999776482582,
+  "max": 20.0
+ },
+ {
+  "id": "L2_op2Level",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_op2Ratio",
+  "min": 0.5,
+  "max": 16.0
+ },
+ {
+  "id": "L2_op2Sus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_op3Atk",
+  "min": 0.0010000000474974513,
+  "max": 8.0
+ },
+ {
+  "id": "L2_op3Dec",
+  "min": 0.009999999776482582,
+  "max": 20.0
+ },
+ {
+  "id": "L2_op3Level",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_op3Ratio",
+  "min": 0.5,
+  "max": 16.0
+ },
+ {
+  "id": "L2_op3Sus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_op4Atk",
+  "min": 0.0010000000474974513,
+  "max": 8.0
+ },
+ {
+  "id": "L2_op4Dec",
+  "min": 0.009999999776482582,
+  "max": 20.0
+ },
+ {
+  "id": "L2_op4Level",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_op4Ratio",
+  "min": 0.5,
+  "max": 16.0
+ },
+ {
+  "id": "L2_op4Sus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_osc2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_osc2Det",
+  "min": -50.0,
+  "max": 50.0
+ },
+ {
+  "id": "L2_osc2Semi",
+  "min": -12.0,
+  "max": 12.0
+ },
+ {
+  "id": "L2_osc2Wave",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "L2_pan",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_phase",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_portamento",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "L2_portamentoOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_pulse",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_pw",
+  "min": 0.05000000074505806,
+  "max": 0.949999988079071
+ },
+ {
+  "id": "L2_pwmDepth",
+  "min": 0.0,
+  "max": 0.44999998807907104
+ },
+ {
+  "id": "L2_pwmRate",
+  "min": 0.05000000074505806,
+  "max": 12.0
+ },
+ {
+  "id": "L2_rel",
+  "min": 0.019999999552965164,
+  "max": 6.0
+ },
+ {
+  "id": "L2_res",
+  "min": 0.5,
+  "max": 12.0
+ },
+ {
+  "id": "L2_saw",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_semi",
+  "min": -12.0,
+  "max": 12.0
+ },
+ {
+  "id": "L2_seqBpm",
+  "min": 30.0,
+  "max": 300.0
+ },
+ {
+  "id": "L2_seqGate",
+  "min": 0.05000000074505806,
+  "max": 1.0
+ },
+ {
+  "id": "L2_seqOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_seqStep0",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L2_seqStep1",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L2_seqStep10",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L2_seqStep11",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L2_seqStep12",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L2_seqStep13",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L2_seqStep14",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L2_seqStep15",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L2_seqStep2",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L2_seqStep3",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L2_seqStep4",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L2_seqStep5",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L2_seqStep6",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L2_seqStep7",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L2_seqStep8",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L2_seqStep9",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L2_seqSteps",
+  "min": 1.0,
+  "max": 16.0
+ },
+ {
+  "id": "L2_slide",
+  "min": -12.0,
+  "max": 12.0
+ },
+ {
+  "id": "L2_sub",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_sus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_synthType",
+  "min": 0.0,
+  "max": 4.0
+ },
+ {
+  "id": "L2_trBright",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_trDecay",
+  "min": 0.004999999888241291,
+  "max": 4.0
+ },
+ {
+  "id": "L2_trLevel",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_trType",
+  "min": 0.0,
+  "max": 7.0
+ },
+ {
+  "id": "L2_uniDet",
+  "min": 0.0,
+  "max": 50.0
+ },
+ {
+  "id": "L2_uniSprd",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_unison",
+  "min": 1.0,
+  "max": 8.0
+ },
+ {
+  "id": "L2_velAmp",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "L2_velCut",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_voiceMode",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "L2_vol",
+  "min": 0.0,
+  "max": 1.5
+ },
+ {
+  "id": "L2_wave",
+  "min": 0.0,
+  "max": 35.0
+ },
+ {
+  "id": "L2_wheelAmp",
+  "min": -24.0,
+  "max": 12.0
+ },
+ {
+  "id": "L2_wheelCutoff",
+  "min": -6.0,
+  "max": 6.0
+ },
+ {
+  "id": "L2_wheelMode",
+  "min": 0.0,
+  "max": 3.0
+ },
+ {
+  "id": "L2_wheelVibRate",
+  "min": 0.10000000149011612,
+  "max": 12.0
+ },
+ {
+  "id": "L2_wheelVibrato",
+  "min": 0.0,
+  "max": 200.0
+ },
+ {
+  "id": "L2_wheelWtMorph",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "L2_wtIdx",
+  "min": 0.0,
+  "max": 63.0
+ },
+ {
+  "id": "L2_wtMorph",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_analog",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_atk",
+  "min": 0.0010000000474974513,
+  "max": 4.0
+ },
+ {
+  "id": "L3_cut",
+  "min": 40.0,
+  "max": 20000.0
+ },
+ {
+  "id": "L3_dec",
+  "min": 0.019999999552965164,
+  "max": 6.0
+ },
+ {
+  "id": "L3_det",
+  "min": -50.0,
+  "max": 50.0
+ },
+ {
+  "id": "L3_drive",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_en",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fAtk",
+  "min": 0.0010000000474974513,
+  "max": 4.0
+ },
+ {
+  "id": "L3_fDec",
+  "min": 0.004999999888241291,
+  "max": 10.0
+ },
+ {
+  "id": "L3_fRel",
+  "min": 0.004999999888241291,
+  "max": 10.0
+ },
+ {
+  "id": "L3_fSus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_filtEnv",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_filtKT",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_filtType",
+  "min": 0.0,
+  "max": 5.0
+ },
+ {
+  "id": "L3_fm4Algo",
+  "min": 0.0,
+  "max": 7.0
+ },
+ {
+  "id": "L3_fm4Fb",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fm4Vel",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fmIndex",
+  "min": 0.0,
+  "max": 8.0
+ },
+ {
+  "id": "L3_fmRatio",
+  "min": 0.25,
+  "max": 12.0
+ },
+ {
+  "id": "L3_fx0_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fx0_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "L3_fx0_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "L3_fx0_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fx0_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fx0_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "L3_fx0_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fx0_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "L3_fx1_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fx1_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "L3_fx1_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "L3_fx1_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fx1_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fx1_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "L3_fx1_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fx1_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "L3_fx2_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fx2_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "L3_fx2_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "L3_fx2_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fx2_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fx2_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "L3_fx2_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fx2_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "L3_fx3_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fx3_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "L3_fx3_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "L3_fx3_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fx3_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fx3_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "L3_fx3_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fx3_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "L3_fx4_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fx4_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "L3_fx4_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "L3_fx4_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fx4_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fx4_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "L3_fx4_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fx4_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "L3_fx5_damp",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fx5_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fx5_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "L3_fx5_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "L3_fx5_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fx5_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fx5_predelay",
+  "min": 0.0,
+  "max": 250.0
+ },
+ {
+  "id": "L3_fx5_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "L3_fx5_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_fx5_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "L3_fx5_type",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "L3_glideMode",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_hpf",
+  "min": 20.0,
+  "max": 6000.0
+ },
+ {
+  "id": "L3_keyHigh",
+  "min": 0.0,
+  "max": 127.0
+ },
+ {
+  "id": "L3_keyLow",
+  "min": 0.0,
+  "max": 127.0
+ },
+ {
+  "id": "L3_keyTrans",
+  "min": -24.0,
+  "max": 24.0
+ },
+ {
+  "id": "L3_keyTrk",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "L3_laMix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_laRing",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_lfoCutoff",
+  "min": -10000.0,
+  "max": 10000.0
+ },
+ {
+  "id": "L3_lfoDelay",
+  "min": 0.0,
+  "max": 5.0
+ },
+ {
+  "id": "L3_lfoDepth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_lfoEnabled",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_lfoFade",
+  "min": 0.0,
+  "max": 5.0
+ },
+ {
+  "id": "L3_lfoPan",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_lfoPitch",
+  "min": -1200.0,
+  "max": 1200.0
+ },
+ {
+  "id": "L3_lfoRate",
+  "min": 0.05000000074505806,
+  "max": 30.0
+ },
+ {
+  "id": "L3_lfoSync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_lfoVolume",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_lfoWave",
+  "min": 0.0,
+  "max": 5.0
+ },
+ {
+  "id": "L3_noise",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_oct",
+  "min": -2.0,
+  "max": 2.0
+ },
+ {
+  "id": "L3_op1Atk",
+  "min": 0.0010000000474974513,
+  "max": 8.0
+ },
+ {
+  "id": "L3_op1Dec",
+  "min": 0.009999999776482582,
+  "max": 20.0
+ },
+ {
+  "id": "L3_op1Level",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_op1Ratio",
+  "min": 0.5,
+  "max": 16.0
+ },
+ {
+  "id": "L3_op1Sus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_op2Atk",
+  "min": 0.0010000000474974513,
+  "max": 8.0
+ },
+ {
+  "id": "L3_op2Dec",
+  "min": 0.009999999776482582,
+  "max": 20.0
+ },
+ {
+  "id": "L3_op2Level",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_op2Ratio",
+  "min": 0.5,
+  "max": 16.0
+ },
+ {
+  "id": "L3_op2Sus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_op3Atk",
+  "min": 0.0010000000474974513,
+  "max": 8.0
+ },
+ {
+  "id": "L3_op3Dec",
+  "min": 0.009999999776482582,
+  "max": 20.0
+ },
+ {
+  "id": "L3_op3Level",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_op3Ratio",
+  "min": 0.5,
+  "max": 16.0
+ },
+ {
+  "id": "L3_op3Sus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_op4Atk",
+  "min": 0.0010000000474974513,
+  "max": 8.0
+ },
+ {
+  "id": "L3_op4Dec",
+  "min": 0.009999999776482582,
+  "max": 20.0
+ },
+ {
+  "id": "L3_op4Level",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_op4Ratio",
+  "min": 0.5,
+  "max": 16.0
+ },
+ {
+  "id": "L3_op4Sus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_osc2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_osc2Det",
+  "min": -50.0,
+  "max": 50.0
+ },
+ {
+  "id": "L3_osc2Semi",
+  "min": -12.0,
+  "max": 12.0
+ },
+ {
+  "id": "L3_osc2Wave",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "L3_pan",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_phase",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_portamento",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "L3_portamentoOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_pulse",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_pw",
+  "min": 0.05000000074505806,
+  "max": 0.949999988079071
+ },
+ {
+  "id": "L3_pwmDepth",
+  "min": 0.0,
+  "max": 0.44999998807907104
+ },
+ {
+  "id": "L3_pwmRate",
+  "min": 0.05000000074505806,
+  "max": 12.0
+ },
+ {
+  "id": "L3_rel",
+  "min": 0.019999999552965164,
+  "max": 6.0
+ },
+ {
+  "id": "L3_res",
+  "min": 0.5,
+  "max": 12.0
+ },
+ {
+  "id": "L3_saw",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_semi",
+  "min": -12.0,
+  "max": 12.0
+ },
+ {
+  "id": "L3_seqBpm",
+  "min": 30.0,
+  "max": 300.0
+ },
+ {
+  "id": "L3_seqGate",
+  "min": 0.05000000074505806,
+  "max": 1.0
+ },
+ {
+  "id": "L3_seqOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_seqStep0",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L3_seqStep1",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L3_seqStep10",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L3_seqStep11",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L3_seqStep12",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L3_seqStep13",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L3_seqStep14",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L3_seqStep15",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L3_seqStep2",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L3_seqStep3",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L3_seqStep4",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L3_seqStep5",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L3_seqStep6",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L3_seqStep7",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L3_seqStep8",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L3_seqStep9",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L3_seqSteps",
+  "min": 1.0,
+  "max": 16.0
+ },
+ {
+  "id": "L3_slide",
+  "min": -12.0,
+  "max": 12.0
+ },
+ {
+  "id": "L3_sub",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_sus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_synthType",
+  "min": 0.0,
+  "max": 4.0
+ },
+ {
+  "id": "L3_trBright",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_trDecay",
+  "min": 0.004999999888241291,
+  "max": 4.0
+ },
+ {
+  "id": "L3_trLevel",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_trType",
+  "min": 0.0,
+  "max": 7.0
+ },
+ {
+  "id": "L3_uniDet",
+  "min": 0.0,
+  "max": 50.0
+ },
+ {
+  "id": "L3_uniSprd",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_unison",
+  "min": 1.0,
+  "max": 8.0
+ },
+ {
+  "id": "L3_velAmp",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "L3_velCut",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_voiceMode",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "L3_vol",
+  "min": 0.0,
+  "max": 1.5
+ },
+ {
+  "id": "L3_wave",
+  "min": 0.0,
+  "max": 35.0
+ },
+ {
+  "id": "L3_wheelAmp",
+  "min": -24.0,
+  "max": 12.0
+ },
+ {
+  "id": "L3_wheelCutoff",
+  "min": -6.0,
+  "max": 6.0
+ },
+ {
+  "id": "L3_wheelMode",
+  "min": 0.0,
+  "max": 3.0
+ },
+ {
+  "id": "L3_wheelVibRate",
+  "min": 0.10000000149011612,
+  "max": 12.0
+ },
+ {
+  "id": "L3_wheelVibrato",
+  "min": 0.0,
+  "max": 200.0
+ },
+ {
+  "id": "L3_wheelWtMorph",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "L3_wtIdx",
+  "min": 0.0,
+  "max": 63.0
+ },
+ {
+  "id": "L3_wtMorph",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_analog",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_atk",
+  "min": 0.0010000000474974513,
+  "max": 4.0
+ },
+ {
+  "id": "L4_cut",
+  "min": 40.0,
+  "max": 20000.0
+ },
+ {
+  "id": "L4_dec",
+  "min": 0.019999999552965164,
+  "max": 6.0
+ },
+ {
+  "id": "L4_det",
+  "min": -50.0,
+  "max": 50.0
+ },
+ {
+  "id": "L4_drive",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_en",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fAtk",
+  "min": 0.0010000000474974513,
+  "max": 4.0
+ },
+ {
+  "id": "L4_fDec",
+  "min": 0.004999999888241291,
+  "max": 10.0
+ },
+ {
+  "id": "L4_fRel",
+  "min": 0.004999999888241291,
+  "max": 10.0
+ },
+ {
+  "id": "L4_fSus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_filtEnv",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_filtKT",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_filtType",
+  "min": 0.0,
+  "max": 5.0
+ },
+ {
+  "id": "L4_fm4Algo",
+  "min": 0.0,
+  "max": 7.0
+ },
+ {
+  "id": "L4_fm4Fb",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fm4Vel",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fmIndex",
+  "min": 0.0,
+  "max": 8.0
+ },
+ {
+  "id": "L4_fmRatio",
+  "min": 0.25,
+  "max": 12.0
+ },
+ {
+  "id": "L4_fx0_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fx0_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "L4_fx0_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "L4_fx0_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fx0_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fx0_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "L4_fx0_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fx0_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "L4_fx1_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fx1_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "L4_fx1_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "L4_fx1_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fx1_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fx1_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "L4_fx1_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fx1_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "L4_fx2_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fx2_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "L4_fx2_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "L4_fx2_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fx2_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fx2_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "L4_fx2_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fx2_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "L4_fx3_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fx3_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "L4_fx3_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "L4_fx3_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fx3_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fx3_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "L4_fx3_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fx3_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "L4_fx4_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fx4_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "L4_fx4_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "L4_fx4_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fx4_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fx4_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "L4_fx4_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fx4_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "L4_fx5_damp",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fx5_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fx5_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "L4_fx5_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "L4_fx5_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fx5_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fx5_predelay",
+  "min": 0.0,
+  "max": 250.0
+ },
+ {
+  "id": "L4_fx5_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "L4_fx5_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_fx5_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "L4_fx5_type",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "L4_glideMode",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_hpf",
+  "min": 20.0,
+  "max": 6000.0
+ },
+ {
+  "id": "L4_keyHigh",
+  "min": 0.0,
+  "max": 127.0
+ },
+ {
+  "id": "L4_keyLow",
+  "min": 0.0,
+  "max": 127.0
+ },
+ {
+  "id": "L4_keyTrans",
+  "min": -24.0,
+  "max": 24.0
+ },
+ {
+  "id": "L4_keyTrk",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "L4_laMix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_laRing",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_lfoCutoff",
+  "min": -10000.0,
+  "max": 10000.0
+ },
+ {
+  "id": "L4_lfoDelay",
+  "min": 0.0,
+  "max": 5.0
+ },
+ {
+  "id": "L4_lfoDepth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_lfoEnabled",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_lfoFade",
+  "min": 0.0,
+  "max": 5.0
+ },
+ {
+  "id": "L4_lfoPan",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_lfoPitch",
+  "min": -1200.0,
+  "max": 1200.0
+ },
+ {
+  "id": "L4_lfoRate",
+  "min": 0.05000000074505806,
+  "max": 30.0
+ },
+ {
+  "id": "L4_lfoSync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_lfoVolume",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_lfoWave",
+  "min": 0.0,
+  "max": 5.0
+ },
+ {
+  "id": "L4_noise",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_oct",
+  "min": -2.0,
+  "max": 2.0
+ },
+ {
+  "id": "L4_op1Atk",
+  "min": 0.0010000000474974513,
+  "max": 8.0
+ },
+ {
+  "id": "L4_op1Dec",
+  "min": 0.009999999776482582,
+  "max": 20.0
+ },
+ {
+  "id": "L4_op1Level",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_op1Ratio",
+  "min": 0.5,
+  "max": 16.0
+ },
+ {
+  "id": "L4_op1Sus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_op2Atk",
+  "min": 0.0010000000474974513,
+  "max": 8.0
+ },
+ {
+  "id": "L4_op2Dec",
+  "min": 0.009999999776482582,
+  "max": 20.0
+ },
+ {
+  "id": "L4_op2Level",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_op2Ratio",
+  "min": 0.5,
+  "max": 16.0
+ },
+ {
+  "id": "L4_op2Sus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_op3Atk",
+  "min": 0.0010000000474974513,
+  "max": 8.0
+ },
+ {
+  "id": "L4_op3Dec",
+  "min": 0.009999999776482582,
+  "max": 20.0
+ },
+ {
+  "id": "L4_op3Level",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_op3Ratio",
+  "min": 0.5,
+  "max": 16.0
+ },
+ {
+  "id": "L4_op3Sus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_op4Atk",
+  "min": 0.0010000000474974513,
+  "max": 8.0
+ },
+ {
+  "id": "L4_op4Dec",
+  "min": 0.009999999776482582,
+  "max": 20.0
+ },
+ {
+  "id": "L4_op4Level",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_op4Ratio",
+  "min": 0.5,
+  "max": 16.0
+ },
+ {
+  "id": "L4_op4Sus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_osc2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_osc2Det",
+  "min": -50.0,
+  "max": 50.0
+ },
+ {
+  "id": "L4_osc2Semi",
+  "min": -12.0,
+  "max": 12.0
+ },
+ {
+  "id": "L4_osc2Wave",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "L4_pan",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_phase",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_portamento",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "L4_portamentoOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_pulse",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_pw",
+  "min": 0.05000000074505806,
+  "max": 0.949999988079071
+ },
+ {
+  "id": "L4_pwmDepth",
+  "min": 0.0,
+  "max": 0.44999998807907104
+ },
+ {
+  "id": "L4_pwmRate",
+  "min": 0.05000000074505806,
+  "max": 12.0
+ },
+ {
+  "id": "L4_rel",
+  "min": 0.019999999552965164,
+  "max": 6.0
+ },
+ {
+  "id": "L4_res",
+  "min": 0.5,
+  "max": 12.0
+ },
+ {
+  "id": "L4_saw",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_semi",
+  "min": -12.0,
+  "max": 12.0
+ },
+ {
+  "id": "L4_seqBpm",
+  "min": 30.0,
+  "max": 300.0
+ },
+ {
+  "id": "L4_seqGate",
+  "min": 0.05000000074505806,
+  "max": 1.0
+ },
+ {
+  "id": "L4_seqOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_seqStep0",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L4_seqStep1",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L4_seqStep10",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L4_seqStep11",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L4_seqStep12",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L4_seqStep13",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L4_seqStep14",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L4_seqStep15",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L4_seqStep2",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L4_seqStep3",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L4_seqStep4",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L4_seqStep5",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L4_seqStep6",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L4_seqStep7",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L4_seqStep8",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L4_seqStep9",
+  "min": -24.0,
+  "max": 99.0
+ },
+ {
+  "id": "L4_seqSteps",
+  "min": 1.0,
+  "max": 16.0
+ },
+ {
+  "id": "L4_slide",
+  "min": -12.0,
+  "max": 12.0
+ },
+ {
+  "id": "L4_sub",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_sus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_synthType",
+  "min": 0.0,
+  "max": 4.0
+ },
+ {
+  "id": "L4_trBright",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_trDecay",
+  "min": 0.004999999888241291,
+  "max": 4.0
+ },
+ {
+  "id": "L4_trLevel",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_trType",
+  "min": 0.0,
+  "max": 7.0
+ },
+ {
+  "id": "L4_uniDet",
+  "min": 0.0,
+  "max": 50.0
+ },
+ {
+  "id": "L4_uniSprd",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_unison",
+  "min": 1.0,
+  "max": 8.0
+ },
+ {
+  "id": "L4_velAmp",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "L4_velCut",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_voiceMode",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "L4_vol",
+  "min": 0.0,
+  "max": 1.5
+ },
+ {
+  "id": "L4_wave",
+  "min": 0.0,
+  "max": 35.0
+ },
+ {
+  "id": "L4_wheelAmp",
+  "min": -24.0,
+  "max": 12.0
+ },
+ {
+  "id": "L4_wheelCutoff",
+  "min": -6.0,
+  "max": 6.0
+ },
+ {
+  "id": "L4_wheelMode",
+  "min": 0.0,
+  "max": 3.0
+ },
+ {
+  "id": "L4_wheelVibRate",
+  "min": 0.10000000149011612,
+  "max": 12.0
+ },
+ {
+  "id": "L4_wheelVibrato",
+  "min": 0.0,
+  "max": 200.0
+ },
+ {
+  "id": "L4_wheelWtMorph",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "L4_wtIdx",
+  "min": 0.0,
+  "max": 63.0
+ },
+ {
+  "id": "L4_wtMorph",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "attack",
+  "min": 0.0010000000474974513,
+  "max": 4.0
+ },
+ {
+  "id": "chorusDelay",
+  "min": 7.0,
+  "max": 28.0
+ },
+ {
+  "id": "chorusDepth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "chorusEnabled",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "chorusFeedback",
+  "min": -0.5,
+  "max": 0.5
+ },
+ {
+  "id": "chorusMix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "chorusRate",
+  "min": 0.10000000149011612,
+  "max": 6.0
+ },
+ {
+  "id": "chorusTone",
+  "min": 500.0,
+  "max": 18000.0
+ },
+ {
+  "id": "chorusVoices",
+  "min": 1.0,
+  "max": 3.0
+ },
+ {
+  "id": "chorusWidth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "cutoff",
+  "min": 20.0,
+  "max": 20000.0
+ },
+ {
+  "id": "decay",
+  "min": 0.019999999552965164,
+  "max": 8.0
+ },
+ {
+  "id": "delayDamping",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "delayDivision",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "delayEnabled",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "delayFeedback",
+  "min": 0.0,
+  "max": 0.9200000166893005
+ },
+ {
+  "id": "delayMix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "delayPingPong",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "delayTempoSync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "delayTimeMs",
+  "min": 40.0,
+  "max": 1500.0
+ },
+ {
+  "id": "drawbar0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "drawbar1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "drawbar2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "drawbar3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "drawbar4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "drawbar5",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "drawbar6",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "drawbar7",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "drawbar8",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "eqEnabled",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "eqFreq0",
+  "min": 20.0,
+  "max": 20000.0
+ },
+ {
+  "id": "eqFreq1",
+  "min": 20.0,
+  "max": 20000.0
+ },
+ {
+  "id": "eqFreq2",
+  "min": 20.0,
+  "max": 20000.0
+ },
+ {
+  "id": "eqFreq3",
+  "min": 20.0,
+  "max": 20000.0
+ },
+ {
+  "id": "eqFreq4",
+  "min": 20.0,
+  "max": 20000.0
+ },
+ {
+  "id": "eqGain0",
+  "min": -15.0,
+  "max": 15.0
+ },
+ {
+  "id": "eqGain1",
+  "min": -15.0,
+  "max": 15.0
+ },
+ {
+  "id": "eqGain2",
+  "min": -15.0,
+  "max": 15.0
+ },
+ {
+  "id": "eqGain3",
+  "min": -15.0,
+  "max": 15.0
+ },
+ {
+  "id": "eqGain4",
+  "min": -15.0,
+  "max": 15.0
+ },
+ {
+  "id": "eqQ0",
+  "min": 0.25,
+  "max": 12.0
+ },
+ {
+  "id": "eqQ1",
+  "min": 0.25,
+  "max": 12.0
+ },
+ {
+  "id": "eqQ2",
+  "min": 0.25,
+  "max": 12.0
+ },
+ {
+  "id": "eqQ3",
+  "min": 0.25,
+  "max": 12.0
+ },
+ {
+  "id": "eqQ4",
+  "min": 0.25,
+  "max": 12.0
+ },
+ {
+  "id": "flangerDepth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "flangerEnabled",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "flangerFeedback",
+  "min": -0.8500000238418579,
+  "max": 0.8500000238418579
+ },
+ {
+  "id": "flangerMix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "flangerRate",
+  "min": 0.05000000074505806,
+  "max": 5.0
+ },
+ {
+  "id": "fxSend0Delay",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend0Mod",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend0Reverb",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend1Delay",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend1Mod",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend1Reverb",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend2Delay",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend2Mod",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend2Reverb",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend3Delay",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend3Mod",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend3Reverb",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend4Delay",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend4Mod",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend4Reverb",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend5Delay",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend5Mod",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend5Reverb",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend6Delay",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend6Mod",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend6Reverb",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend7Delay",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend7Mod",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend7Reverb",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend8Delay",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend8Mod",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend8Reverb",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend9Delay",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend9Mod",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "fxSend9Reverb",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "highCut",
+  "min": 1500.0,
+  "max": 20000.0
+ },
+ {
+  "id": "loopHold",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "lowCut",
+  "min": 20.0,
+  "max": 800.0
+ },
+ {
+  "id": "masterAutoPanDepth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "masterAutoPanOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "masterAutoPanRate",
+  "min": 0.05000000074505806,
+  "max": 12.0
+ },
+ {
+  "id": "masterBpm",
+  "min": 30.0,
+  "max": 300.0
+ },
+ {
+  "id": "masterDriveAmount",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "masterDriveOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "maxVoices",
+  "min": 16.0,
+  "max": 256.0
+ },
+ {
+  "id": "octave",
+  "min": -2.0,
+  "max": 2.0
+ },
+ {
+  "id": "organChorusDepth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organChorusEnabled",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organChorusFeedback",
+  "min": -0.5,
+  "max": 0.5
+ },
+ {
+  "id": "organChorusMix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organChorusRate",
+  "min": 0.10000000149011612,
+  "max": 5.0
+ },
+ {
+  "id": "organChorusTone",
+  "min": 500.0,
+  "max": 18000.0
+ },
+ {
+  "id": "organChorusVoices",
+  "min": 1.0,
+  "max": 3.0
+ },
+ {
+  "id": "organChorusWidth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organDrive",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organEnabled",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organFxAutoPanDepth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organFxAutoPanOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organFxAutoPanRate",
+  "min": 0.05000000074505806,
+  "max": 12.0
+ },
+ {
+  "id": "organFxChorusDepth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organFxChorusMix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organFxChorusOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organFxChorusRate",
+  "min": 0.10000000149011612,
+  "max": 6.0
+ },
+ {
+  "id": "organFxDelayFeedback",
+  "min": 0.0,
+  "max": 0.8500000238418579
+ },
+ {
+  "id": "organFxDelayMix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organFxDelayOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organFxDelayTime",
+  "min": 40.0,
+  "max": 1200.0
+ },
+ {
+  "id": "organFxDriveAmount",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organFxDriveOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organFxFlangerDepth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organFxFlangerFeedback",
+  "min": -0.8500000238418579,
+  "max": 0.8500000238418579
+ },
+ {
+  "id": "organFxFlangerMix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organFxFlangerOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organFxFlangerRate",
+  "min": 0.05000000074505806,
+  "max": 5.0
+ },
+ {
+  "id": "organFxPhaserDepth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organFxPhaserFeedback",
+  "min": 0.0,
+  "max": 0.8500000238418579
+ },
+ {
+  "id": "organFxPhaserMix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organFxPhaserOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organFxPhaserRate",
+  "min": 0.10000000149011612,
+  "max": 6.0
+ },
+ {
+  "id": "organFxReverbMix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organFxReverbOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organFxReverbSize",
+  "min": 0.05000000074505806,
+  "max": 1.0
+ },
+ {
+  "id": "organFxReverbType",
+  "min": 0.0,
+  "max": 3.0
+ },
+ {
+  "id": "organFxTremoloDepth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organFxTremoloOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organFxTremoloRate",
+  "min": 0.5,
+  "max": 14.0
+ },
+ {
+  "id": "organModel",
+  "min": 0.0,
+  "max": 7.0
+ },
+ {
+  "id": "organPan",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "organPercDecaySec",
+  "min": 0.10000000149011612,
+  "max": 1.2000000476837158
+ },
+ {
+  "id": "organPercEnabled",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organPercHarmonic",
+  "min": 2.0,
+  "max": 3.0
+ },
+ {
+  "id": "organPercLevel",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organRotaryFast",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organRotaryFastRate",
+  "min": 0.6000000238418579,
+  "max": 1.5
+ },
+ {
+  "id": "organRotaryMix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organRotaryRamp",
+  "min": 0.4000000059604645,
+  "max": 2.5
+ },
+ {
+  "id": "organRotaryStereoWidth",
+  "min": 0.0,
+  "max": 1.5
+ },
+ {
+  "id": "organSendDelay",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organSendMod",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organSendReverb",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "organTune",
+  "min": -100.0,
+  "max": 100.0
+ },
+ {
+  "id": "organVibratoDepth",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "organVibratoMode",
+  "min": 0.0,
+  "max": 6.0
+ },
+ {
+  "id": "organVibratoRate",
+  "min": 2.0,
+  "max": 12.0
+ },
+ {
+  "id": "organVolume",
+  "min": 0.0,
+  "max": 1.5
+ },
+ {
+  "id": "organZoneHigh",
+  "min": 0.0,
+  "max": 127.0
+ },
+ {
+  "id": "organZoneLow",
+  "min": 0.0,
+  "max": 127.0
+ },
+ {
+  "id": "pan",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "phaserDepth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "phaserEnabled",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "phaserFeedback",
+  "min": 0.0,
+  "max": 0.8500000238418579
+ },
+ {
+  "id": "phaserMix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "phaserRate",
+  "min": 0.10000000149011612,
+  "max": 6.0
+ },
+ {
+  "id": "pianoEnabled",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx0_0_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx0_0_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx0_0_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx0_0_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx0_0_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx0_0_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx0_0_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx0_0_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx0_1_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx0_1_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx0_1_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx0_1_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx0_1_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx0_1_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx0_1_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx0_1_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx0_2_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx0_2_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx0_2_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx0_2_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx0_2_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx0_2_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx0_2_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx0_2_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx0_3_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx0_3_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx0_3_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx0_3_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx0_3_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx0_3_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx0_3_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx0_3_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx0_4_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx0_4_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx0_4_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx0_4_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx0_4_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx0_4_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx0_4_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx0_4_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx0_5_damp",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx0_5_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx0_5_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx0_5_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx0_5_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx0_5_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx0_5_predelay",
+  "min": 0.0,
+  "max": 250.0
+ },
+ {
+  "id": "pianoFx0_5_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx0_5_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx0_5_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx0_5_type",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "pianoFx1_0_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx1_0_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx1_0_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx1_0_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx1_0_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx1_0_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx1_0_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx1_0_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx1_1_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx1_1_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx1_1_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx1_1_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx1_1_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx1_1_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx1_1_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx1_1_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx1_2_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx1_2_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx1_2_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx1_2_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx1_2_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx1_2_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx1_2_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx1_2_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx1_3_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx1_3_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx1_3_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx1_3_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx1_3_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx1_3_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx1_3_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx1_3_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx1_4_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx1_4_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx1_4_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx1_4_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx1_4_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx1_4_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx1_4_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx1_4_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx1_5_damp",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx1_5_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx1_5_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx1_5_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx1_5_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx1_5_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx1_5_predelay",
+  "min": 0.0,
+  "max": 250.0
+ },
+ {
+  "id": "pianoFx1_5_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx1_5_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx1_5_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx1_5_type",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "pianoFx2_0_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx2_0_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx2_0_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx2_0_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx2_0_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx2_0_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx2_0_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx2_0_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx2_1_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx2_1_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx2_1_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx2_1_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx2_1_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx2_1_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx2_1_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx2_1_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx2_2_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx2_2_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx2_2_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx2_2_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx2_2_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx2_2_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx2_2_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx2_2_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx2_3_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx2_3_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx2_3_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx2_3_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx2_3_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx2_3_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx2_3_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx2_3_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx2_4_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx2_4_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx2_4_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx2_4_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx2_4_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx2_4_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx2_4_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx2_4_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx2_5_damp",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx2_5_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx2_5_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx2_5_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx2_5_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx2_5_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx2_5_predelay",
+  "min": 0.0,
+  "max": 250.0
+ },
+ {
+  "id": "pianoFx2_5_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx2_5_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx2_5_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx2_5_type",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "pianoFx3_0_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx3_0_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx3_0_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx3_0_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx3_0_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx3_0_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx3_0_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx3_0_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx3_1_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx3_1_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx3_1_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx3_1_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx3_1_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx3_1_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx3_1_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx3_1_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx3_2_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx3_2_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx3_2_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx3_2_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx3_2_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx3_2_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx3_2_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx3_2_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx3_3_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx3_3_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx3_3_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx3_3_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx3_3_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx3_3_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx3_3_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx3_3_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx3_4_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx3_4_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx3_4_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx3_4_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx3_4_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx3_4_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx3_4_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx3_4_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx3_5_damp",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx3_5_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx3_5_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx3_5_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx3_5_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx3_5_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx3_5_predelay",
+  "min": 0.0,
+  "max": 250.0
+ },
+ {
+  "id": "pianoFx3_5_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx3_5_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx3_5_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx3_5_type",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "pianoFx4_0_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx4_0_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx4_0_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx4_0_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx4_0_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx4_0_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx4_0_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx4_0_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx4_1_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx4_1_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx4_1_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx4_1_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx4_1_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx4_1_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx4_1_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx4_1_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx4_2_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx4_2_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx4_2_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx4_2_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx4_2_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx4_2_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx4_2_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx4_2_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx4_3_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx4_3_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx4_3_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx4_3_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx4_3_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx4_3_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx4_3_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx4_3_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx4_4_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx4_4_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx4_4_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx4_4_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx4_4_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx4_4_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx4_4_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx4_4_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx4_5_damp",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx4_5_depth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx4_5_division",
+  "min": 0.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoFx4_5_feedback",
+  "min": -0.7900000214576721,
+  "max": 0.7900000214576721
+ },
+ {
+  "id": "pianoFx4_5_mix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx4_5_on",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx4_5_predelay",
+  "min": 0.0,
+  "max": 250.0
+ },
+ {
+  "id": "pianoFx4_5_rate",
+  "min": 0.05000000074505806,
+  "max": 7.0
+ },
+ {
+  "id": "pianoFx4_5_sync",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoFx4_5_time",
+  "min": 35.0,
+  "max": 750.0
+ },
+ {
+  "id": "pianoFx4_5_type",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "pianoLayerEnabled0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoLayerEnabled1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoLayerEnabled2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoLayerEnabled3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoLayerEnabled4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoLayerVol0",
+  "min": 0.0,
+  "max": 1.5
+ },
+ {
+  "id": "pianoLayerVol1",
+  "min": 0.0,
+  "max": 1.5
+ },
+ {
+  "id": "pianoLayerVol2",
+  "min": 0.0,
+  "max": 1.5
+ },
+ {
+  "id": "pianoLayerVol3",
+  "min": 0.0,
+  "max": 1.5
+ },
+ {
+  "id": "pianoLayerVol4",
+  "min": 0.0,
+  "max": 1.5
+ },
+ {
+  "id": "pianoPan",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample0Atk",
+  "min": 0.004999999888241291,
+  "max": 5.0
+ },
+ {
+  "id": "pianoSample0Cut",
+  "min": 40.0,
+  "max": 20000.0
+ },
+ {
+  "id": "pianoSample0Dec",
+  "min": 0.019999999552965164,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample0Eq0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample0Eq1",
+  "min": 20.0,
+  "max": 1000.0
+ },
+ {
+  "id": "pianoSample0Eq2",
+  "min": 1000.0,
+  "max": 20000.0
+ },
+ {
+  "id": "pianoSample0Eq3",
+  "min": 12.0,
+  "max": 48.0
+ },
+ {
+  "id": "pianoSample0Eq4",
+  "min": 12.0,
+  "max": 48.0
+ },
+ {
+  "id": "pianoSample0EqF0",
+  "min": 30.0,
+  "max": 16000.0
+ },
+ {
+  "id": "pianoSample0EqF1",
+  "min": 30.0,
+  "max": 16000.0
+ },
+ {
+  "id": "pianoSample0EqF2",
+  "min": 30.0,
+  "max": 16000.0
+ },
+ {
+  "id": "pianoSample0EqG0",
+  "min": -15.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoSample0EqG1",
+  "min": -15.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoSample0EqG2",
+  "min": -15.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoSample0EqHP",
+  "min": 20.0,
+  "max": 1000.0
+ },
+ {
+  "id": "pianoSample0EqLP",
+  "min": 1000.0,
+  "max": 20000.0
+ },
+ {
+  "id": "pianoSample0EqQ0",
+  "min": 0.30000001192092896,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample0EqQ1",
+  "min": 0.30000001192092896,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample0EqQ2",
+  "min": 0.30000001192092896,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample0Gain",
+  "min": -36.0,
+  "max": 18.0
+ },
+ {
+  "id": "pianoSample0Hold",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample0Legato",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample0Mono",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample0Pan",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample0PortMode",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample0PortOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample0PortTime",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "pianoSample0Rel",
+  "min": 0.019999999552965164,
+  "max": 10.0
+ },
+ {
+  "id": "pianoSample0Res",
+  "min": 0.5,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample0Sus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample0Tune",
+  "min": -100.0,
+  "max": 100.0
+ },
+ {
+  "id": "pianoSample0WheelAmp",
+  "min": -24.0,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample0WheelAmpOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample0WheelCutoff",
+  "min": -6.0,
+  "max": 6.0
+ },
+ {
+  "id": "pianoSample0WheelCutoffInvert",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample0WheelCutoffOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample0WheelVibratoDepth",
+  "min": 0.0,
+  "max": 200.0
+ },
+ {
+  "id": "pianoSample0WheelVibratoOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample0WheelVibratoRate",
+  "min": 0.10000000149011612,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample1Atk",
+  "min": 0.004999999888241291,
+  "max": 5.0
+ },
+ {
+  "id": "pianoSample1Cut",
+  "min": 40.0,
+  "max": 20000.0
+ },
+ {
+  "id": "pianoSample1Dec",
+  "min": 0.019999999552965164,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample1Eq0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample1Eq1",
+  "min": 20.0,
+  "max": 1000.0
+ },
+ {
+  "id": "pianoSample1Eq2",
+  "min": 1000.0,
+  "max": 20000.0
+ },
+ {
+  "id": "pianoSample1Eq3",
+  "min": 12.0,
+  "max": 48.0
+ },
+ {
+  "id": "pianoSample1Eq4",
+  "min": 12.0,
+  "max": 48.0
+ },
+ {
+  "id": "pianoSample1EqF0",
+  "min": 30.0,
+  "max": 16000.0
+ },
+ {
+  "id": "pianoSample1EqF1",
+  "min": 30.0,
+  "max": 16000.0
+ },
+ {
+  "id": "pianoSample1EqF2",
+  "min": 30.0,
+  "max": 16000.0
+ },
+ {
+  "id": "pianoSample1EqG0",
+  "min": -15.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoSample1EqG1",
+  "min": -15.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoSample1EqG2",
+  "min": -15.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoSample1EqHP",
+  "min": 20.0,
+  "max": 1000.0
+ },
+ {
+  "id": "pianoSample1EqLP",
+  "min": 1000.0,
+  "max": 20000.0
+ },
+ {
+  "id": "pianoSample1EqQ0",
+  "min": 0.30000001192092896,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample1EqQ1",
+  "min": 0.30000001192092896,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample1EqQ2",
+  "min": 0.30000001192092896,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample1Gain",
+  "min": -36.0,
+  "max": 18.0
+ },
+ {
+  "id": "pianoSample1Hold",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample1Legato",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample1Mono",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample1Pan",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample1PortMode",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample1PortOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample1PortTime",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "pianoSample1Rel",
+  "min": 0.019999999552965164,
+  "max": 10.0
+ },
+ {
+  "id": "pianoSample1Res",
+  "min": 0.5,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample1Sus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample1Tune",
+  "min": -100.0,
+  "max": 100.0
+ },
+ {
+  "id": "pianoSample1WheelAmp",
+  "min": -24.0,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample1WheelAmpOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample1WheelCutoff",
+  "min": -6.0,
+  "max": 6.0
+ },
+ {
+  "id": "pianoSample1WheelCutoffInvert",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample1WheelCutoffOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample1WheelVibratoDepth",
+  "min": 0.0,
+  "max": 200.0
+ },
+ {
+  "id": "pianoSample1WheelVibratoOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample1WheelVibratoRate",
+  "min": 0.10000000149011612,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample2Atk",
+  "min": 0.004999999888241291,
+  "max": 5.0
+ },
+ {
+  "id": "pianoSample2Cut",
+  "min": 40.0,
+  "max": 20000.0
+ },
+ {
+  "id": "pianoSample2Dec",
+  "min": 0.019999999552965164,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample2Eq0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample2Eq1",
+  "min": 20.0,
+  "max": 1000.0
+ },
+ {
+  "id": "pianoSample2Eq2",
+  "min": 1000.0,
+  "max": 20000.0
+ },
+ {
+  "id": "pianoSample2Eq3",
+  "min": 12.0,
+  "max": 48.0
+ },
+ {
+  "id": "pianoSample2Eq4",
+  "min": 12.0,
+  "max": 48.0
+ },
+ {
+  "id": "pianoSample2EqF0",
+  "min": 30.0,
+  "max": 16000.0
+ },
+ {
+  "id": "pianoSample2EqF1",
+  "min": 30.0,
+  "max": 16000.0
+ },
+ {
+  "id": "pianoSample2EqF2",
+  "min": 30.0,
+  "max": 16000.0
+ },
+ {
+  "id": "pianoSample2EqG0",
+  "min": -15.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoSample2EqG1",
+  "min": -15.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoSample2EqG2",
+  "min": -15.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoSample2EqHP",
+  "min": 20.0,
+  "max": 1000.0
+ },
+ {
+  "id": "pianoSample2EqLP",
+  "min": 1000.0,
+  "max": 20000.0
+ },
+ {
+  "id": "pianoSample2EqQ0",
+  "min": 0.30000001192092896,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample2EqQ1",
+  "min": 0.30000001192092896,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample2EqQ2",
+  "min": 0.30000001192092896,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample2Gain",
+  "min": -36.0,
+  "max": 18.0
+ },
+ {
+  "id": "pianoSample2Hold",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample2Legato",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample2Mono",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample2Pan",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample2PortMode",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample2PortOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample2PortTime",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "pianoSample2Rel",
+  "min": 0.019999999552965164,
+  "max": 10.0
+ },
+ {
+  "id": "pianoSample2Res",
+  "min": 0.5,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample2Sus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample2Tune",
+  "min": -100.0,
+  "max": 100.0
+ },
+ {
+  "id": "pianoSample2WheelAmp",
+  "min": -24.0,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample2WheelAmpOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample2WheelCutoff",
+  "min": -6.0,
+  "max": 6.0
+ },
+ {
+  "id": "pianoSample2WheelCutoffInvert",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample2WheelCutoffOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample2WheelVibratoDepth",
+  "min": 0.0,
+  "max": 200.0
+ },
+ {
+  "id": "pianoSample2WheelVibratoOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample2WheelVibratoRate",
+  "min": 0.10000000149011612,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample3Atk",
+  "min": 0.004999999888241291,
+  "max": 5.0
+ },
+ {
+  "id": "pianoSample3Cut",
+  "min": 40.0,
+  "max": 20000.0
+ },
+ {
+  "id": "pianoSample3Dec",
+  "min": 0.019999999552965164,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample3Eq0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample3Eq1",
+  "min": 20.0,
+  "max": 1000.0
+ },
+ {
+  "id": "pianoSample3Eq2",
+  "min": 1000.0,
+  "max": 20000.0
+ },
+ {
+  "id": "pianoSample3Eq3",
+  "min": 12.0,
+  "max": 48.0
+ },
+ {
+  "id": "pianoSample3Eq4",
+  "min": 12.0,
+  "max": 48.0
+ },
+ {
+  "id": "pianoSample3EqF0",
+  "min": 30.0,
+  "max": 16000.0
+ },
+ {
+  "id": "pianoSample3EqF1",
+  "min": 30.0,
+  "max": 16000.0
+ },
+ {
+  "id": "pianoSample3EqF2",
+  "min": 30.0,
+  "max": 16000.0
+ },
+ {
+  "id": "pianoSample3EqG0",
+  "min": -15.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoSample3EqG1",
+  "min": -15.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoSample3EqG2",
+  "min": -15.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoSample3EqHP",
+  "min": 20.0,
+  "max": 1000.0
+ },
+ {
+  "id": "pianoSample3EqLP",
+  "min": 1000.0,
+  "max": 20000.0
+ },
+ {
+  "id": "pianoSample3EqQ0",
+  "min": 0.30000001192092896,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample3EqQ1",
+  "min": 0.30000001192092896,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample3EqQ2",
+  "min": 0.30000001192092896,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample3Gain",
+  "min": -36.0,
+  "max": 18.0
+ },
+ {
+  "id": "pianoSample3Hold",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample3Legato",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample3Mono",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample3Pan",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample3PortMode",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample3PortOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample3PortTime",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "pianoSample3Rel",
+  "min": 0.019999999552965164,
+  "max": 10.0
+ },
+ {
+  "id": "pianoSample3Res",
+  "min": 0.5,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample3Sus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample3Tune",
+  "min": -100.0,
+  "max": 100.0
+ },
+ {
+  "id": "pianoSample3WheelAmp",
+  "min": -24.0,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample3WheelAmpOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample3WheelCutoff",
+  "min": -6.0,
+  "max": 6.0
+ },
+ {
+  "id": "pianoSample3WheelCutoffInvert",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample3WheelCutoffOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample3WheelVibratoDepth",
+  "min": 0.0,
+  "max": 200.0
+ },
+ {
+  "id": "pianoSample3WheelVibratoOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample3WheelVibratoRate",
+  "min": 0.10000000149011612,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample4Atk",
+  "min": 0.004999999888241291,
+  "max": 5.0
+ },
+ {
+  "id": "pianoSample4Cut",
+  "min": 40.0,
+  "max": 20000.0
+ },
+ {
+  "id": "pianoSample4Dec",
+  "min": 0.019999999552965164,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample4Eq0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample4Eq1",
+  "min": 20.0,
+  "max": 1000.0
+ },
+ {
+  "id": "pianoSample4Eq2",
+  "min": 1000.0,
+  "max": 20000.0
+ },
+ {
+  "id": "pianoSample4Eq3",
+  "min": 12.0,
+  "max": 48.0
+ },
+ {
+  "id": "pianoSample4Eq4",
+  "min": 12.0,
+  "max": 48.0
+ },
+ {
+  "id": "pianoSample4EqF0",
+  "min": 30.0,
+  "max": 16000.0
+ },
+ {
+  "id": "pianoSample4EqF1",
+  "min": 30.0,
+  "max": 16000.0
+ },
+ {
+  "id": "pianoSample4EqF2",
+  "min": 30.0,
+  "max": 16000.0
+ },
+ {
+  "id": "pianoSample4EqG0",
+  "min": -15.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoSample4EqG1",
+  "min": -15.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoSample4EqG2",
+  "min": -15.0,
+  "max": 15.0
+ },
+ {
+  "id": "pianoSample4EqHP",
+  "min": 20.0,
+  "max": 1000.0
+ },
+ {
+  "id": "pianoSample4EqLP",
+  "min": 1000.0,
+  "max": 20000.0
+ },
+ {
+  "id": "pianoSample4EqQ0",
+  "min": 0.30000001192092896,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample4EqQ1",
+  "min": 0.30000001192092896,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample4EqQ2",
+  "min": 0.30000001192092896,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample4Gain",
+  "min": -36.0,
+  "max": 18.0
+ },
+ {
+  "id": "pianoSample4Hold",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample4Legato",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample4Mono",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample4Pan",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample4PortMode",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample4PortOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample4PortTime",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "pianoSample4Rel",
+  "min": 0.019999999552965164,
+  "max": 10.0
+ },
+ {
+  "id": "pianoSample4Res",
+  "min": 0.5,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample4Sus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample4Tune",
+  "min": -100.0,
+  "max": 100.0
+ },
+ {
+  "id": "pianoSample4WheelAmp",
+  "min": -24.0,
+  "max": 12.0
+ },
+ {
+  "id": "pianoSample4WheelAmpOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample4WheelCutoff",
+  "min": -6.0,
+  "max": 6.0
+ },
+ {
+  "id": "pianoSample4WheelCutoffInvert",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample4WheelCutoffOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample4WheelVibratoDepth",
+  "min": 0.0,
+  "max": 200.0
+ },
+ {
+  "id": "pianoSample4WheelVibratoOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "pianoSample4WheelVibratoRate",
+  "min": 0.10000000149011612,
+  "max": 12.0
+ },
+ {
+  "id": "pianoTune",
+  "min": -100.0,
+  "max": 100.0
+ },
+ {
+  "id": "pianoVolume",
+  "min": 0.0,
+  "max": 1.5
+ },
+ {
+  "id": "pianoZone0High",
+  "min": 0.0,
+  "max": 127.0
+ },
+ {
+  "id": "pianoZone0Low",
+  "min": 0.0,
+  "max": 127.0
+ },
+ {
+  "id": "pianoZone1High",
+  "min": 0.0,
+  "max": 127.0
+ },
+ {
+  "id": "pianoZone1Low",
+  "min": 0.0,
+  "max": 127.0
+ },
+ {
+  "id": "pianoZone2High",
+  "min": 0.0,
+  "max": 127.0
+ },
+ {
+  "id": "pianoZone2Low",
+  "min": 0.0,
+  "max": 127.0
+ },
+ {
+  "id": "pianoZone3High",
+  "min": 0.0,
+  "max": 127.0
+ },
+ {
+  "id": "pianoZone3Low",
+  "min": 0.0,
+  "max": 127.0
+ },
+ {
+  "id": "pianoZone4High",
+  "min": 0.0,
+  "max": 127.0
+ },
+ {
+  "id": "pianoZone4Low",
+  "min": 0.0,
+  "max": 127.0
+ },
+ {
+  "id": "pianoZoneHigh",
+  "min": 0.0,
+  "max": 127.0
+ },
+ {
+  "id": "pianoZoneLow",
+  "min": 0.0,
+  "max": 127.0
+ },
+ {
+  "id": "programSlot01",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "programSlot02",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "programSlot03",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "programSlot04",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "programSlot05",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "programSlot06",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "programSlot07",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "programSlot08",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "release",
+  "min": 0.019999999552965164,
+  "max": 6.0
+ },
+ {
+  "id": "resonance",
+  "min": 0.5,
+  "max": 12.0
+ },
+ {
+  "id": "reverbDamping",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "reverbEnabled",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "reverbMix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "reverbPreDelayMs",
+  "min": 0.0,
+  "max": 240.0
+ },
+ {
+  "id": "reverbShimmer",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "reverbSize",
+  "min": 0.05000000074505806,
+  "max": 1.0
+ },
+ {
+  "id": "reverbType",
+  "min": 0.0,
+  "max": 3.0
+ },
+ {
+  "id": "shimmerColorMode",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "shimmerDiffusion",
+  "min": 0.0,
+  "max": 0.9800000190734863
+ },
+ {
+  "id": "shimmerFeedback",
+  "min": 0.0,
+  "max": 0.9850000143051147
+ },
+ {
+  "id": "shimmerHighCutHz",
+  "min": 1000.0,
+  "max": 20000.0
+ },
+ {
+  "id": "shimmerLowCutHz",
+  "min": 20.0,
+  "max": 1000.0
+ },
+ {
+  "id": "shimmerModDepth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "shimmerModRateHz",
+  "min": 0.05000000074505806,
+  "max": 5.0
+ },
+ {
+  "id": "shimmerPitchMode",
+  "min": 0.0,
+  "max": 4.0
+ },
+ {
+  "id": "shimmerReverbMode",
+  "min": 0.0,
+  "max": 3.0
+ },
+ {
+  "id": "shimmerShiftSt",
+  "min": -12.0,
+  "max": 12.0
+ },
+ {
+  "id": "softRelease",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend0_0_0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend0_0_1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend0_0_2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend0_0_3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend0_0_4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend0_1_0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend0_1_1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend0_1_2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend0_1_3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend0_1_4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend0_2_0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend0_2_1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend0_2_2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend0_2_3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend0_2_4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend0_3_0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend0_3_1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend0_3_2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend0_3_3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend0_3_4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend0_4_0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend0_4_1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend0_4_2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend0_4_3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend0_4_4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend1_0_0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend1_0_1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend1_0_2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend1_0_3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend1_0_4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend1_1_0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend1_1_1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend1_1_2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend1_1_3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend1_1_4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend1_2_0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend1_2_1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend1_2_2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend1_2_3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend1_2_4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend1_3_0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend1_3_1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend1_3_2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend1_3_3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend1_3_4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend2_0_0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend2_0_1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend2_0_2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend2_0_3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend2_0_4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend3_0_0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend3_0_1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend3_0_2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend3_0_3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend3_0_4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend3_1_0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend3_1_1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend3_1_2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend3_1_3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend3_1_4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend3_2_0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend3_2_1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend3_2_2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend3_2_3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSend3_2_4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_0_p0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_0_p1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_0_p10",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_0_p11",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_0_p12",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_0_p13",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_0_p14",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_0_p15",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_0_p16",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_0_p17",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_0_p18",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_0_p19",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_0_p2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_0_p20",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_0_p21",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_0_p22",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_0_p23",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_0_p3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_0_p4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_0_p5",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_0_p6",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_0_p7",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_0_p8",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_0_p9",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_1_p0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_1_p1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_1_p10",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_1_p11",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_1_p12",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_1_p13",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_1_p14",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_1_p15",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_1_p16",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_1_p17",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_1_p18",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_1_p19",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_1_p2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_1_p20",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_1_p21",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_1_p22",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_1_p23",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_1_p3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_1_p4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_1_p5",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_1_p6",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_1_p7",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_1_p8",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_1_p9",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_2_p0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_2_p1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_2_p10",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_2_p11",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_2_p12",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_2_p13",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_2_p14",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_2_p15",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_2_p16",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_2_p17",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_2_p18",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_2_p19",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_2_p2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_2_p20",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_2_p21",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_2_p22",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_2_p23",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_2_p3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_2_p4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_2_p5",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_2_p6",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_2_p7",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_2_p8",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_2_p9",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_3_p0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_3_p1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_3_p10",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_3_p11",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_3_p12",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_3_p13",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_3_p14",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_3_p15",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_3_p16",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_3_p17",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_3_p18",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_3_p19",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_3_p2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_3_p20",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_3_p21",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_3_p22",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_3_p23",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_3_p3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_3_p4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_3_p5",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_3_p6",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_3_p7",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_3_p8",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_3_p9",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_4_p0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_4_p1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_4_p10",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_4_p11",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_4_p12",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_4_p13",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_4_p14",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_4_p15",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_4_p16",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_4_p17",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_4_p18",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_4_p19",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_4_p2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_4_p20",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_4_p21",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_4_p22",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_4_p23",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_4_p3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_4_p4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_4_p5",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_4_p6",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_4_p7",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_4_p8",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot0_4_p9",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_0_p0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_0_p1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_0_p10",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_0_p11",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_0_p12",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_0_p13",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_0_p14",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_0_p15",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_0_p16",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_0_p17",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_0_p18",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_0_p19",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_0_p2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_0_p20",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_0_p21",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_0_p22",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_0_p23",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_0_p3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_0_p4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_0_p5",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_0_p6",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_0_p7",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_0_p8",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_0_p9",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_1_p0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_1_p1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_1_p10",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_1_p11",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_1_p12",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_1_p13",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_1_p14",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_1_p15",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_1_p16",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_1_p17",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_1_p18",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_1_p19",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_1_p2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_1_p20",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_1_p21",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_1_p22",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_1_p23",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_1_p3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_1_p4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_1_p5",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_1_p6",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_1_p7",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_1_p8",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_1_p9",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_2_p0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_2_p1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_2_p10",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_2_p11",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_2_p12",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_2_p13",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_2_p14",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_2_p15",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_2_p16",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_2_p17",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_2_p18",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_2_p19",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_2_p2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_2_p20",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_2_p21",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_2_p22",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_2_p23",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_2_p3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_2_p4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_2_p5",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_2_p6",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_2_p7",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_2_p8",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_2_p9",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_3_p0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_3_p1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_3_p10",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_3_p11",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_3_p12",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_3_p13",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_3_p14",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_3_p15",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_3_p16",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_3_p17",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_3_p18",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_3_p19",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_3_p2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_3_p20",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_3_p21",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_3_p22",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_3_p23",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_3_p3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_3_p4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_3_p5",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_3_p6",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_3_p7",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_3_p8",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_3_p9",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_4_p0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_4_p1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_4_p10",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_4_p11",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_4_p12",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_4_p13",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_4_p14",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_4_p15",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_4_p16",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_4_p17",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_4_p18",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_4_p19",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_4_p2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_4_p20",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_4_p21",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_4_p22",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_4_p23",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_4_p3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_4_p4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_4_p5",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_4_p6",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_4_p7",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_4_p8",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot1_4_p9",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_0_p0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_0_p1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_0_p10",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_0_p11",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_0_p12",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_0_p13",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_0_p14",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_0_p15",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_0_p16",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_0_p17",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_0_p18",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_0_p19",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_0_p2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_0_p20",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_0_p21",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_0_p22",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_0_p23",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_0_p3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_0_p4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_0_p5",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_0_p6",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_0_p7",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_0_p8",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_0_p9",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_1_p0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_1_p1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_1_p10",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_1_p11",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_1_p12",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_1_p13",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_1_p14",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_1_p15",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_1_p16",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_1_p17",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_1_p18",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_1_p19",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_1_p2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_1_p20",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_1_p21",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_1_p22",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_1_p23",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_1_p3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_1_p4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_1_p5",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_1_p6",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_1_p7",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_1_p8",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_1_p9",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_2_p0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_2_p1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_2_p10",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_2_p11",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_2_p12",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_2_p13",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_2_p14",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_2_p15",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_2_p16",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_2_p17",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_2_p18",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_2_p19",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_2_p2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_2_p20",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_2_p21",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_2_p22",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_2_p23",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_2_p3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_2_p4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_2_p5",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_2_p6",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_2_p7",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_2_p8",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_2_p9",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_3_p0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_3_p1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_3_p10",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_3_p11",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_3_p12",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_3_p13",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_3_p14",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_3_p15",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_3_p16",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_3_p17",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_3_p18",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_3_p19",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_3_p2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_3_p20",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_3_p21",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_3_p22",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_3_p23",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_3_p3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_3_p4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_3_p5",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_3_p6",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_3_p7",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_3_p8",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_3_p9",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_4_p0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_4_p1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_4_p10",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_4_p11",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_4_p12",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_4_p13",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_4_p14",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_4_p15",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_4_p16",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_4_p17",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_4_p18",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_4_p19",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_4_p2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_4_p20",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_4_p21",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_4_p22",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_4_p23",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_4_p3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_4_p4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_4_p5",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_4_p6",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_4_p7",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_4_p8",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot2_4_p9",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_0_p0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_0_p1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_0_p10",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_0_p11",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_0_p12",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_0_p13",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_0_p14",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_0_p15",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_0_p16",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_0_p17",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_0_p18",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_0_p19",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_0_p2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_0_p20",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_0_p21",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_0_p22",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_0_p23",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_0_p3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_0_p4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_0_p5",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_0_p6",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_0_p7",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_0_p8",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_0_p9",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_1_p0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_1_p1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_1_p10",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_1_p11",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_1_p12",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_1_p13",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_1_p14",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_1_p15",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_1_p16",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_1_p17",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_1_p18",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_1_p19",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_1_p2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_1_p20",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_1_p21",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_1_p22",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_1_p23",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_1_p3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_1_p4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_1_p5",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_1_p6",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_1_p7",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_1_p8",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_1_p9",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_2_p0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_2_p1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_2_p10",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_2_p11",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_2_p12",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_2_p13",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_2_p14",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_2_p15",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_2_p16",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_2_p17",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_2_p18",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_2_p19",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_2_p2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_2_p20",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_2_p21",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_2_p22",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_2_p23",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_2_p3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_2_p4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_2_p5",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_2_p6",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_2_p7",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_2_p8",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_2_p9",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_3_p0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_3_p1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_3_p10",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_3_p11",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_3_p12",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_3_p13",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_3_p14",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_3_p15",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_3_p16",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_3_p17",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_3_p18",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_3_p19",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_3_p2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_3_p20",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_3_p21",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_3_p22",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_3_p23",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_3_p3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_3_p4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_3_p5",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_3_p6",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_3_p7",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_3_p8",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_3_p9",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_4_p0",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_4_p1",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_4_p10",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_4_p11",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_4_p12",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_4_p13",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_4_p14",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_4_p15",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_4_p16",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_4_p17",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_4_p18",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_4_p19",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_4_p2",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_4_p20",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_4_p21",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_4_p22",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_4_p23",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_4_p3",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_4_p4",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_4_p5",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_4_p6",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_4_p7",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_4_p8",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "studioSlot3_4_p9",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "sustain",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synth-filt-atk",
+  "min": 0.0010000000474974513,
+  "max": 5.0
+ },
+ {
+  "id": "synth-filt-dec",
+  "min": 0.004999999888241291,
+  "max": 10.0
+ },
+ {
+  "id": "synth-filt-envamt",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "synth-filt-rel",
+  "min": 0.004999999888241291,
+  "max": 10.0
+ },
+ {
+  "id": "synth-filt-sus",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synth-keytrack",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "synth-phase",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synth-unison-detune",
+  "min": 0.0,
+  "max": 50.0
+ },
+ {
+  "id": "synth-unison-spread",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synth-unison-voices",
+  "min": 1.0,
+  "max": 8.0
+ },
+ {
+  "id": "synth-vel-amp",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "synth-vel-cutoff",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthEnabled",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthFxAutoPanDepth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthFxAutoPanOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthFxAutoPanRate",
+  "min": 0.05000000074505806,
+  "max": 12.0
+ },
+ {
+  "id": "synthFxChorusDepth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthFxChorusMix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthFxChorusOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthFxChorusRate",
+  "min": 0.10000000149011612,
+  "max": 6.0
+ },
+ {
+  "id": "synthFxDelayFeedback",
+  "min": 0.0,
+  "max": 0.8500000238418579
+ },
+ {
+  "id": "synthFxDelayMix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthFxDelayOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthFxDelayTime",
+  "min": 40.0,
+  "max": 1200.0
+ },
+ {
+  "id": "synthFxDriveAmount",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthFxDriveOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthFxFlangerDepth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthFxFlangerFeedback",
+  "min": -0.8500000238418579,
+  "max": 0.8500000238418579
+ },
+ {
+  "id": "synthFxFlangerMix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthFxFlangerOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthFxFlangerRate",
+  "min": 0.05000000074505806,
+  "max": 5.0
+ },
+ {
+  "id": "synthFxPhaserDepth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthFxPhaserFeedback",
+  "min": 0.0,
+  "max": 0.8500000238418579
+ },
+ {
+  "id": "synthFxPhaserMix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthFxPhaserOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthFxPhaserRate",
+  "min": 0.10000000149011612,
+  "max": 6.0
+ },
+ {
+  "id": "synthFxReverbMix",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthFxReverbOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthFxReverbSize",
+  "min": 0.05000000074505806,
+  "max": 1.0
+ },
+ {
+  "id": "synthFxReverbType",
+  "min": 0.0,
+  "max": 3.0
+ },
+ {
+  "id": "synthFxTremoloDepth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthFxTremoloOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthFxTremoloRate",
+  "min": 0.5,
+  "max": 14.0
+ },
+ {
+  "id": "synthGlideMode",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthLfoCutoff",
+  "min": -5000.0,
+  "max": 5000.0
+ },
+ {
+  "id": "synthLfoDepth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthLfoEnabled",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthLfoPitch",
+  "min": 0.0,
+  "max": 200.0
+ },
+ {
+  "id": "synthLfoRate",
+  "min": 0.05000000074505806,
+  "max": 30.0
+ },
+ {
+  "id": "synthLfoWave",
+  "min": 0.0,
+  "max": 3.0
+ },
+ {
+  "id": "synthMacroCutoff",
+  "min": 0.10000000149011612,
+  "max": 2.0
+ },
+ {
+  "id": "synthMasterVol",
+  "min": 0.0,
+  "max": 1.5
+ },
+ {
+  "id": "synthPan",
+  "min": -1.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthPortamento",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "synthPortamentoOn",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthPresetId",
+  "min": 1.0,
+  "max": 432.0
+ },
+ {
+  "id": "synthSend0Delay",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthSend0Mod",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthSend0Reverb",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthSend1Delay",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthSend1Mod",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthSend1Reverb",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthSend2Delay",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthSend2Mod",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthSend2Reverb",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthSlide",
+  "min": -12.0,
+  "max": 12.0
+ },
+ {
+  "id": "synthTune",
+  "min": -100.0,
+  "max": 100.0
+ },
+ {
+  "id": "synthVoiceMaster",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "synthVoiceMode",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "synthWheelGlobalAmpDb",
+  "min": -24.0,
+  "max": 12.0
+ },
+ {
+  "id": "synthWheelGlobalCutoff",
+  "min": -6.0,
+  "max": 6.0
+ },
+ {
+  "id": "synthZoneHigh",
+  "min": 0.0,
+  "max": 127.0
+ },
+ {
+  "id": "synthZoneLow",
+  "min": 0.0,
+  "max": 127.0
+ },
+ {
+  "id": "touch",
+  "min": 0.0,
+  "max": 2.0
+ },
+ {
+  "id": "transpose",
+  "min": -12.0,
+  "max": 12.0
+ },
+ {
+  "id": "tremoloDepth",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "tremoloEnabled",
+  "min": 0.0,
+  "max": 1.0
+ },
+ {
+  "id": "tremoloRate",
+  "min": 0.5,
+  "max": 14.0
+ },
+ {
+  "id": "tune",
+  "min": -50.0,
+  "max": 50.0
+ },
+ {
+  "id": "volume",
+  "min": 0.0,
+  "max": 1.5
+ }
+]

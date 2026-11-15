@@ -10,10 +10,10 @@ std::shared_ptr<PianoInstrument> testBank(int id) {
     b->id = id; b->name = "piano-" + std::to_string(id);
     StrokeSample s; s.frames=16000; s.sampleRate=48000; s.actualRootMidi=60;
     s.lokey=0; s.hikey=127;
-    s.audioL.resize(s.frames); s.audioR.resize(s.frames);
+    s.pcmL.resize(s.frames); s.pcmR.resize(s.frames);
     for(unsigned k=0;k<s.frames;++k)
-        s.audioL[k]=s.audioR[k]=0.06f*std::sin(2.0*3.141592653589793*k*220.0/48000.0);
-    b->strokes.push_back(std::move(s)); return b;
+        s.pcmL[k]=s.pcmR[k]=int16_t(std::lrint(32767.f*0.06f*std::sin(2.0*3.141592653589793*k*220.0/48000.0)));
+    s.sampleScale=1.f/32768.f;s.readyFrames->store(s.frames);b->strokes.push_back(std::move(s)); return b;
 }
 int main() {
   NordPianoEngine piano;

@@ -1,0 +1,20 @@
+{
+  "name": "Jazz Organ",
+  "factoryId": 5,
+  "params": {
+    "organModel": 5,
+    "organEnabled": true,
+    "organRotaryFast": false,
+    "drawbars": [
+      8,
+      8,
+      8,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  }
+}

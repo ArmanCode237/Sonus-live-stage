@@ -1,0 +1,20 @@
+{
+  "name": "Rock Organ",
+  "factoryId": 4,
+  "params": {
+    "organModel": 4,
+    "organEnabled": true,
+    "organRotaryFast": false,
+    "drawbars": [
+      8,
+      8,
+      8,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  }
+}

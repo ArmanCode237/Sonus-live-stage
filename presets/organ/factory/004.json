@@ -1,0 +1,20 @@
+{
+  "name": "Combo Compact",
+  "factoryId": 3,
+  "params": {
+    "organModel": 3,
+    "organEnabled": true,
+    "organRotaryFast": false,
+    "drawbars": [
+      8,
+      8,
+      8,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  }
+}

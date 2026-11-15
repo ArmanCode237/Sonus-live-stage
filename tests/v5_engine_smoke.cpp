@@ -9,9 +9,9 @@ using namespace NordDSP;
 static std::shared_ptr<PianoInstrument> makeSample() {
     auto bank=std::make_shared<PianoInstrument>();
     StrokeSample s; s.frames=48000;s.sampleRate=48000;s.actualRootMidi=60;s.lokey=0;s.hikey=127;
-    s.audioL.resize(s.frames);s.audioR.resize(s.frames);
-    for (unsigned n=0;n<s.frames;++n) s.audioL[n]=s.audioR[n]=0.08f*std::sin(2*3.141592653589793*220*n/48000);
-    bank->strokes.push_back(std::move(s));return bank;
+    s.pcmL.resize(s.frames);s.pcmR.resize(s.frames);
+    for (unsigned n=0;n<s.frames;++n) s.pcmL[n]=s.pcmR[n]=int16_t(std::lrint(32767.f*0.08f*std::sin(2*3.141592653589793*220*n/48000)));
+    s.sampleScale=1.f/32768.f;s.readyFrames->store(s.frames);bank->strokes.push_back(std::move(s));return bank;
 }
 static int crosses(const std::vector<float>& buffer) {
     int z=0;

@@ -1,3 +1,10 @@
+# main.cpp was split into src/app/** (StageApp + route groups): contract checks
+# read the whole application layer instead of the single former file.
+def _stage_app_source():
+    import pathlib as _p
+    root = _p.Path(__file__).resolve().parents[1]
+    files = [root / 'src/main.cpp', *sorted((root / 'src/app').rglob('*.h')), *sorted((root / 'src/app').rglob('*.cpp'))]
+    return chr(10).join(f.read_text(encoding='utf-8') for f in files)
 """Static UI contract. The redesigned physical controls keep the existing DSP IDs."""
 from pathlib import Path
 import re
@@ -5,7 +12,7 @@ root=Path(__file__).resolve().parents[1]
 read=lambda p: (root/p).read_text(encoding='utf-8')
 main=read('ui/index.html'); synth=read('ui/js/synth.js')
 knobs=read('ui/js/knobs.js'); organ=read('ui/js/organ.js')
-server=read('src/main.cpp'); panels=read('ui/synth.html')
+server=_stage_app_source(); panels=read('ui/synth.html')
 assert 'set_mount_point("/", uiRootDir)' in server
 for b in range(5): assert f'data-id="eqGain{b}"' in main
 for i in range(3):

@@ -1,0 +1,20 @@
+{
+  "name": "Tonewheel B3",
+  "factoryId": 0,
+  "params": {
+    "organModel": 0,
+    "organEnabled": true,
+    "organRotaryFast": false,
+    "drawbars": [
+      8,
+      8,
+      8,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ]
+  }
+}

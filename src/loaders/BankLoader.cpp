@@ -1,7 +1,6 @@
 #define DR_WAV_IMPLEMENTATION
 #include "dr_wav.h"
 #include "BankLoader.h"
-#include <nlohmann/json.hpp>
 #include <fstream>
 #include <sstream>
 #include <iostream>
@@ -12,9 +11,16 @@
 #include <thread>
 #include <atomic>
 #include <chrono>
+#include <cctype>
+#include <iterator>
+#include <iomanip>
+#include <limits>
+#include <memory>
+#include <mutex>
 #include "NsmpLoader.h"
+#include "Sf2Loader.h"
+#include "ReadOnlyFileBytes.h"
 
-using json = nlohmann::json;
 namespace fs = std::filesystem;
 
 namespace NordDSP {
@@ -54,7 +60,7 @@ const int PREDICTORS[5][4] = {
     {4, -6, 4, -1}
 };
 
-int findCnspOffset(const std::vector<uint8_t>& bytes) {
+template<typename Bytes> int findCnspOffset(const Bytes& bytes) {
     size_t limit = std::min<size_t>(bytes.size(), 0x100);
     for (size_t i = 0; i + 4 <= limit; ++i) {
         if (bytes[i] == 0x43 && bytes[i + 1] == 0x4e && bytes[i + 2] == 0x53 && bytes[i + 3] == 0x50) {
@@ -88,66 +94,105 @@ std::string extractFirstAsciiRun(const std::vector<uint8_t>& bytes, size_t from,
 
 } // namespace
 
-// Si una muestra no trae bucle en el .npno (o es muy corto), busca cruces por cero en la cola para poder sostenerla
-void BankLoader::ensureSustainLoop(StrokeSample& s) {
-    if (s.frames < 4096 || s.audioL.size() < s.frames) return;
+// Long, stereo-aware late-tail loop. Never touch a valid factory loop.
+// In progressive mode the loop is published atomically instead of changing
+// s.loop (which is read by the realtime callback).
+void BankLoader::ensureSustainLoop(StrokeSample& s, bool progressive) {
+    if (s.loop.hasLoop && s.loop.length >= 4 &&
+        s.loop.start < s.frames && s.loop.length <= s.frames-s.loop.start) return;
+    if (s.frames < 16384 || s.pcmL.size()<s.frames || s.pcmR.size()<s.frames ||
+        s.actualRootMidi>=86 || s.isReleaseStroke || s.explicitOneShot) return;
 
-    // 1. Si el archivo .npno ya trae su bucle original de fábrica, respetarlo intacto
-    if (s.loop.hasLoop && s.loop.length >= 64 && s.loop.start + s.loop.length <= s.frames) {
-        s.loop.end = s.loop.start + s.loop.length;
-        return;
+    const uint32_t searchStart=static_cast<uint32_t>(s.frames*0.76);
+    const uint32_t searchEnd=static_cast<uint32_t>(s.frames*0.95);
+    if(searchEnd<=searchStart+8192) return;
+    auto ascending=[&](uint32_t i)->bool{
+        if(i==0||i+1>=s.frames)return false;
+        const int l0=s.pcmL[i-1],l1=s.pcmL[i];
+        const int r0=s.pcmR[i-1],r1=s.pcmR[i];
+        return l0 <= 0 && l1 > 0 &&
+            ((r0 <= 0 && r1 > 0) ||
+             std::abs(r1-r0) < std::max(20,3*(l1-l0)));
+    };
+    uint32_t start=0,end=0;
+    int firstSlope=0;
+    for(uint32_t i=searchStart;i<searchStart+4096&&i<searchEnd;++i){
+        if(ascending(i)){start=i;firstSlope=s.pcmL[i]-s.pcmL[i-1];break;}
     }
-
-    // 2. En un piano real, las últimas 2 octavas (notas >= 86 D6) son percusivas y cortas;
-    // no debemos inventarles un bucle artificial si el .npno de fábrica no lo incluyó.
-    if (s.actualRootMidi >= 86) {
-        s.loop.hasLoop = false;
-        return;
+    if(!start)return;
+    int bestScore=std::numeric_limits<int>::max();
+    const uint32_t from=std::max(start+8192,searchEnd-4096);
+    for(uint32_t i=from;i<searchEnd;++i){
+        if(!ascending(i))continue;
+        const int slope=s.pcmL[i]-s.pcmL[i-1];
+        const int rightSlope=s.pcmR[i]-s.pcmR[i-1];
+        const int leftSlope=s.pcmR[start]-s.pcmR[start-1];
+        const int score=std::abs(firstSlope-slope)+std::abs(leftSlope-rightSlope);
+        if(score<bestScore){bestScore=score;end=i;}
     }
+    if(end<=start+8192)return;
 
-    uint32_t searchStart = static_cast<uint32_t>(s.frames * 0.45);
-    uint32_t searchEnd = static_cast<uint32_t>(s.frames * 0.90);
-    if (searchEnd <= searchStart + 4096) return;
-
-    uint32_t loopStart = searchStart;
-    for (uint32_t i = searchStart; i < searchStart + 4096 && i + 1 < searchEnd; ++i) {
-        if (s.audioL[i] <= 0.0f && s.audioL[i + 1] > 0.0f) {
-            loopStart = i;
-            break;
+    // Analyze a late, stationary stereo tail rather than blindly looping a
+    // decaying piano/EP attack. A coherent, shared gain keeps stereo imaging.
+    const uint32_t xfade=std::min<uint32_t>(4096,std::min<uint32_t>((end-start)/3,start/3));
+    if(xfade<2048)return;
+    auto rms=[&](const std::vector<int16_t>& pcm,uint32_t offset,uint32_t len){
+        double sum=0.;
+        for(uint32_t k=0;k<len;++k){const double x=pcm[offset+k];sum+=x*x;}
+        return std::sqrt(sum/double(len));
+    };
+    const uint32_t probe=std::min<uint32_t>(1024,xfade);
+    const double headL=rms(s.pcmL,start-probe,probe),headR=rms(s.pcmR,start-probe,probe);
+    const double tailL=rms(s.pcmL,end-probe,probe),tailR=rms(s.pcmR,end-probe,probe);
+    const double earlyL=rms(s.pcmL,start-2*probe,probe),earlyR=rms(s.pcmR,start-2*probe,probe);
+    const auto stable=[](double a,double b){
+        return a>55. && b>55. && std::abs(20.*std::log10(a/b))<1.2;
+    };
+    if(!stable(headL,tailL)||!stable(headR,tailR)||
+       !stable(earlyL,headL)||!stable(earlyR,headR))return;
+    // Equal-power fades are not invisible for unrelated spectral/phase states.
+    // Accept only tails whose stereo waveforms agree across the actual splice;
+    // otherwise preserve the original one-shot instead of creating a pump.
+    auto correlation=[&](const std::vector<int16_t>& pcm)->double{
+        double xy=0.,xx=0.,yy=0.;
+        for(uint32_t k=0;k<xfade;k+=4){
+            const double a=pcm[end-xfade+k],b=pcm[start-xfade+k];
+            xy+=a*b;xx+=a*a;yy+=b*b;
         }
+        return xy/std::sqrt(std::max(1.,xx*yy));
+    };
+    if(correlation(s.pcmL)<.80 || correlation(s.pcmR)<.80)return;
+    // Both channels share ONE RMS correction. Independent channel gain would
+    // shift the stereo field each time the sustain repeats.
+    const float sharedGain=std::clamp(float(std::sqrt((tailL*tailL+tailR*tailR)/
+        std::max(1.,headL*headL+headR*headR))),.93f,1.07f);
+    const float inv=float(1.)/float(xfade);
+    auto splice=[&](std::vector<int16_t>& pcm){
+        for(uint32_t k=0;k<xfade;++k){
+            const float u=(float(k)+.5f)*inv;
+            const float theta=u*1.5707963267948966f;
+            const float a=std::cos(theta),b=std::sin(theta);
+            // The gain returns exactly to unity at loopEnd: no level step
+            // when the stream immediately continues at the original loopStart.
+            const float gain=1.f+(sharedGain-1.f)*(1.f-u)*(1.f-u);
+            const float normalizer=1.f/std::max(1.f,a+b);
+            const float out=(a*float(pcm[end-xfade+k])+
+                             b*gain*float(pcm[start-xfade+k]))*normalizer;
+            pcm[end-xfade+k]=int16_t(std::lrint(std::clamp(out,-32768.f,32767.f)));
+        }
+    };
+    splice(s.pcmL);splice(s.pcmR);
+    if(progressive){
+        s.publishedAutoLoop->store((uint64_t(start)<<32)|end,std::memory_order_release);
+    }else{
+        s.loop={true,true,start,end-start,end};
     }
-
-    uint32_t loopEnd = searchEnd;
-    for (uint32_t i = searchEnd; i > loopStart + 4096; --i) {
-        if (s.audioL[i - 1] <= 0.0f && s.audioL[i] > 0.0f) {
-            loopEnd = i;
-            break;
-        }
-    }
-
-    if (loopEnd > loopStart + 2048) {
-        // Suavizar la costura del auto-loop con un crossfade de 256 muestras
-        const uint32_t xfade = 256;
-        if (loopStart >= xfade) {
-            for (uint32_t k = 0; k < xfade; ++k) {
-                float alpha = static_cast<float>(k) / static_cast<float>(xfade);
-                uint32_t endIdx = loopEnd - xfade + k;
-                uint32_t preStartIdx = loopStart - xfade + k;
-                s.audioL[endIdx] = s.audioL[endIdx] * (1.0f - alpha) + s.audioL[preStartIdx] * alpha;
-                s.audioR[endIdx] = s.audioR[endIdx] * (1.0f - alpha) + s.audioR[preStartIdx] * alpha;
-            }
-        }
-        s.loop.hasLoop = true;
-        s.loop.isAutoLoop = true;
-        s.loop.start = loopStart;
-        s.loop.length = loopEnd - loopStart;
-        s.loop.end = loopEnd;
-        if (s.decayCoef >= 0.999999f) {
-            s.loopDecayDbPerS = -4.5f;
-            s.decayCoef = std::pow(10.0f, -4.5f / (20.0f * static_cast<float>(NSP_ENVELOPE_RATE)));
-        }
+    if(!progressive && s.decayCoef>=0.999999f){
+        s.loopDecayDbPerS=-4.5f;
+        s.decayCoef=std::pow(10.f,-4.5f/(20.f*float(NSP_ENVELOPE_RATE)));
     }
 }
+
 ClaviaHeaderInfo BankLoader::inspectClaviaHeader(const std::string& filePath) {
     ClaviaHeaderInfo info;
     std::ifstream f(filePath, std::ios::binary);
@@ -198,23 +243,191 @@ ClaviaHeaderInfo BankLoader::inspectClaviaHeader(const std::string& filePath) {
 }
 
 
-bool BankLoader::loadNpnoNative(const std::string& filePath, PianoInstrument& outInstrument, std::string& outStatusMsg) {
+namespace {
+// Portable field-by-field cache, versioned; no pointers, padding or raw C++ structs.
+// Validate source size/mtime AND each region before accepting cached PCM.
+// v26: v25 could persist a preload-only normalization scale in NPCACHE4.
+// Invalidate it after switching user loads to complete parallel decoding.
+constexpr uint32_t NPCACHE_VERSION=5;
+std::mutex npnoCacheDirMutex;
+fs::path activeNpnoCacheDir=".cache";
+fs::path npnoCacheDirectory(){std::lock_guard<std::mutex> guard(npnoCacheDirMutex);return activeNpnoCacheDir;}
+template<class T> bool cacheRead(std::ifstream& f,T& v){return bool(f.read(reinterpret_cast<char*>(&v),sizeof(v)));}
+template<class T> void cacheWrite(std::ofstream& f,const T& v){f.write(reinterpret_cast<const char*>(&v),sizeof(v));}
+fs::path cachePathFor(const std::string& source){
+    std::error_code ec;auto normalized=fs::weakly_canonical(source,ec).generic_string();
+    if(ec)normalized=fs::path(source).lexically_normal().generic_string();
+    uint64_t h=14695981039346656037ULL;
+    for(unsigned char c:normalized){h^=c;h*=1099511628211ULL;}
+    std::ostringstream name;name<<std::hex<<std::setw(16)<<std::setfill('0')<<h<<".npcache";
+    return npnoCacheDirectory()/name.str();
+}
+bool cacheStamp(const std::string& path,uint64_t& length,int64_t& timestamp){
+    std::error_code ec;length=fs::file_size(path,ec);if(ec)return false;
+    timestamp=static_cast<int64_t>(fs::last_write_time(path,ec).time_since_epoch().count());
+    return !ec;
+}
+bool loadPcmCache(const std::string& source,std::vector<StrokeSample>& strokes){
+    uint64_t size=0;int64_t time=0;if(!cacheStamp(source,size,time))return false;
+    std::ifstream f(cachePathFor(source),std::ios::binary);
+    if(!f && npnoCacheDirectory()!=fs::path(".cache")){f.open(fs::path(".cache")/cachePathFor(source).filename(),std::ios::binary);}
+    if(!f)return false;
+    char magic[8]{};if(!f.read(magic,8) || std::string(magic,8)!="NPCACHE5")return false;
+    uint32_t version=0,count=0;uint64_t fileSize=0;int64_t fileTime=0;
+    if(!cacheRead(f,version)||!cacheRead(f,fileSize)||!cacheRead(f,fileTime)||!cacheRead(f,count)||
+       version!=NPCACHE_VERSION||fileSize!=size||fileTime!=time||count!=strokes.size())return false;
+    // Staging prevents a truncated cache from publishing a partially loaded bank.
+    struct Record{float scale;LoopInfo loop;std::vector<int16_t> left,right;};
+    std::vector<Record> records(strokes.size());
+    uint64_t cachedBytes=0;
+    for(size_t i=0;i<strokes.size();++i){
+        auto& r=records[i];uint32_t frames=0;uint8_t loopFlag=0,autoFlag=0;
+        uint32_t ls=0,ll=0;
+        if(!cacheRead(f,frames)||frames!=strokes[i].frames||frames>100000000 ||
+           !cacheRead(f,r.scale)||!std::isfinite(r.scale)||r.scale<=0 ||
+           !cacheRead(f,loopFlag)||!cacheRead(f,autoFlag)||
+           !cacheRead(f,ls)||!cacheRead(f,ll))return false;
+        r.loop={loopFlag!=0,autoFlag!=0,ls,ll,ls+ll};
+        if(r.loop.hasLoop && (ls>=frames||ll>frames-ls))return false;
+        cachedBytes+=uint64_t(frames)*sizeof(int16_t)*2;
+        if(cachedBytes>uint64_t(2)*1024*1024*1024)return false;
+        r.left.resize(frames);r.right.resize(frames);
+        if(!f.read(reinterpret_cast<char*>(r.left.data()),frames*sizeof(int16_t))||
+           !f.read(reinterpret_cast<char*>(r.right.data()),frames*sizeof(int16_t)))return false;
+    }
+    for(size_t i=0;i<strokes.size();++i){
+        auto& s=strokes[i];auto& r=records[i];
+        s.sampleScale=r.scale;s.loop=r.loop;
+        s.pcmL=std::move(r.left);s.pcmR=std::move(r.right);
+        s.readyFrames->store(s.frames,std::memory_order_release);
+    }
+    return true;
+}
+void savePcmCache(const std::string& source,const std::vector<StrokeSample>& strokes){
+    uint64_t size=0;int64_t time=0;if(!cacheStamp(source,size,time))return;
+    std::error_code ec;const auto destination=cachePathFor(source);
+    fs::create_directories(destination.parent_path(),ec);if(ec)return;
+    // Unique temporary files prevent independent app/plugin processes from
+    // corrupting one another's cache writes. The final rename is atomic on
+    // POSIX; on Windows replace the destination with MoveFileExW.
+    const auto tag=std::chrono::steady_clock::now().time_since_epoch().count();
+    const auto tid=std::hash<std::thread::id>{}(std::this_thread::get_id());
+    const auto temp=fs::path(destination.string()+".tmp."+std::to_string(tag)+"."+std::to_string(tid));
+    std::ofstream f(temp,std::ios::binary|std::ios::trunc);if(!f)return;
+    f.write("NPCACHE5",8);cacheWrite(f,NPCACHE_VERSION);cacheWrite(f,size);
+    cacheWrite(f,time);const uint32_t count=static_cast<uint32_t>(strokes.size());cacheWrite(f,count);
+    for(const auto& s:strokes){
+        if(s.frames==0||s.pcmL.size()!=s.frames||s.pcmR.size()!=s.frames||
+           s.readyFrames->load(std::memory_order_acquire)!=s.frames){f.close();fs::remove(temp,ec);return;}
+        LoopInfo loop=s.loop;
+        if(!loop.hasLoop && s.publishedAutoLoop){
+            const uint64_t packed=s.publishedAutoLoop->load(std::memory_order_acquire);
+            if(packed){loop.start=uint32_t(packed>>32);loop.end=uint32_t(packed);
+                loop.length=loop.end-loop.start;loop.hasLoop=true;loop.isAutoLoop=true;}
+        }
+        cacheWrite(f,s.frames);cacheWrite(f,s.sampleScale);
+        const uint8_t valid=loop.hasLoop?1:0,autoLoop=loop.isAutoLoop?1:0;
+        cacheWrite(f,valid);cacheWrite(f,autoLoop);cacheWrite(f,loop.start);cacheWrite(f,loop.length);
+        f.write(reinterpret_cast<const char*>(s.pcmL.data()),s.frames*sizeof(int16_t));
+        f.write(reinterpret_cast<const char*>(s.pcmR.data()),s.frames*sizeof(int16_t));
+    }
+    f.flush();const bool ok=f.good();f.close();
+    if(!ok){fs::remove(temp,ec);return;}
+    // Never publish a cache computed for a source that changed during write.
+    uint64_t finalSize=0;int64_t finalTime=0;
+    if(!cacheStamp(source,finalSize,finalTime) || finalSize!=size || finalTime!=time){
+        fs::remove(temp,ec);return;
+    }
+#ifdef _WIN32
+    const bool replaced=MoveFileExW(temp.c_str(),destination.c_str(),
+                       MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH)!=0;
+    if(!replaced)fs::remove(temp,ec);
+#else
+    fs::rename(temp,destination,ec);
+    if(ec)fs::remove(temp,ec);
+#endif
+}
+} // anonymous namespace
+
+void BankLoader::setNpnoCacheDirectory(const std::filesystem::path& dir){
+    if(!dir.empty()){std::lock_guard<std::mutex> guard(npnoCacheDirMutex);activeNpnoCacheDir=dir;}
+}
+
+bool BankLoader::hasNpnoCache(const std::string& source){
+    uint64_t size=0;int64_t stamp=0;
+    if(!cacheStamp(source,size,stamp))return false;
+    // "Prepared" means present in the configured SSD directory. The loader
+    // still reads a legacy .cache as a compatibility fallback, but the batch
+    // preparation then migrates its PCM into the chosen persistent location.
+    std::ifstream f(cachePathFor(source),std::ios::binary);
+    char sign[8]{};uint32_t version=0,count=0;uint64_t fileSize=0;int64_t fileTime=0;
+    return bool(f.read(sign,8)) && std::string(sign,8)=="NPCACHE5" &&
+       cacheRead(f,version) && cacheRead(f,fileSize) && cacheRead(f,fileTime) && cacheRead(f,count) &&
+       version==NPCACHE_VERSION && fileSize==size && fileTime==stamp && count>0 && count<=100000;
+}
+
+bool BankLoader::rebindNpnoCache(const std::string& oldSource,const std::string& newSource){
+    // An explicit user relink can reuse NPCACHE5 if a moved original retains
+    // its exact size and modification time. No decoded sample is changed.
+    std::error_code ec;
+    if(fs::is_regular_file(oldSource,ec)||!fs::is_regular_file(newSource,ec)||ec)return false;
+    if(hasNpnoCache(newSource))return true;
+    uint64_t newSize=0;int64_t newTime=0;
+    if(!cacheStamp(newSource,newSize,newTime))return false;
+    const auto oldCache=cachePathFor(oldSource),newCache=cachePathFor(newSource);
+    std::ifstream input(oldCache,std::ios::binary);
+    if(!input && npnoCacheDirectory()!=fs::path(".cache"))
+        input.open(fs::path(".cache")/oldCache.filename(),std::ios::binary);
+    char magic[8]{};uint32_t version=0,count=0;uint64_t size=0;int64_t time=0;
+    if(!input.read(magic,8)||std::string(magic,8)!="NPCACHE5"||
+       !cacheRead(input,version)||!cacheRead(input,size)||!cacheRead(input,time)||
+       !cacheRead(input,count)||version!=NPCACHE_VERSION||size!=newSize||
+       time!=newTime||count==0||count>100000)return false;
+    input.close();
+    fs::create_directories(newCache.parent_path(),ec);if(ec)return false;
+    const auto temp=fs::path(newCache.string()+".relink."+
+        std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
+    // Prefer a copy: an older program or instance may still use the previous path.
+    const auto src=fs::exists(oldCache)?oldCache:fs::path(".cache")/oldCache.filename();
+    if(!fs::copy_file(src,temp,fs::copy_options::none,ec)||ec)return false;
+#ifdef _WIN32
+    const bool ok=MoveFileExW(temp.wstring().c_str(),newCache.wstring().c_str(),
+        MOVEFILE_REPLACE_EXISTING|MOVEFILE_WRITE_THROUGH)!=0;
+#else
+    fs::rename(temp,newCache,ec);const bool ok=!ec;
+#endif
+    if(!ok)fs::remove(temp,ec);
+    return ok&&hasNpnoCache(newSource);
+}
+
+bool BankLoader::loadNpnoNative(const std::string& filePath,PianoInstrument& out,
+                                std::string& msg,bool skipCacheWrite){
+    return loadNpnoNativeImpl(filePath,out,msg,{},skipCacheWrite);
+}
+void BankLoader::persistNpnoCache(const std::string& filePath,const PianoInstrument& bank){
+    savePcmCache(filePath,bank.strokes);
+}
+bool BankLoader::loadNpnoNativeShared(const std::string& filePath,
+         const std::shared_ptr<PianoInstrument>& owner,std::string& msg){
+    if(!owner){msg="PianoInstrument nulo";return false;}
+    return loadNpnoNativeImpl(filePath,*owner,msg,owner,false);
+}
+bool BankLoader::loadNpnoNativeImpl(const std::string& filePath, PianoInstrument& outInstrument,
+                                     std::string& outStatusMsg,std::shared_ptr<PianoInstrument> owner,
+                                     bool skipCacheWrite) {
     auto t0 = std::chrono::steady_clock::now();
 
-    std::ifstream f(filePath, std::ios::binary | std::ios::ate);
-    if (!f) {
-        outStatusMsg = "No se pudo abrir: " + filePath;
+    // Memory mapping avoids copying large compressed CNSP banks to a second
+    // 80+ MB heap buffer. The mapped view is captured by background decoding
+    // workers, so its lifetime always extends until the last reader exits.
+    auto sharedBytes = std::make_shared<ReadOnlyFileBytes>(filePath);
+    if (!sharedBytes->good()) {
+        outStatusMsg = "No se pudo leer: " + filePath;
         return false;
     }
-    std::streamsize fileSize = f.tellg();
-    if (fileSize < 0x800) {
+    const auto& bytes = *sharedBytes;
+    if (bytes.size() < 0x800) {
         outStatusMsg = "Archivo demasiado pequeño para ser CNSP.";
-        return false;
-    }
-    f.seekg(0, std::ios::beg);
-    std::vector<uint8_t> bytes(static_cast<size_t>(fileSize));
-    if (!f.read(reinterpret_cast<char*>(bytes.data()), fileSize)) {
-        outStatusMsg = "Error leyendo archivo en disco.";
         return false;
     }
 
@@ -373,7 +586,7 @@ bool BankLoader::loadNpnoNative(const std::string& filePath, PianoInstrument& ou
     std::vector<RawStrokeDesc> validStrokes;
     validStrokes.reserve(rawStrokes.size());
     for (const auto& rs : rawStrokes) {
-        if (rs.flags != 0) continue; // Solo capas dinámicas principales
+        if (rs.flags > 2) continue; // normal, alternate, and key-release strokes
         if (rs.frames == 0 || rs.blocks == 0) continue;
         if (static_cast<size_t>(rs.offset) + static_cast<size_t>(rs.blocks) * blockWords * 2 > bytes.size()) continue;
         validStrokes.push_back(rs);
@@ -386,7 +599,8 @@ bool BankLoader::loadNpnoNative(const std::string& filePath, PianoInstrument& ou
 
     std::map<int, std::vector<size_t>> strokesByZone;
     for (size_t i = 0; i < validStrokes.size(); ++i) {
-        strokesByZone[validStrokes[i].zone].push_back(i);
+        if(!validStrokes[i].release && validStrokes[i].flags != 1)
+            strokesByZone[validStrokes[i].zone].push_back(i);
     }
 
     outInstrument.zoneCount = static_cast<int>(strokesByZone.size());
@@ -431,7 +645,10 @@ bool BankLoader::loadNpnoNative(const std::string& filePath, PianoInstrument& ou
 
             s.frames = rs.frames;
             s.sampleRate = static_cast<uint32_t>(NSP_SAMPLE_RATE);
-            s.loop = {rs.hasLoop, false, rs.loopStart, rs.loopLength, rs.hasLoop ? (rs.loopStart + rs.loopLength) : 0u};
+            const bool validFactory=rs.hasLoop && rs.loopLength>=4 &&
+                rs.loopStart<rs.frames && rs.loopLength<=rs.frames-rs.loopStart;
+            s.loop={validFactory,false,validFactory?rs.loopStart:0u,
+                validFactory?rs.loopLength:0u,validFactory?rs.loopStart+rs.loopLength:0u};
             s.decayCoef = rs.loopDecay;
             s.loopDecayDbPerS = rs.hasLoop ? (20.0f * std::log10(std::max(1e-7f, rs.loopDecay)) * static_cast<float>(NSP_ENVELOPE_RATE)) : -3.5f;
 
@@ -455,121 +672,223 @@ bool BankLoader::loadNpnoNative(const std::string& filePath, PianoInstrument& ou
         }
     }
 
-    // Decodificación multihilo de todos los strokes con calibración limpia de 16 bits
-    unsigned int numThreads = std::max(2u, std::thread::hardware_concurrency());
-    numThreads = std::min<unsigned int>(numThreads, static_cast<unsigned int>(validStrokes.size()));
-    std::atomic<size_t> nextStroke{0};
-    std::vector<std::thread> workers;
-    workers.reserve(numThreads);
+    // Auxiliary recordings are not normal velocity layers. Keep their decoded
+    // samples in this instrument, but never let them compete with the main keymap.
+    for(size_t i=0;i<validStrokes.size();++i){
+        auto& rs=validStrokes[i];
+        if(rs.flags!=1 && !rs.release)continue;
+        auto& s=outInstrument.strokes[i];
+        s.index=rs.index;s.zone=rs.zone;s.flags=rs.flags;
+        s.isReleaseStroke=rs.release;
+        s.storedRoot=rs.storedRoot;s.actualRootMidi=rs.storedRoot+NSP_ROOT_OFFSET;
+        s.frames=rs.frames;s.sampleRate=uint32_t(NSP_SAMPLE_RATE);
+        s.velocityFrom=rs.velocityFrom;s.switchPoint=rs.velocityFrom;
+        s.lovel=1;s.hivel=127;
+        auto span=rootSpans.find(rs.storedRoot);
+        if(span!=rootSpans.end()){
+            s.lokey=span->second.first;s.hikey=span->second.second;
+        }else{s.lokey=std::max(0,s.actualRootMidi-2);s.hikey=std::min(127,s.actualRootMidi+2);}
+        const bool valid=rs.hasLoop && rs.loopLength>=4 && rs.loopStart<rs.frames &&
+            rs.loopLength<=rs.frames-rs.loopStart && !rs.release;
+        s.loop={valid,false,valid?rs.loopStart:0u,valid?rs.loopLength:0u,
+            valid?rs.loopStart+rs.loopLength:0u};
+        s.explicitOneShot=rs.release;
+        s.fineTuneCents=float(rs.fineTune);
+        s.baseLevelWord=rs.levelWord;
+        if(rs.levelWord>125 && rs.levelWord<600)
+            s.levelGainLinear=std::clamp(std::pow(10.f,-float(rs.levelWord-125)*.08f/20.f),.25f,1.f);
+        s.decayCoef=rs.loopDecay;
+        s.loopDecayDbPerS=valid?20.f*std::log10(std::max(1e-7f,rs.loopDecay))*float(NSP_ENVELOPE_RATE):0.f;
+        s.damperIndex=rs.damperIdx?rs.damperIdx:44;
+        s.softDamperIndex=rs.softDamperIdx?rs.softDamperIdx:50;
+        s.damperT60Seconds=.0015f*std::pow(10.f,s.damperIndex/20.f);
+        s.softDamperT60Seconds=.0015f*std::pow(10.f,s.softDamperIndex/20.f);
+    }
 
-    for (unsigned int th = 0; th < numThreads; ++th) {
-        workers.emplace_back([&]() {
-            while (true) {
-                size_t idx = nextStroke.fetch_add(1, std::memory_order_relaxed);
-                if (idx >= validStrokes.size()) break;
+    if (loadPcmCache(filePath,outInstrument.strokes)) {
+        outInstrument.memoryMB=0;
+        for(const auto& st:outInstrument.strokes)
+            outInstrument.memoryMB+=(st.pcmL.size()+st.pcmR.size())*sizeof(int16_t)/(1024.0*1024.0);
+        outStatusMsg="Desde caché PCM16: "+outInstrument.name;
+        return true;
+    }
 
-                const RawStrokeDesc& rs = validStrokes[idx];
-                StrokeSample& dst = outInstrument.strokes[idx];
-
-                dst.audioL.assign(rs.frames, 0.0f);
-                dst.audioR.assign(rs.frames, 0.0f);
-
-                int32_t hist[2][4];
-                for (int c = 0; c < 2; ++c) {
-                    for (int k = 0; k < 4; ++k) hist[c][k] = rs.history[c][k];
-                }
-
-                uint32_t t = 0;
-                int32_t maxPeak = 1;
-                bool decodeOk = true;
-
-                for (uint16_t b = 0; b < rs.blocks && t < rs.frames; ++b) {
-                    size_t at = static_cast<size_t>(rs.offset) + static_cast<size_t>(b) * blockWords * 2;
-                    if (at + blockWords * 2 > bytes.size()) { decodeOk = false; break; }
-
-                    uint16_t header = readU16BE(&bytes[at]);
-                    int width = header & 0x1f;
-                    int order = (header >> 5) & 7;
-
-                    if (width == 0 || width > 24 || order >= 5) {
-                        decodeOk = false;
-                        break;
+    struct DecodeState {
+        int32_t hist[2][4]{};
+        uint32_t written=0;
+        uint16_t block=0;
+        int32_t maxPeak=1;
+        bool valid=true;
+    };
+    std::vector<DecodeState> states(validStrokes.size());
+    for(size_t idx=0;idx<validStrokes.size();++idx){
+        const auto& rs=validStrokes[idx];auto& st=states[idx];
+        for(int c=0;c<2;++c)for(int k=0;k<4;++k)st.hist[c][k]=rs.history[c][k];
+    }
+    auto decodeStroke=[&](size_t idx,uint16_t maxBlocks){
+        const auto& rs=validStrokes[idx];auto& st=states[idx];
+        auto& dst=outInstrument.strokes[idx];
+        // Each stroke is owned by exactly one worker. Allocate and decode it
+        // on that worker instead of serially zeroing hundreds of PCM vectors.
+        if (st.block==0 && st.written==0) {
+            dst.pcmL.resize(rs.frames);dst.pcmR.resize(rs.frames);
+        }
+        for(;st.block<maxBlocks && st.written<rs.frames && st.valid;++st.block){
+            const size_t at=size_t(rs.offset)+size_t(st.block)*size_t(blockWords)*2;
+            if(at+size_t(blockWords)*2>bytes.size()){st.valid=false;break;}
+            const uint16_t header=readU16BE(&bytes[at]);
+            const int width=header&0x1f,order=(header>>5)&7;
+            if(width==0||width>24||order>=5){st.valid=false;break;}
+            const int* coef=PREDICTORS[order];const int coefLen=PREDICTOR_LEN[order];
+            const int own=framesPerBlock(blockWords,width,channels);
+            if(own<=0){st.valid=false;break;}
+            const int32_t half=1<<(width-1),full=1<<width;
+            const uint8_t* bitNext=bytes.data()+at+2;
+            const uint8_t* bitEnd=bytes.data()+at+size_t(blockWords)*2;
+            uint64_t reservoir=0;
+            unsigned available=0;
+            for(int n=0;n<own&&st.written<rs.frames;++n){
+                int32_t frame[2]={0,0};
+                for(uint16_t c=0;c<channels;++c){
+                    // CNSP stores LSB-first bit fields within BE 16-bit words.
+                    // A 64-bit reservoir avoids reloading the same word on
+                    // every 3-8-bit sample while retaining exact integer PCM.
+                    while(available < unsigned(width)) {
+                        if(size_t(bitEnd-bitNext)<2){st.valid=false;break;}
+                        reservoir |= uint64_t(readU16BE(bitNext)) << available;
+                        bitNext+=2;available+=16;
                     }
-
-                    const int* coef = PREDICTORS[order];
-                    const int coefLen = PREDICTOR_LEN[order];
-                    const int own = framesPerBlock(blockWords, width, channels);
-                    const int32_t half = 1 << (width - 1);
-                    const int32_t full = 1 << width;
-
-                    int bit = 0;
-                    for (int n = 0; n < own && t < rs.frames; ++n) {
-                        int32_t frameOut[2] = {0, 0};
-
-                        for (uint16_t c = 0; c < channels; ++c) {
-                            int32_t v = 0;
-                            for (int got = 0; got < width; ) {
-                                size_t wordOff = at + 2 + static_cast<size_t>(bit >> 4) * 2;
-                                uint16_t word = readU16BE(&bytes[wordOff]);
-                                int offs = bit & 15;
-                                int take = std::min(16 - offs, width - got);
-                                v += static_cast<int32_t>((word >> offs) & ((1u << take) - 1u)) << got;
-                                got += take;
-                                bit += take;
-                            }
-                            int32_t r = (v >= half) ? (v - full) : v;
-                            int32_t x = r;
-                            for (int k = 0; k < coefLen; ++k) {
-                                x += coef[k] * hist[c][k];
-                            }
-                            hist[c][3] = hist[c][2];
-                            hist[c][2] = hist[c][1];
-                            hist[c][1] = hist[c][0];
-                            hist[c][0] = x;
-                            frameOut[c] = x;
-
-                            int32_t absX = std::abs(x);
-                            if (absX > maxPeak) maxPeak = absX;
-                        }
-
-                        dst.audioL[t] = static_cast<float>(frameOut[0]);
-                        dst.audioR[t] = static_cast<float>(channels == 2 ? frameOut[1] : frameOut[0]);
-                        ++t;
-                    }
+                    if(!st.valid)break;
+                    const uint32_t v=uint32_t(reservoir)&((1u<<width)-1u);
+                    reservoir >>= width;
+                    available -= unsigned(width);
+                    const int32_t residual=int32_t(v)>=half?int32_t(v)-full:int32_t(v);
+                    int64_t x=residual;
+                    for(int k=0;k<coefLen;++k)x+=int64_t(coef[k])*st.hist[c][k];
+                    // Predictor history must retain the full reconstructed
+                    // value. Only the PCM16 storage representation is clipped.
+                    // Clipping history would corrupt subsequent delta samples.
+                    const int32_t predictorSample=static_cast<int32_t>(
+                        std::clamp<int64_t>(x,INT32_MIN,INT32_MAX));
+                    for(int k=3;k>0;--k)st.hist[c][k]=st.hist[c][k-1];
+                    st.hist[c][0]=predictorSample;
+                    frame[c]=std::clamp(predictorSample,-32768,32767);
+                    st.maxPeak=std::max(st.maxPeak,std::abs(frame[c]));
                 }
-
-                if (!decodeOk || t < 16) {
-                    dst.frames = 0;
-                    continue;
-                }
-                dst.frames = t;
-
-                // Normalización sin distorsión: en fábrica NPNO_PEAK = 7782, pero capas fuertes pueden llegar a 32767.
-                // Usamos una referencia limpia de 16384.0f con techo garantizado <= 0.85f para cero saturación.
-                float normScale = 1.0f / std::max<float>(12000.0f, static_cast<float>(maxPeak) * 1.18f);
-                for (uint32_t fIdx = 0; fIdx < t; ++fIdx) {
-                    dst.audioL[fIdx] *= normScale;
-                    dst.audioR[fIdx] *= normScale;
-                }
-
-                ensureSustainLoop(dst);
+                if(!st.valid)break;
+                dst.pcmL[st.written]=static_cast<int16_t>(frame[0]);
+                dst.pcmR[st.written]=static_cast<int16_t>(channels==2?frame[1]:frame[0]);
+                ++st.written;
+            }
+        }
+        // Lock-free producer/consumer release-publish; never advertise the
+        // late tail prior to final splice for factory-loop-less material.
+        const bool autoCandidate=!dst.loop.hasLoop&&!dst.explicitOneShot&&!dst.isReleaseStroke&&dst.actualRootMidi<86;
+        const uint32_t prefix=(owner && autoCandidate && maxBlocks>=rs.blocks)
+            ? std::min<uint32_t>(st.written,uint32_t(rs.frames*0.72)) : st.written;
+        dst.readyFrames->store(prefix,std::memory_order_release);
+    };
+    auto decodeStage=[&](bool preload){
+        // Work stealing scales on modern 8/16-core hosts without occupying
+        // every hardware thread. Keep one logical CPU for the real-time audio
+        // callback and other devices while decoding on a control thread.
+        const unsigned hardware=std::max(1u,std::thread::hardware_concurrency());
+        const unsigned available=hardware>2?hardware-1:hardware;
+        const unsigned threads=std::min<unsigned>(std::min(available,8u),
+                                            static_cast<unsigned>(validStrokes.size()));
+        std::atomic<size_t> next{0};std::vector<std::thread> workers;workers.reserve(threads);
+        for(unsigned th=0;th<threads;++th)workers.emplace_back([&]{
+            for(;;){const size_t idx=next.fetch_add(1);if(idx>=states.size())break;
+                decodeStroke(idx,preload?std::min<uint16_t>(6,validStrokes[idx].blocks):validStrokes[idx].blocks);
             }
         });
-    }
+        for(auto& worker:workers)worker.join();
+    };
 
-    for (auto& w : workers) {
-        if (w.joinable()) w.join();
+    // Phase 1: only first six blocks per region; playback may begin now.
+    decodeStage(bool(owner));
+    for(size_t idx=0;idx<states.size();++idx){
+        if(!states[idx].valid || states[idx].written<4){
+            outStatusMsg="Error en el ataque CNSP: stroke "+std::to_string(idx);
+            return false;
+        }
+        const float peak=float(states[idx].maxPeak);
+        outInstrument.strokes[idx].sampleScale=1.f/std::max(12000.f,peak*1.18f);
     }
-
-    outInstrument.strokes.erase(
-        std::remove_if(outInstrument.strokes.begin(), outInstrument.strokes.end(),
-                       [](const StrokeSample& s) { return s.frames < 16; }),
-        outInstrument.strokes.end()
-    );
+    if(owner){
+        // Background owns all resources; PCM vectors are already fully sized,
+        // and only contiguous readyFrames is published after writes.
+        std::thread([owner,sharedBytes,states=std::move(states),strokes=std::move(validStrokes),
+                     blockWords,channels,filePath]() mutable {
+            const auto& bytes=*sharedBytes;
+            for(size_t idx=0;idx<states.size();++idx){
+                auto& st=states[idx];auto& dst=owner->strokes[idx];const auto& rs=strokes[idx];
+                for(;st.block<rs.blocks && st.written<rs.frames && st.valid;++st.block){
+                    const size_t at=size_t(rs.offset)+size_t(st.block)*size_t(blockWords)*2;
+                    if(at+size_t(blockWords)*2>bytes.size()){st.valid=false;break;}
+                    const uint16_t hdr=readU16BE(&bytes[at]);
+                    const int width=hdr&31,order=(hdr>>5)&7;
+                    if(width==0||width>24||order>=5){st.valid=false;break;}
+                    const int own=framesPerBlock(blockWords,width,channels);
+                    if(own<=0){st.valid=false;break;}
+                    const int32_t half=1<<(width-1),full=1<<width;
+                    const uint8_t* bitNext=bytes.data()+at+2;
+                    const uint8_t* bitEnd=bytes.data()+at+size_t(blockWords)*2;
+                    uint64_t reservoir=0;unsigned available=0;
+                    for(int n=0;n<own && st.written<rs.frames;++n){
+                        int32_t frame[2]={0,0};
+                        for(uint16_t c=0;c<channels;++c){
+                            while(available<unsigned(width)){
+                                if(size_t(bitEnd-bitNext)<2){st.valid=false;break;}
+                                reservoir |= uint64_t(readU16BE(bitNext))<<available;
+                                bitNext+=2;available+=16;
+                            }
+                            if(!st.valid)break;
+                            const uint32_t v=uint32_t(reservoir)&((1u<<width)-1u);
+                            reservoir>>=width;available-=unsigned(width);
+                            int64_t x=int32_t(v)>=half?int32_t(v)-full:int32_t(v);
+                            for(int k=0;k<PREDICTOR_LEN[order];++k)x+=int64_t(PREDICTORS[order][k])*st.hist[c][k];
+                            const int32_t predictorSample=static_cast<int32_t>(
+                                std::clamp<int64_t>(x,INT32_MIN,INT32_MAX));
+                            for(int k=3;k>0;--k)st.hist[c][k]=st.hist[c][k-1];
+                            st.hist[c][0]=predictorSample;
+                            frame[c]=std::clamp(predictorSample,-32768,32767);
+                        }
+                        if(!st.valid)break;
+                        dst.pcmL[st.written]=int16_t(frame[0]);
+                        dst.pcmR[st.written]=int16_t(channels==2?frame[1]:frame[0]);
+                        ++st.written;
+                    }
+                    const bool autoCandidate=!dst.loop.hasLoop&&!dst.explicitOneShot&&!dst.isReleaseStroke&&dst.actualRootMidi<86;
+                    const uint32_t prefix=autoCandidate?
+                        std::min<uint32_t>(st.written,uint32_t(rs.frames*0.72)):st.written;
+                    dst.readyFrames->store(prefix,std::memory_order_release);
+                }
+                if(st.valid&&st.written==rs.frames){
+                    BankLoader::ensureSustainLoop(dst,true);
+                    dst.readyFrames->store(rs.frames,std::memory_order_release);
+                }
+            }
+            savePcmCache(filePath,owner->strokes);
+        }).detach();
+    }else{
+        for(size_t idx=0;idx<states.size();++idx){
+            auto& st=states[idx];auto& dst=outInstrument.strokes[idx];
+            if(!st.valid||st.written<16){dst.readyFrames->store(0);continue;}
+            dst.frames=st.written;
+            dst.sampleScale=1.f/std::max(12000.f,float(st.maxPeak)*1.18f);
+            dst.pcmL.resize(dst.frames);dst.pcmR.resize(dst.frames);
+            ensureSustainLoop(dst);
+            dst.readyFrames->store(dst.frames,std::memory_order_release);
+        }
+        outInstrument.strokes.erase(std::remove_if(outInstrument.strokes.begin(),outInstrument.strokes.end(),
+            [](const StrokeSample& st){return st.readyFrames->load()==0;}),outInstrument.strokes.end());
+        if(!skipCacheWrite)savePcmCache(filePath,outInstrument.strokes);
+    }
 
     size_t totalFloats = 0;
-    for (const auto& s : outInstrument.strokes) totalFloats += s.audioL.size() + s.audioR.size();
-    outInstrument.memoryMB = static_cast<double>(totalFloats * sizeof(float)) / (1024.0 * 1024.0);
+    for (const auto& s : outInstrument.strokes) totalFloats += s.pcmL.size() + s.pcmR.size();
+    outInstrument.memoryMB = static_cast<double>(totalFloats * sizeof(int16_t)) / (1024.0 * 1024.0);
 
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t0).count();
     outStatusMsg = "Cargado: " + outInstrument.name + " (" +
@@ -793,25 +1112,33 @@ bool BankLoader::loadWaveFile(const std::string& wavPath, StrokeSample& s) {
     s.sampleRate = wav.sampleRate ? wav.sampleRate : 44100;
     if (totalFrames == 0 || ch == 0) { drwav_uninit(&wav); return false; }
 
+    // Reject malformed/oversized WAVs before allocation; 512 MiB per source limit.
+    if(totalFrames>uint64_t(512)*1024*1024/(sizeof(float)*ch) || totalFrames>UINT32_MAX){drwav_uninit(&wav);return false;}
     std::vector<float> pSampleData(totalFrames * ch);
     uint64_t framesRead = drwav_read_pcm_frames_f32(&wav, totalFrames, pSampleData.data());
     drwav_uninit(&wav);
     if (framesRead < 4) return false;
 
     s.frames = static_cast<uint32_t>(framesRead);
-    s.audioL.resize(framesRead);
-    s.audioR.resize(framesRead);
+    s.pcmL.resize(framesRead);
+    s.pcmR.resize(framesRead);
 
     if (ch == 1) {
-        std::copy(pSampleData.begin(), pSampleData.begin() + framesRead, s.audioL.begin());
-        std::copy(pSampleData.begin(), pSampleData.begin() + framesRead, s.audioR.begin());
+        for(size_t i=0;i<framesRead;++i){
+            const auto q=static_cast<int16_t>(std::lrint(std::clamp(pSampleData[i],-1.f,1.f)*32767.f));
+            s.pcmL[i]=q;s.pcmR[i]=q;
+        }
     } else {
         for (size_t i = 0; i < framesRead; ++i) {
-            s.audioL[i] = pSampleData[i * ch];
-            s.audioR[i] = pSampleData[i * ch + 1];
+            s.pcmL[i] = static_cast<int16_t>(std::lrint(std::clamp(pSampleData[i*ch],-1.f,1.f)*32767.f));
+            s.pcmR[i] = static_cast<int16_t>(std::lrint(std::clamp(pSampleData[i*ch+1],-1.f,1.f)*32767.f));
         }
     }
-    ensureSustainLoop(s);
+    // This WAV helper currently serves SFZ regions. Loop metadata is applied
+    // by the SFZ importer, so do not modify an explicit one-shot or factory
+    // loop by inventing a piano-style splice here.
+    s.sampleScale=1.f/32768.f;
+    s.readyFrames->store(s.frames,std::memory_order_release);
     return true;
 }
 
@@ -819,7 +1146,7 @@ void BankLoader::loadWavesInParallel(std::vector<StrokeSample>& strokes, const s
     const size_t total = strokes.size();
     if (total == 0) return;
 
-    unsigned int numThreads = std::max(2u, std::thread::hardware_concurrency());
+    unsigned int numThreads = std::clamp(std::thread::hardware_concurrency(), 1u, 4u);
     numThreads = std::min<unsigned int>(numThreads, static_cast<unsigned int>(total));
 
     std::atomic<size_t> nextIndex{0};
@@ -841,64 +1168,168 @@ void BankLoader::loadWavesInParallel(std::vector<StrokeSample>& strokes, const s
     );
 }
 
+// SFZ 1.x: <control>/<global>/<master>/<group>/<region> inheritance, multiline
+// opcodes, quoted sample paths, MIDI key names, velocity zones and sample loops.
+// Non-PCM compressed formats and script opcodes are intentionally not interpreted.
 bool BankLoader::loadFromSfz(const std::string& sfzFilePath, PianoInstrument& outInstrument) {
     fs::path sfzPath(sfzFilePath);
-    if (!fs::exists(sfzPath)) return false;
-
-    std::ifstream f(sfzPath);
-    if (!f) return false;
-
-    outInstrument.id = g_nextInstrumentId.fetch_add(1);
-    outInstrument.strokes.clear();
-    outInstrument.name = sfzPath.stem().string();
-    outInstrument.formatType = "SFZ";
-    outInstrument.sourcePath = sfzPath.string();
-
-    fs::path baseDir = sfzPath.parent_path();
-    std::string defaultSubPath = "";
-    std::vector<StrokeSample> tempStrokes;
-    std::vector<std::string> wavPaths;
-
-    std::string line;
-    int idx = 0;
-    while (std::getline(f, line)) {
-        auto commentPos = line.find("//");
-        if (commentPos != std::string::npos) line = line.substr(0, commentPos);
-
-        if (line.find("default_path=") != std::string::npos) {
-            auto p = line.find("default_path=") + 13;
-            defaultSubPath = line.substr(p);
-            defaultSubPath.erase(defaultSubPath.find_last_not_of(" \t\r\n") + 1);
+    if (!fs::is_regular_file(sfzPath)) return false;
+    std::ifstream input(sfzPath);
+    if (!input) return false;
+    std::string content((std::istreambuf_iterator<char>(input)), {});
+    if (content.size() > 16 * 1024 * 1024) return false;
+    // Strip // and /* */ comments without disturbing quoted paths.
+    std::string clean; clean.reserve(content.size());
+    bool quoted=false, lineComment=false, blockComment=false;
+    for(size_t i=0;i<content.size();++i){
+        char c=content[i],n=(i+1<content.size()?content[i+1]:'\0');
+        if(lineComment){if(c=='\n'){lineComment=false;clean+='\n';}continue;}
+        if(blockComment){if(c=='*'&&n=='/'){blockComment=false;++i;}else if(c=='\n')clean+='\n';continue;}
+        if(c=='"') quoted=!quoted;
+        if(!quoted&&c=='/'&&n=='/'){lineComment=true;++i;continue;}
+        if(!quoted&&c=='/'&&n=='*'){blockComment=true;++i;continue;}
+        clean+=c;
+    }
+    using Opcodes=std::map<std::string,std::string>;
+    auto trim=[](std::string v){
+        const auto first=v.find_first_not_of(" \t\r\n\"");
+        if(first==std::string::npos)return std::string{};
+        auto last=v.find_last_not_of(" \t\r\n\"");
+        return v.substr(first,last-first+1);
+    };
+    auto midiKey=[&](const std::string& t,int fallback){
+        if(t.empty())return fallback;
+        try{size_t consumed=0;int v=std::stoi(t,&consumed);if(consumed==t.size())return std::clamp(v,0,127);}catch(...){}
+        char c=char(std::toupper(static_cast<unsigned char>(t[0])));
+        auto base=std::string("CDEFGAB").find(c);
+        if(base==std::string::npos)return fallback;
+        const int offsets[]={0,2,4,5,7,9,11};
+        int semitone=offsets[base];size_t i=1;
+        if(i<t.size()&&(t[i]=='#'||t[i]=='b')){semitone+=(t[i]=='#'?1:-1);++i;}
+        try{return std::clamp((std::stoi(t.substr(i))+1)*12+semitone,0,127);}catch(...){return fallback;}
+    };
+    auto number=[&](const Opcodes& ops,const char* name,double fallback){
+        auto it=ops.find(name);if(it==ops.end())return fallback;
+        try{double v=std::stod(it->second);return std::isfinite(v)?v:fallback;}catch(...){return fallback;}
+    };
+    Opcodes control,global,master,group,region;
+    std::vector<StrokeSample> strokes;
+    std::vector<std::string> paths;
+    std::vector<int64_t> loopStart,loopEnd,offsets;
+    std::vector<bool> regionLoop;
+    auto combine=[&](){Opcodes merged=control;for(const auto& level:{global,master,group,region})
+        for(const auto& kv:level)merged[kv.first]=kv.second;return merged;};
+    auto submit=[&](){
+        if(region.empty())return;
+        Opcodes o=combine();auto it=o.find("sample");if(it==o.end())return;
+        std::string sample=trim(it->second);if(sample.empty())return;
+        for(char& c:sample)if(c=='\\')c='/';
+        fs::path folder=sfzPath.parent_path();
+        auto prefix=o.find("default_path");
+        if(prefix!=o.end()){
+            std::string d=trim(prefix->second);for(char& c:d)if(c=='\\')c='/';
+            folder/=d;
         }
-        if (line.find("<region>") != std::string::npos) {
-            StrokeSample s;
-            s.index = idx++;
-            auto extractToken = [&](const std::string& key) -> std::string {
-                auto pos = line.find(key + "=");
-                if (pos == std::string::npos) return "";
-                pos += key.length() + 1;
-                auto end = line.find_first_of(" \t\r\n", pos);
-                return line.substr(pos, end - pos);
-            };
-            std::string sampleName = extractToken("sample");
-            if (sampleName.empty()) continue;
-            try {
-                std::string v;
-                if (!(v = extractToken("pitch_keycenter")).empty()) s.actualRootMidi = std::stoi(v);
-                if (!(v = extractToken("lokey")).empty()) s.lokey = std::stoi(v);
-                if (!(v = extractToken("hikey")).empty()) s.hikey = std::stoi(v);
-                if (!(v = extractToken("lovel")).empty()) s.lovel = std::stoi(v);
-                if (!(v = extractToken("hivel")).empty()) s.hivel = std::stoi(v);
-            } catch (...) {}
-            if (s.lovel > s.hivel) std::swap(s.lovel, s.hivel);
-            fs::path fullWavPath = baseDir / defaultSubPath / sampleName;
-            if (!fs::exists(fullWavPath)) fullWavPath = baseDir / sampleName;
-            tempStrokes.push_back(std::move(s));
-            wavPaths.push_back(fullWavPath.string());
+        fs::path wav=folder/sample;
+        if(!fs::is_regular_file(wav))wav=sfzPath.parent_path()/sample;
+        std::string ext=wav.extension().string();
+        std::transform(ext.begin(),ext.end(),ext.begin(),[](unsigned char c){return char(std::tolower(c));});
+        if(ext!=".wav"&&!ext.empty())return; // PCM WAV; avoid pretending FLAC/OGG work
+        StrokeSample s;
+        s.index=static_cast<int>(strokes.size());
+        const int key=midiKey(o.count("key")?o.at("key"):"",60);
+        s.lokey=midiKey(o.count("lokey")?o.at("lokey"):"",o.count("key")?key:0);
+        s.hikey=midiKey(o.count("hikey")?o.at("hikey"):"",o.count("key")?key:127);
+        if(s.lokey>s.hikey)std::swap(s.lokey,s.hikey);
+        s.actualRootMidi=midiKey(o.count("pitch_keycenter")?o.at("pitch_keycenter"):"",key);
+        s.actualRootMidi=std::clamp(s.actualRootMidi-static_cast<int>(number(o,"transpose",0)),0,127);
+        s.fineTuneCents=static_cast<float>(std::clamp(number(o,"tune",0),-1200.,1200.));
+        s.lovel=std::clamp(int(number(o,"lovel",1)),1,127);
+        s.hivel=std::clamp(int(number(o,"hivel",127)),1,127);
+        if(s.lovel>s.hivel)std::swap(s.lovel,s.hivel);
+        const double volume=std::clamp(number(o,"volume",0),-96.,24.);
+        s.levelGainLinear=static_cast<float>(std::pow(10.0,volume/20.0));
+        bool looping=o.count("loop_mode")&&(o.at("loop_mode")=="loop_continuous"||o.at("loop_mode")=="loop_sustain");
+        const int64_t ls=static_cast<int64_t>(number(o,"loop_start",-1));
+        const int64_t le=static_cast<int64_t>(number(o,"loop_end",-1));
+        if(ls>=0 && le>ls)looping=true;
+        if(o.count("loop_mode")&&(o.at("loop_mode")=="no_loop"||o.at("loop_mode")=="one_shot"))looping=false;
+        s.loop.hasLoop=looping;
+        strokes.push_back(std::move(s));paths.push_back(wav.string());
+        loopStart.push_back(ls);loopEnd.push_back(le);
+        offsets.push_back(std::max<int64_t>(0,int64_t(number(o,"offset",0))));
+        regionLoop.push_back(looping);
+    };
+    std::string scope;
+    size_t pos=0;
+    while(pos<clean.size()){
+        while(pos<clean.size()&&std::isspace(static_cast<unsigned char>(clean[pos])))++pos;
+        if(pos>=clean.size())break;
+        if(clean[pos]=='<'){
+            const auto end=clean.find('>',pos+1);if(end==std::string::npos)break;
+            std::string tag=trim(clean.substr(pos+1,end-pos-1));
+            std::transform(tag.begin(),tag.end(),tag.begin(),[](unsigned char c){return char(std::tolower(c));});
+            if(tag=="region") {submit();region.clear();}
+            else if(tag=="group"){submit();region.clear();group.clear();}
+            else if(tag=="master"){submit();region.clear();master.clear();group.clear();}
+            else if(tag=="global"){submit();region.clear();global.clear();master.clear();group.clear();}
+            scope=tag;pos=end+1;continue;
+        }
+        const size_t begin=pos;
+        while(pos<clean.size()&&(std::isalnum(static_cast<unsigned char>(clean[pos]))||clean[pos]=='_'))++pos;
+        if(begin==pos){++pos;continue;}
+        std::string key=clean.substr(begin,pos-begin);
+        while(pos<clean.size()&&(clean[pos]==' '||clean[pos]=='\t'))++pos;
+        if(pos>=clean.size()||clean[pos]!='=')continue;
+        ++pos;while(pos<clean.size()&&(clean[pos]==' '||clean[pos]=='\t'))++pos;
+        const size_t start=pos;
+        if(pos<clean.size()&&clean[pos]=='"'){
+            ++pos;while(pos<clean.size()&&clean[pos]!='"')++pos;
+            if(pos<clean.size())++pos;
+        }else{
+            // Values can include spaces (e.g. sample=Grand Piano C4.wav). Stop at next opcode.
+            while(pos<clean.size()&&clean[pos]!='<'){
+                if(clean[pos]=='\n'){
+                    // Allow multiline SFZ parameters; terminate only when next token is key=.
+                }
+                if(std::isspace(static_cast<unsigned char>(clean[pos]))){
+                    size_t next=pos;
+                    while(next<clean.size()&&std::isspace(static_cast<unsigned char>(clean[next])))++next;
+                    size_t k=next;
+                    while(k<clean.size()&&(std::isalnum(static_cast<unsigned char>(clean[k]))||clean[k]=='_'))++k;
+                    if(k>next&&k<clean.size()&&clean[k]=='=')break;
+                }
+                ++pos;
+            }
+        }
+        auto value=trim(clean.substr(start,pos-start));
+        Opcodes* dest=scope=="control"?&control:scope=="global"?&global:scope=="master"?&master:scope=="group"?&group:scope=="region"?&region:nullptr;
+        if(dest&&!key.empty())(*dest)[key]=value;
+    }
+    submit();
+    if(strokes.empty())return false;
+    loadWavesInParallel(strokes,paths); // below: preserve indices after filtering failed WAVs
+    for(auto& s:strokes){
+        const int i=s.index;
+        if(i<0||size_t(i)>=loopStart.size())continue;
+        s.startFrameOffset=uint32_t(std::min<int64_t>(offsets[i],std::max<int64_t>(0,s.frames-1)));
+        // SFZ defaults to one-shot; never invent an acoustic-piano sustain loop.
+        if(!regionLoop[i]){s.loop.hasLoop=false;continue;}
+        if(s.loop.hasLoop && loopStart[i]>=0 && loopEnd[i]>loopStart[i]){
+            const auto start=uint32_t(std::min<int64_t>(loopStart[i],s.frames-1));
+            const auto end=uint32_t(std::min<int64_t>(loopEnd[i],s.frames-1));
+            if(end>start+16){s.loop.start=start;s.loop.end=end;s.loop.length=end-start;}
+            else s.loop.hasLoop=false;
         }
     }
-    loadWavesInParallel(tempStrokes, wavPaths);
-    outInstrument.strokes = std::move(tempStrokes);
+    outInstrument.id=g_nextInstrumentId.fetch_add(1);
+    outInstrument.strokes=std::move(strokes);
+    outInstrument.name=sfzPath.stem().string();
+    outInstrument.formatType="SFZ (PCM WAV)";
+    outInstrument.sourcePath=sfzPath.string();
+    outInstrument.zoneCount=static_cast<int>(outInstrument.strokes.size());
+    size_t bytes=0;for(const auto& st:outInstrument.strokes)bytes+=(st.pcmL.size()+st.pcmR.size())*sizeof(int16_t);
+    outInstrument.memoryMB=double(bytes)/(1024.0*1024.0);
     return !outInstrument.strokes.empty();
 }
 
@@ -910,6 +1341,8 @@ bool BankLoader::loadFromDirectory(const std::string& folderPath, PianoInstrumen
         if (!entry.is_regular_file()) continue;
         std::string ext = entry.path().extension().string();
         std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+        if(ext == ".sfz" && loadFromSfz(entry.path().string(),outInstrument))return true;
+        if(ext == ".sf2"){std::string err;if(Sf2Loader::load(entry.path().string(),outInstrument,err))return true;}
         if (ext == ".npno") {
             std::string msg;
             if (loadNpnoNative(entry.path().string(), outInstrument, msg)) return true;
@@ -931,7 +1364,7 @@ bool BankLoader::loadAny(const std::string& pathStr, PianoInstrument& outInstrum
                            " (" + std::to_string(outInstrument.strokes.size()) + " muestras PCM)";
             return true;
         }
-        outStatusMsg = "Selecciona un archivo .npno de la lista.";
+        outStatusMsg = "Selecciona un .npno, .nsmp, .sfz o .sf2 de la lista.";
         return false;
     }
 
@@ -952,11 +1385,14 @@ bool BankLoader::loadAny(const std::string& pathStr, PianoInstrument& outInstrum
         return loadClaviaProgramPreset(p.string(), outInstrument, outStatusMsg);
     }
 
+    if (ext == ".sf2") return Sf2Loader::load(p.string(),outInstrument,outStatusMsg);
     if (ext == ".sfz") {
         if (loadFromSfz(p.string(), outInstrument)) {
             outStatusMsg = "SFZ cargado: " + outInstrument.name;
             return true;
         }
+        outStatusMsg = "SFZ sin muestras WAV válidas. Comprueba default_path, rutas, mayúsculas y formato PCM/float WAV.";
+        return false;
     }
 
     outStatusMsg = "Formato no soportado: " + ext;
@@ -969,7 +1405,7 @@ std::vector<LibraryEntry> BankLoader::scanLibraryDirectory(const std::string& ro
     if (!fs::exists(root) || !fs::is_directory(root)) return entries;
 
     const std::vector<std::string> validExts = {
-        ".npno", ".nsmp", ".nsmp3", ".nsmp4", ".nsp", ".ns3f", ".ns2p", ".ns2f", ".nw2p", ".sfz"
+        ".npno", ".nsmp", ".nsmp3", ".nsmp4", ".nsp", ".ns3f", ".ns2p", ".ns2f", ".nw2p", ".sfz", ".sf2"
     };
 
     auto classifySound = [](const std::string& filename, const std::string& ext, const ClaviaHeaderInfo& hdr) -> std::string {
@@ -1034,6 +1470,7 @@ std::vector<LibraryEntry> BankLoader::scanLibraryDirectory(const std::string& ro
                 if (ext == ".npno") cat = "PIANO (.npno)";
                 else if (ext == ".ns3f" || ext == ".ns2p" || ext == ".ns2f" || ext == ".nw2p") cat = "PROGRAM (" + ext + ")";
                 else if (ext == ".sfz") cat = "SFZ";
+                else if (ext == ".sf2") cat = "SOUNDFONT SF2";
                 else cat = "SAMPLE (" + ext + ")";
 
                 std::string group = classifySound(entry.path().filename().string(), ext, hdr);

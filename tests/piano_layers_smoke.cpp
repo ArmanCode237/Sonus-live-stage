@@ -17,13 +17,14 @@ static std::shared_ptr<PianoInstrument> makeBank(int id) {
     sample.actualRootMidi = 60;
     sample.lokey = 0;
     sample.hikey = 127;
-    sample.audioL.resize(sample.frames);
-    sample.audioR.resize(sample.frames);
+    sample.pcmL.resize(sample.frames);
+    sample.pcmR.resize(sample.frames);
     for (size_t i = 0; i < sample.frames; ++i) {
         const float value = 0.2f * std::sin(2.0f * 3.14159265f * i * (i + id) / 48000.0f);
-        sample.audioL[i] = value;
-        sample.audioR[i] = value;
+        sample.pcmL[i] = int16_t(std::lrint(32767.f*value));
+        sample.pcmR[i] = int16_t(std::lrint(32767.f*value));
     }
+    sample.sampleScale=1.f/32768.f;sample.readyFrames->store(sample.frames);
     bank->strokes.push_back(std::move(sample));
     return bank;
 }

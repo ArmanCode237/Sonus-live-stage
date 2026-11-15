@@ -1,5 +1,12 @@
 cmake_minimum_required(VERSION 3.16)
-project(NordVirtualStage VERSION 5.1 LANGUAGES CXX)
+project(NordVirtualStage VERSION 28.2.9 LANGUAGES CXX)
+
+# Real-time audio must never ship unoptimized: single-config generators
+# (Ninja, MinGW/Unix Makefiles) default to no flags when no type is given.
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
+    message(STATUS "Live Stage: CMAKE_BUILD_TYPE not set, defaulting to Release")
+endif()
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -8,11 +15,19 @@ include(FetchContent)
 
 # Evitar colisión del target "uninstall" entre RtAudio y RtMidi y activar ASIO/WASAPI
 set(RTAUDIO_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
+# Match the application default /MD runtime when using MSVC (avoid LNK2038).
+set(RTAUDIO_STATIC_MSVCRT OFF CACHE BOOL "" FORCE)
 set(RTAUDIO_BUILD_TESTING OFF CACHE BOOL "" FORCE)
 set(RTAUDIO_TARGETNAME_UNINSTALL "uninstall_rtaudio" CACHE STRING "" FORCE)
 if(WIN32)
     set(RTAUDIO_API_WASAPI ON CACHE BOOL "" FORCE)
-    set(RTAUDIO_API_ASIO ON CACHE BOOL "" FORCE)
+    option(STAGE_ENABLE_ASIO "Build native ASIO output with RtAudio on Windows" ON)
+    set(RTAUDIO_API_ASIO ${STAGE_ENABLE_ASIO} CACHE BOOL "" FORCE)
+    if(STAGE_ENABLE_ASIO)
+        message(STATUS "Live Stage: ASIO + WASAPI enabled. Verify RtAudio/Steinberg license for distribution.")
+    else()
+        message(WARNING "Live Stage: ASIO DISABLED. Native UMC1820 ASIO driver WILL NOT be listed; only WASAPI is available.")
+    endif()
 endif()
 
 FetchContent_Declare(
@@ -39,11 +54,56 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(rtaudio rtmidi json)
 
+# MT-32: Munt's libmt32emu (LGPL-2.1+, third_party/mt32emu/COPYING.LESSER.txt), static,
+# C++ API only. It needs the user's own MT-32 control + PCM ROM dumps at run time
+# (Roland's ROMs are copyrighted and are not part of this project).
+set(libmt32emu_SHARED OFF CACHE BOOL "" FORCE)
+set(libmt32emu_C_INTERFACE OFF CACHE BOOL "" FORCE)
+set(libmt32emu_BUILD_TESTING OFF CACHE BOOL "" FORCE)
+set(libmt32emu_PKGCONFIG_INSTALL_PREFIX "" CACHE STRING "" FORCE)
+add_subdirectory(third_party/mt32emu EXCLUDE_FROM_ALL)
+
+# DX7 engine: msfa FM core (Apache-2.0, third_party/msfa/NOTICE.txt) + Live Stage glue.
+# Linked to every target defined below (the synth module uses it).
+add_library(stage_msfa STATIC
+    src/dsp/Dx7Engine.cpp
+    src/dsp/Mt32Engine.cpp
+    third_party/msfa/dx7note.cc third_party/msfa/env.cc third_party/msfa/exp2.cc
+    third_party/msfa/fm_core.cc third_party/msfa/fm_op_kernel.cc third_party/msfa/freqlut.cc
+    third_party/msfa/lfo.cc third_party/msfa/pitchenv.cc third_party/msfa/porta.cpp third_party/msfa/sin.cc)
+target_link_libraries(stage_msfa PUBLIC mt32emu)
+link_libraries(stage_msfa mt32emu)
+
 add_executable(NordVirtualStage
     src/main.cpp
+    src/app/StageApp.cpp
+    src/app/AudioCallbacks.cpp
+    src/app/UserDataPaths.cpp
+    src/app/ParamSerialization.cpp
+    src/app/SampleSources.cpp
+    src/app/routes/PageRoutes.cpp
+    src/app/routes/LibraryRoutes.cpp
+    src/app/routes/ProgramRoutes.cpp
+    src/app/routes/HardwareRoutes.cpp
+    src/app/routes/PianoRoutes.cpp
+    src/app/routes/SoundRoutes.cpp
+    src/app/routes/SynthRoutes.cpp
+    src/app/routes/Dx7Routes.cpp
+    src/app/D50Import.cpp
+    src/app/routes/EngineRoutes.cpp
+    src/app/routes/OrganRoutes.cpp
+    src/app/routes/RealtimeRoutes.cpp
+    src/app/routes/MappingRoutes.cpp
+    src/app/StateHub.cpp
     src/core/WorkstationHost.cpp
+    src/control/ControlMappings.cpp
+    src/control/ParamValueReader.cpp
+    src/loaders/InstrumentPool.cpp
+    src/loaders/DecodedSampleCache.cpp
+    src/loaders/SampleLibraryManager.cpp
     src/loaders/BankLoader.cpp
     src/loaders/NsmpLoader.cpp
+    src/loaders/Sf2Loader.cpp
     src/modules/NordPianoEngine.cpp
     src/modules/NordSynthModule.cpp
     src/modules/NordOrganModule.cpp
@@ -67,8 +127,8 @@ if(WIN32)
     target_compile_definitions(NordVirtualStage PRIVATE
         _WIN32_WINNT=0x0A00
         __WINDOWS_WASAPI__
-        __WINDOWS_ASIO__
         __WINDOWS_MM__
+        $<$<BOOL:${STAGE_ENABLE_ASIO}>:__WINDOWS_ASIO__>
     )
     target_link_libraries(NordVirtualStage PRIVATE
         rtaudio
@@ -106,3 +166,261 @@ elseif(UNIX)
         Threads::Threads
     )
 endif()
+
+# Optional real-time sample engine regression checks (no soundcard needed).
+# Enable with -DSTAGE_BUILD_SAMPLE_TESTS=ON; exercises 44.1 / 48 / 96 kHz.
+option(STAGE_BUILD_SAMPLE_TESTS "Build sample loop, polyphony and PCM lifetime tests" OFF)
+if(STAGE_BUILD_SAMPLE_TESTS)
+  enable_testing()
+  add_executable(LiveStageSampleEngineCheck
+    tests/v22_sample_runtime_and_memory.cpp
+    src/modules/NordPianoEngine.cpp
+    src/modules/NordSynthModule.cpp
+    src/modules/NordOrganModule.cpp)
+  target_include_directories(LiveStageSampleEngineCheck PRIVATE
+    src src/core src/modules src/dsp third_party)
+  if(UNIX AND NOT APPLE)
+    find_package(Threads REQUIRED)
+    target_link_libraries(LiveStageSampleEngineCheck PRIVATE Threads::Threads)
+  endif()
+  foreach(rate 44100 48000 96000)
+    add_test(NAME sample_engine_${rate}Hz COMMAND LiveStageSampleEngineCheck ${rate})
+  endforeach()
+  # v23 DFD regression: held-pedal retrigger, voice stealing, streamed
+  # prefixes and organ phase continuity (no audio interface needed).
+  add_executable(LiveStageClickFreeCheck
+    tests/v23_clickfree_regression.cpp
+    src/modules/NordPianoEngine.cpp
+    src/modules/NordSynthModule.cpp
+    src/modules/NordOrganModule.cpp)
+  target_include_directories(LiveStageClickFreeCheck PRIVATE
+    src src/core src/modules src/dsp third_party)
+  if(UNIX AND NOT APPLE)
+    target_link_libraries(LiveStageClickFreeCheck PRIVATE Threads::Threads)
+  endif()
+  foreach(rate 44100 48000 96000)
+    add_test(NAME clickfree_engine_${rate}Hz COMMAND LiveStageClickFreeCheck ${rate})
+  endforeach()
+
+  # Synthetic, redistributable CNSP verifies complete-on-publish decoding,
+  # late-peak normalization, RAM sharing and NPCACHE5 reload.
+  add_executable(LiveStageDfDPoolCheck
+    tests/v23_pool_cache_regression.cpp
+    src/loaders/InstrumentPool.cpp
+    src/loaders/DecodedSampleCache.cpp
+    src/loaders/SampleLibraryManager.cpp
+    src/loaders/BankLoader.cpp
+    src/loaders/NsmpLoader.cpp
+    src/loaders/Sf2Loader.cpp)
+  target_include_directories(LiveStageDfDPoolCheck PRIVATE
+    src src/core src/loaders src/dsp third_party)
+  if(UNIX AND NOT APPLE)
+    target_link_libraries(LiveStageDfDPoolCheck PRIVATE Threads::Threads)
+  endif()
+  add_test(NAME dfd_pool_cache COMMAND LiveStageDfDPoolCheck)
+
+  # v28.2.3: mono-legato velocity and Butterworth HPF/LPF slopes,
+  # plus per-Sound EQ snapshot regression (no audio device needed).
+  add_executable(LiveStageSoundEqVelocityCheck
+    tests/v28_2_3_eq_velocity.cpp
+    src/modules/NordPianoEngine.cpp
+    src/modules/NordSynthModule.cpp
+    src/modules/NordOrganModule.cpp)
+  target_include_directories(LiveStageSoundEqVelocityCheck PRIVATE
+    src src/core src/modules src/dsp third_party)
+  if(UNIX AND NOT APPLE)
+    target_link_libraries(LiveStageSoundEqVelocityCheck PRIVATE Threads::Threads)
+  endif()
+  add_test(NAME sound_eq_velocity_v2823 COMMAND LiveStageSoundEqVelocityCheck)
+
+  # v24: OpenNord-derived STK word markers, exact Q23 hold, periodic factory
+  # loops (including four frames), alternate recordings and key-up transients.
+  add_executable(LiveStageFactoryLoopCheck
+    tests/v24_factory_loop_metadata.cpp
+    src/modules/NordPianoEngine.cpp
+    src/modules/NordSynthModule.cpp
+    src/modules/NordOrganModule.cpp)
+  target_include_directories(LiveStageFactoryLoopCheck PRIVATE
+    src src/core src/loaders src/modules src/dsp third_party)
+  if(UNIX AND NOT APPLE)
+    target_link_libraries(LiveStageFactoryLoopCheck PRIVATE Threads::Threads)
+  endif()
+  add_test(NAME factory_loop_and_regions COMMAND LiveStageFactoryLoopCheck)
+
+  add_executable(LiveStageNpnoFactoryCacheCheck
+    tests/v24_npno_factory_cache.cpp
+    src/loaders/BankLoader.cpp
+    src/loaders/NsmpLoader.cpp
+    src/loaders/Sf2Loader.cpp)
+  target_include_directories(LiveStageNpnoFactoryCacheCheck PRIVATE
+    src src/core src/loaders src/dsp third_party)
+  if(UNIX AND NOT APPLE)
+    target_link_libraries(LiveStageNpnoFactoryCacheCheck PRIVATE Threads::Threads)
+  endif()
+  add_test(NAME npno_factory_cache COMMAND LiveStageNpnoFactoryCacheCheck)
+
+  # v28.1: universal cache format, corruption/invalidation and dependency tests.
+  add_executable(LiveStageSoundRelocationCheck
+    tests/v28_2_sound_relocation.cpp src/loaders/DecodedSampleCache.cpp)
+  target_include_directories(LiveStageSoundRelocationCheck PRIVATE
+    src src/core src/loaders src/dsp third_party)
+  if(UNIX AND NOT APPLE)
+    target_link_libraries(LiveStageSoundRelocationCheck PRIVATE Threads::Threads)
+  endif()
+  add_test(NAME sound_library_relocation COMMAND LiveStageSoundRelocationCheck)
+
+  add_executable(LiveStageLibraryCacheCheck
+    tests/v28_1_cache_roundtrip.cpp src/loaders/DecodedSampleCache.cpp)
+  target_include_directories(LiveStageLibraryCacheCheck PRIVATE
+    src src/core src/loaders src/dsp third_party)
+  if(UNIX AND NOT APPLE)
+    target_link_libraries(LiveStageLibraryCacheCheck PRIVATE Threads::Threads)
+  endif()
+  add_test(NAME library_cache_integrity COMMAND LiveStageLibraryCacheCheck)
+
+  add_executable(LiveStageLibraryIntegrationCheck
+    tests/v28_1_sfz_library_integration.cpp
+    src/loaders/InstrumentPool.cpp src/loaders/SampleLibraryManager.cpp
+    src/loaders/DecodedSampleCache.cpp src/loaders/BankLoader.cpp
+    src/loaders/NsmpLoader.cpp src/loaders/Sf2Loader.cpp)
+  target_include_directories(LiveStageLibraryIntegrationCheck PRIVATE
+    src src/core src/loaders src/dsp third_party)
+  if(UNIX AND NOT APPLE)
+    target_link_libraries(LiveStageLibraryIntegrationCheck PRIVATE Threads::Threads)
+  endif()
+  add_test(NAME library_cache_end_to_end COMMAND LiveStageLibraryIntegrationCheck)
+
+
+  # v28.2.4: independent rack effects, optional v2 algorithms and EQ insert.
+  # Only standard C++17 and existing DSP headers: no audio interface needed.
+  add_executable(LiveStageStudioFx2824Check tests/v28_2_4_fx_rack.cpp)
+  target_include_directories(LiveStageStudioFx2824Check PRIVATE src src/core src/dsp)
+  add_test(NAME studio_rack_v2824 COMMAND LiveStageStudioFx2824Check)
+
+  # v28.2.9: Shimmer Atmosphere v4.2 (wet level vs Hall, FREEZE, pitch return,
+  # BLOOM, stereo coherence, early reflections, stability and silence CPU).
+  add_executable(LiveStageShimmerAtmosphereCheck tests/v28_2_9_shimmer_fix.cpp)
+  target_include_directories(LiveStageShimmerAtmosphereCheck PRIVATE src src/core src/dsp)
+  add_test(NAME shimmer_atmosphere_v4 COMMAND LiveStageShimmerAtmosphereCheck)
+
+  # v26: regression for every Shimmer control and sustained FX feedback.
+  add_executable(LiveStageShimmerControlsCheck tests/v26_cold_load_shimmer.cpp)
+  target_include_directories(LiveStageShimmerControlsCheck PRIVATE src src/core src/dsp)
+  add_test(NAME shimmer_controls_and_tail COMMAND LiveStageShimmerControlsCheck)
+
+  # v31: synth engines (contours, 24 dB filters, BLEP sync, FM4, LA, transients, LFO).
+  add_executable(LiveStageSynthEnginesCheck tests/v31_synth_engines.cpp src/modules/NordSynthModule.cpp)
+  target_include_directories(LiveStageSynthEnginesCheck PRIVATE src src/core src/dsp)
+  target_link_libraries(LiveStageSynthEnginesCheck PRIVATE nlohmann_json::nlohmann_json)
+  add_test(NAME synth_engines_v31 COMMAND LiveStageSynthEnginesCheck)
+  # v31: MIDI learn ignores the mod wheel, sustain pedal and channel-mode CCs.
+  add_executable(LiveStageMidiLearnCheck tests/v31_midi_learn_reserved.cpp
+    src/control/ControlMappings.cpp src/control/ParamValueReader.cpp)
+  target_include_directories(LiveStageMidiLearnCheck PRIVATE src)
+  target_link_libraries(LiveStageMidiLearnCheck PRIVATE nlohmann_json::nlohmann_json)
+  add_test(NAME midi_learn_reserved_v31 COMMAND LiveStageMidiLearnCheck)
+  # v31: mapping scopes, precedence, pickup, buttons, conflicts, migration.
+  add_executable(LiveStageControlMappingsCheck tests/v31_control_mappings.cpp
+    src/control/ControlMappings.cpp src/control/ParamValueReader.cpp)
+  target_include_directories(LiveStageControlMappingsCheck PRIVATE src)
+  target_link_libraries(LiveStageControlMappingsCheck PRIVATE nlohmann_json::nlohmann_json)
+  add_test(NAME control_mappings_v31 COMMAND LiveStageControlMappingsCheck)
+  # v31: per-layer insert chain (bit-exact bypass, Room / Plate / Hall reverb unit).
+  add_executable(LiveStageInsertChainCheck tests/v31_insert_chain.cpp)
+  target_include_directories(LiveStageInsertChainCheck PRIVATE src src/core src/dsp)
+  add_test(NAME insert_chain_v31 COMMAND LiveStageInsertChainCheck)
+  # v32: live click-free behaviour (organ controls, voice pool, all-notes-off, insert
+  # and studio-slot crossfades / spill-over, idle effects, master limiter).
+  add_executable(LiveStageLiveClickFreeCheck tests/v32_live_clickfree.cpp
+    src/modules/NordPianoEngine.cpp src/modules/NordSynthModule.cpp src/modules/NordOrganModule.cpp)
+  target_include_directories(LiveStageLiveClickFreeCheck PRIVATE src src/core src/modules src/dsp third_party)
+  add_test(NAME live_clickfree_v32 COMMAND LiveStageLiveClickFreeCheck)
+  # v32.2: DX7 layer on msfa with the factory cartridges.
+  add_executable(LiveStageDx7Check tests/v32_dx7_engine.cpp src/modules/NordSynthModule.cpp)
+  target_include_directories(LiveStageDx7Check PRIVATE src src/core src/modules src/dsp third_party)
+  add_test(NAME dx7_engine_v32 COMMAND LiveStageDx7Check ${CMAKE_CURRENT_SOURCE_DIR}/presets/synth/dx7/factory)
+  # v32.3: synth modulation matrix (global / per-voice sources, ranges, insert targets).
+  add_executable(LiveStageModMatrixCheck tests/v32_mod_matrix.cpp src/modules/NordSynthModule.cpp)
+  target_include_directories(LiveStageModMatrixCheck PRIVATE src src/core src/modules src/dsp third_party)
+  add_test(NAME mod_matrix_v32 COMMAND LiveStageModMatrixCheck)
+  # v31: the C++ parameter reader resolves every parameter exactly like webui/src/params/paramMap.ts.
+  add_executable(LiveStageParamReaderCheck tests/v31_param_reader.cpp src/control/ParamValueReader.cpp)
+  target_include_directories(LiveStageParamReaderCheck PRIVATE src)
+  target_link_libraries(LiveStageParamReaderCheck PRIVATE nlohmann_json::nlohmann_json)
+  add_test(NAME param_reader_v31 COMMAND LiveStageParamReaderCheck ${CMAKE_SOURCE_DIR}/webui/src/params/__fixtures__)
+  # v31: vintage bank 385-432 through the real preset JSON path, level-matched to the factory bank.
+  add_executable(LiveStageVintagePresetsCheck tests/v31_vintage_presets.cpp
+    src/core/WorkstationHost.cpp
+    src/control/ControlMappings.cpp
+    src/control/ParamValueReader.cpp src/modules/NordPianoEngine.cpp
+    src/modules/NordSynthModule.cpp src/modules/NordOrganModule.cpp)
+  target_include_directories(LiveStageVintagePresetsCheck PRIVATE src src/core src/dsp src/modules third_party)
+  target_link_libraries(LiveStageVintagePresetsCheck PRIVATE nlohmann_json::nlohmann_json)
+  add_test(NAME synth_vintage_presets_v31 COMMAND LiveStageVintagePresetsCheck ${CMAKE_SOURCE_DIR}/presets/synth/factory)
+endif()
+
+# v27: opt-in standalone cold-load measurement with a user-provided NPNo.
+# The command reports the time until every sample is playable, RAM recall,
+# persistent cache reload and an exact PCM16 checksum. No Nord bank is bundled.
+option(STAGE_BUILD_NPNO_BENCHMARK "Build real-file NPNo cold-load benchmark" OFF)
+if(STAGE_BUILD_NPNO_BENCHMARK)
+  add_executable(LiveStageNpnoBench
+    tests/v27_pool_performance.cpp
+    src/loaders/InstrumentPool.cpp
+    src/loaders/DecodedSampleCache.cpp
+    src/loaders/SampleLibraryManager.cpp
+    src/loaders/BankLoader.cpp
+    src/loaders/NsmpLoader.cpp
+    src/loaders/Sf2Loader.cpp)
+  target_include_directories(LiveStageNpnoBench PRIVATE
+    src src/core src/loaders src/dsp third_party)
+  if(UNIX AND NOT APPLE)
+    find_package(Threads REQUIRED)
+    target_link_libraries(LiveStageNpnoBench PRIVATE Threads::Threads)
+  endif()
+endif()
+
+# Diagnostic executable to confirm that a Windows binary contains ASIO and
+# enumerate native drivers independently of Live Stage's UI and engine.
+option(STAGE_BUILD_AUDIO_PROBE "Build diagnostic audio backend enumerator" ON)
+if(WIN32 AND STAGE_BUILD_AUDIO_PROBE)
+  add_executable(LiveStageAudioProbe tests/asio_probe.cpp)
+  target_link_libraries(LiveStageAudioProbe PRIVATE rtaudio)
+  install(TARGETS LiveStageAudioProbe RUNTIME DESTINATION .)
+endif()
+
+# Build options: standalone is always available; JUCE VST3/AU is opt-in.
+option(STAGE_BUILD_PLUGIN "Build native VST3 (and AU on macOS) using JUCE" OFF)
+include(cmake/StagePlugin.cmake)
+
+# React control surface (webui/ → ui/app). The built files are committed, so a
+# plain C++ build needs no Node.js; `cmake --build build --target webui`
+# rebuilds them after editing webui/src.
+find_program(STAGE_NPM_EXECUTABLE npm)
+if(STAGE_NPM_EXECUTABLE)
+  add_custom_target(webui
+    COMMAND ${STAGE_NPM_EXECUTABLE} run build
+    WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/webui
+    COMMENT "Building the React console into ui/app"
+    VERBATIM)
+endif()
+
+# Relative paths used by the standalone are resolved from its install folder.
+install(TARGETS NordVirtualStage RUNTIME DESTINATION . BUNDLE DESTINATION .)
+install(DIRECTORY ui/app/ DESTINATION ui/app)
+install(DIRECTORY presets/ DESTINATION presets)
+install(FILES programs.json hardware_config.json DESTINATION .)
+set(CPACK_PACKAGE_NAME "Live Stage")
+set(CPACK_PACKAGE_VENDOR "Live Stage")
+set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "Live Stage")
+if(WIN32)
+  include(InstallRequiredSystemLibraries)
+  set(CPACK_GENERATOR "NSIS;ZIP")
+  set(CPACK_NSIS_DISPLAY_NAME "Live Stage")
+elseif(APPLE)
+  set(CPACK_GENERATOR "DragNDrop;ZIP")
+else()
+  set(CPACK_GENERATOR "TGZ")
+endif()
+include(CPack)

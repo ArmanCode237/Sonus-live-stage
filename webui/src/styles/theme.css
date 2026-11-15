@@ -1,0 +1,219 @@
+/* Live Stage | single token system for all React views.
+   Two palettes, same geometry. <html data-theme> is always set by store/theme.ts:
+     stage  (default) red enamel chassis, graphite sections, black rubber, red LEDs, white-on-black OLED
+     studio Studio Dark: blue-grey console with the same controls
+   Components never hard-code colours: they use the tokens below. */
+
+/* ---------- geometry (shared) ---------- */
+:root {
+  color-scheme: dark;
+  --u: clamp(6px, .8vh, 9px);
+  --gap: calc(var(--u) * 1.3);
+  --ctl-h: clamp(28px, 3.9vh, 34px);
+  --head-h: 52px;
+  --fs: clamp(11.5px, 1.3vh, 13.5px);
+  --fs-sm: calc(var(--fs) * .9);
+  --fs-xs: calc(var(--fs) * .79);
+  --knob-sm: calc(var(--u) * 5.2);
+  --knob-md: calc(var(--u) * 6.4);
+  --knob-lg: calc(var(--u) * 8.4);
+  --radius: 7px;
+  --font: Inter, 'Segoe UI Variable Text', 'Segoe UI', system-ui, sans-serif;
+  --display: 'Cascadia Code', 'Cascadia Mono', 'SFMono-Regular', Consolas, ui-monospace, monospace;
+  --mono: var(--display);
+  --ease: cubic-bezier(.2,.7,.2,1);
+}
+
+/* ---------- STAGE: red chassis (default) ---------- */
+:root, :root[data-theme="stage"] {
+  --bg: #0b0b0c;
+  --chassis: #c0161f;
+  --chassis-hi: #d9262f;
+  --chassis-lo: #8e0f16;
+  --chassis-edge: #5a0a0e;
+  --chassis-shadow: rgba(60,0,0,.45);
+  --console-bg: linear-gradient(180deg, rgba(255,255,255,.08), transparent 3px), linear-gradient(180deg, var(--chassis-hi) 0%, var(--chassis) 28%, var(--chassis-lo) 100%);
+  --head-bg: linear-gradient(180deg, #d5232c, #b3141c);
+  --head-edge: #7d0d13;
+  --on-chassis: #ffffff;
+  --on-chassis-soft: #ffd9d6;
+  --nav-hover: rgba(0,0,0,.2);
+  --chrome-box: rgba(0,0,0,.28);
+
+  --section: #2e3236;
+  --section-hi: #3a3f44;
+  --section-lo: #22262a;
+  --strip: #303438;
+  --inset: #121416;
+  --panel: var(--section);
+  --panel-hi: var(--section-hi);
+  --panel-edge: #15171a;
+  --panel-shadow: 0 3px 10px rgba(60,0,0,.45);
+  --line: #474d53;
+  --line-hi: #646b72;
+
+  --text: #f4f5f6;
+  --label: #e3e6e9;
+  --muted: #a7aeb5;
+
+  --rubber: #1b1c1e;
+  --rubber-hi: #2f3134;
+  --rubber-edge: #050506;
+  --rubber-hover: #3a3d41;
+  --rubber-hover-edge: #000;
+
+  --surface-1: #141618;        /* fields, list items, layer rows */
+  --surface-1-hover: #1f2225;
+  --surface-1-edge: #000;
+  --surface-2: #26292d;        /* raised: tabs, pads, tags */
+  --surface-2-hi: #34383d;
+  --surface-2-edge: #0a0b0c;
+  --surface-2-edge-hi: #5b6168;
+  --select-bg: #3d1214;        /* selected item / active pad */
+  --select-bg-hi: #5a1a1d;
+  --select-edge: #ff3b30;
+  --focus-ring: #ffffff;
+
+  --store: #ea4a2c;
+  --red: #c0161f;
+  --red-hi: #ff3b30;
+  --led: #ff2a1f;
+  --led-off: #4a1a18;
+  --led-glow: 0 0 5px rgba(255,42,31,.9), 0 0 1px #fff8;
+  --green: #4cd964;
+  --amber: #ffc21a;
+  --cyan: #4fc3e8;
+
+  --oled: #f2f6ff;
+  --oled-dim: #9aa3b2;
+  --oled-bg: #000;
+  --display-bg: #000;
+  --display-edge: #17191b;
+  --display-bar: var(--oled);
+  --display-bar-fg: #000;
+  --lcd: var(--oled);
+  --lcd-dim: var(--oled-dim);
+  --lcd-bg: var(--oled-bg);
+  --lcd-line: #2a2d33;
+  --value-bg: #000;
+  --value-edge: #000;
+
+  --knob-skirt: #111214;
+  --knob-skirt-edge: #000;
+  --knob-cap: #1e2023;
+  --knob-cap-edge: #34373b;
+  --knob-grip: #2a2c2f;
+  --track-bg: linear-gradient(90deg, #000, #1a1b1d 50%, #000);
+  --well-bg: #0b0c0e;
+
+  --modal-bg: linear-gradient(180deg, var(--section-hi), var(--section) 12%, var(--section-lo));
+  --modal-edge: var(--chassis);
+  --scrim: rgba(0,0,0,.65);
+  --toast-bg: #000;
+  --scroll-thumb: #5b6168;
+}
+
+/* ---------- STUDIO DARK ---------- */
+:root[data-theme="studio"] {
+  --bg: #0a0e13;
+  --chassis: #0c1117;
+  --chassis-hi: #131b24;
+  --chassis-lo: #080d12;
+  --chassis-edge: #27323e;
+  --chassis-shadow: rgba(0,0,0,.3);
+  --console-bg: radial-gradient(ellipse 60% 70% at 50% -40%, rgba(86,127,152,.12), transparent), #0a0e13;
+  --head-bg: linear-gradient(180deg, #131b24, #0c1117);
+  --head-edge: #303e4b;
+  --on-chassis: #f0f4f8;
+  --on-chassis-soft: #929eac;
+  --nav-hover: rgba(255,255,255,.06);
+  --chrome-box: #0e151d;
+
+  --section: #171f29;
+  --section-hi: #202a36;
+  --section-lo: #141b24;
+  --strip: #1c2733;
+  --inset: #0e151d;
+  --panel: var(--section);
+  --panel-hi: var(--section-hi);
+  --panel-edge: #303e4b;
+  --panel-shadow: 0 6px 22px rgba(0,0,0,.2);
+  --line: #303e4b;
+  --line-hi: #526575;
+
+  --text: #f0f4f8;
+  --label: #c7d2de;
+  --muted: #8594a5;
+
+  --rubber: #202b36;
+  --rubber-hi: #293644;
+  --rubber-edge: #394958;
+  --rubber-hover: #344657;
+  --rubber-hover-edge: #536a7e;
+
+  --surface-1: #0e1821;
+  --surface-1-hover: #1a2b38;
+  --surface-1-edge: #293b49;
+  --surface-2: #1c2a36;
+  --surface-2-hi: #283948;
+  --surface-2-edge: #354754;
+  --surface-2-edge-hi: #526c7c;
+  --select-bg: #30222b;
+  --select-bg-hi: #60313c;
+  --select-edge: #e0707d;
+  --focus-ring: #5ad0da;
+
+  --store: #dc5156;
+  --red: #e34b55;
+  --red-hi: #ff7378;
+  --led: #ef5964;
+  --led-off: #4a3139;
+  --led-glow: 0 0 8px rgba(239,89,100,.65);
+  --green: #46cfa7;
+  --amber: #e6b36d;
+  --cyan: #5ad0da;
+
+  --oled: #e7f4fb;
+  --oled-dim: #7b9db0;
+  --oled-bg: #0a151c;
+  --display-bg: linear-gradient(150deg, #07151d, #0e202b 65%, #08131b);
+  --display-edge: #284451;
+  --display-bar: #162d3a;
+  --display-bar-fg: #9bc4d3;
+  --lcd: var(--oled);
+  --lcd-dim: var(--oled-dim);
+  --lcd-bg: var(--oled-bg);
+  --lcd-line: #29404d;
+  --value-bg: #0a141c;
+  --value-edge: #273944;
+
+  --knob-skirt: #0e151b;
+  --knob-skirt-edge: #3a4b58;
+  --knob-cap: #27333e;
+  --knob-cap-edge: #4c5f6d;
+  --knob-grip: #3e5362;
+  --track-bg: linear-gradient(90deg, #05080d, #15212c 45%, #05090f);
+  --well-bg: #0b141b;
+
+  --modal-bg: linear-gradient(155deg, #263340, #151f29);
+  --modal-edge: var(--led);
+  --scrim: rgba(2,6,11,.74);
+  --toast-bg: #15242f;
+  --scroll-thumb: #43505e;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+html,body,#root{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font:500 var(--fs)/1.42 var(--font);overflow:hidden;-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--focus-ring);outline-offset:2px}
+::selection{background:rgba(239,89,100,.35);color:#fff}
+::-webkit-scrollbar{width:7px;height:7px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--scroll-thumb);border:2px solid transparent;border-radius:10px;background-clip:padding-box}
+.muted{color:var(--muted)}
+.grow{flex:1 1 auto;min-width:0}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+@media (prefers-reduced-motion: reduce) { *,*::before,*::after{transition:none!important;animation:none!important;scroll-behavior:auto!important} }

@@ -1,3 +1,10 @@
+# main.cpp was split into src/app/** (StageApp + route groups): contract checks
+# read the whole application layer instead of the single former file.
+def _stage_app_source():
+    import pathlib as _p
+    root = _p.Path(__file__).resolve().parents[1]
+    files = [root / 'src/main.cpp', *sorted((root / 'src/app').rglob('*.h')), *sorted((root / 'src/app').rglob('*.cpp'))]
+    return chr(10).join(f.read_text(encoding='utf-8') for f in files)
 from pathlib import Path
 from bs4 import BeautifulSoup
 import re
@@ -29,6 +36,6 @@ assert 'piano-sample-editor.js' in (R/'ui/index.html').read_text()
 assert 'max-height:clamp' in (R/'ui/css/piano.css').read_text()
 assert 'const SYNTH_PRESET_COUNT = 12' in (R/'ui/js/synth.js').read_text()
 assert len(re.findall(r"P\d+: ", (R/'ui/js/core.js').read_text()))==12
-assert 'status == 0xE0' in (R/'src/main.cpp').read_text()
-assert 'data1 == 1' in (R/'src/main.cpp').read_text()
+assert 'status == 0xE0' in _stage_app_source()
+assert 'data1 == 1' in _stage_app_source()
 print('OK 27 FX knobs, 35 per-layer controls, 6 organ FX, 12 synth presets, MIDI bend & CC1, pages, responsive scroll')

@@ -1,5 +1,5 @@
 #pragma once
-#include "Nordtypes.h"
+#include "NordTypes.h"
 #include <cmath>
 #include <algorithm>
 #include <vector>
@@ -118,35 +118,53 @@ private:
     float x1R_ = 0.0f, x2R_ = 0.0f, y1R_ = 0.0f, y2R_ = 0.0f;
 };
 
+// Cascaded second-order Butterworth sections: order 2/4/8 produces
+// 12/24/48 dB/oct. Q values are the poles of the analog Butterworth prototype.
+// All coefficients are prepared off the inner sample loop; no allocations.
+inline int normalizeEqSlope(int slope) { return slope==48?48:slope==24?24:12; }
 class MasterEqualizer {
 public:
-    void update(float sr, bool enabled, float lowCutHz, float highCutHz, const EqBandParams bands[5]) {
+    void update(float sr, bool enabled, float lowCutHz, float highCutHz,
+                const EqBandParams bands[5],int hpSlope=12,int lpSlope=12) {
         enabled_ = enabled;
         lowCutActive_ = (lowCutHz > 22.0f);
         highCutActive_ = (highCutHz < 19500.0f);
-        hpf_.setHighPass(sr, lowCutHz, 0.7071f);
-        lpf_.setLowPass(sr, highCutHz, 0.7071f);
-        for (int i = 0; i < 5; ++i) {
-            bands_[i].setPeakingEQ(sr, bands[i].freqHz, bands[i].q, bands[i].gainDb);
-        }
+        hpStages_=normalizeEqSlope(hpSlope)/12;
+        lpStages_=normalizeEqSlope(lpSlope)/12;
+        const float q2[1]={0.70710678f};
+        const float q4[2]={0.54119610f,1.30656296f};
+        const float q8[4]={0.50979558f,0.60134489f,0.89997622f,2.56291545f};
+        const float* hpQ=hpStages_==4?q8:hpStages_==2?q4:q2;
+        const float* lpQ=lpStages_==4?q8:lpStages_==2?q4:q2;
+        for(int i=0;i<hpStages_;++i)hpf_[i].setHighPass(sr,lowCutHz,hpQ[i]);
+        for(int i=0;i<lpStages_;++i)lpf_[i].setLowPass(sr,highCutHz,lpQ[i]);
+        for(int i=0;i<5;++i)bands_[i].setPeakingEQ(sr,bands[i].freqHz,bands[i].q,bands[i].gainDb);
     }
-
-    inline void processStereo(float& L, float& R) {
-        if (!enabled_) return;
-        if (lowCutActive_) hpf_.processStereo(L, R);
-        if (highCutActive_) lpf_.processStereo(L, R);
-        for (int i = 0; i < 5; ++i) {
-            bands_[i].processStereo(L, R);
-        }
+    inline void processStereo(float& L,float& R){
+        if(!enabled_)return;
+        if(lowCutActive_)for(int i=0;i<hpStages_;++i)hpf_[i].processStereo(L,R);
+        if(highCutActive_)for(int i=0;i<lpStages_;++i)lpf_[i].processStereo(L,R);
+        for(auto& band:bands_)band.processStereo(L,R);
     }
-
 private:
-    bool enabled_ = true;
-    bool lowCutActive_ = false;
-    bool highCutActive_ = false;
-    StereoBiquad hpf_;
-    StereoBiquad lpf_;
-    StereoBiquad bands_[5];
+    bool enabled_=true,lowCutActive_=false,highCutActive_=false;
+    int hpStages_=1,lpStages_=1;
+    std::array<StereoBiquad,4> hpf_{},lpf_{};
+    std::array<StereoBiquad,5> bands_{};
+};
+
+class SoundLayerEqualizer {
+public:
+    void update(float sr,const PianoLayerSampleConfig& cfg){
+        EqBandParams b[5]{};
+        for(int i=0;i<3;++i){b[i].freqHz=cfg.soundEqFreq[i];b[i].q=cfg.soundEqQ[i];b[i].gainDb=cfg.soundEqGain[i];}
+        for(int i=3;i<5;++i){b[i].freqHz=1000.f;b[i].q=1.f;b[i].gainDb=0.f;}
+        eq_.update(sr,cfg.soundEqEnabled,cfg.soundEqHighPass,cfg.soundEqLowPass,b,
+                   cfg.soundEqHighPassSlope,cfg.soundEqLowPassSlope);
+    }
+    inline void processStereo(float& L,float& R){eq_.processStereo(L,R);}
+private:
+    MasterEqualizer eq_{};
 };
 
 class ModulationRack {
@@ -167,7 +185,9 @@ public:
                        bool chorusOn, float chorusRate, float chorusDepth, float chorusMix,
                        int chorusVoices = 2, float chorusWidth = 0.85f,
                        float chorusFeedback = 0.08f, float chorusToneHz = 9500.0f,
-                       float chorusDelayMs = 16.0f) {
+                       float chorusDelayMs = 16.0f,
+                       int phaserStages = 6,float phaserMinHz = 220.f,
+                       float phaserMaxHz = 3620.f,float phaserStereoPhase = .25f) {
         if (tremOn && tremDepth > 0.001f) {
             tremPhase_ += tremRate / sr_;
             if (tremPhase_ >= 1.0f) tremPhase_ -= 1.0f;
@@ -182,11 +202,15 @@ public:
             if (phaserPhase_ >= 1.0f) phaserPhase_ -= 1.0f;
 
             float lfoL = 0.5f * (1.0f + std::sin(2.0f * PI_F * phaserPhase_));
-            float lfoR = 0.5f * (1.0f + std::cos(2.0f * PI_F * phaserPhase_));
+            float lfoR = 0.5f * (1.0f + std::sin(2.0f * PI_F * (phaserPhase_+phaserStereoPhase)));
 
-            float fMin = 220.0f, fMax = 220.0f + phaserDepth * 3400.0f;
-            float freqL = fMin + (fMax - fMin) * lfoL;
-            float freqR = fMin + (fMax - fMin) * lfoR;
+            const float fMin = std::clamp(phaserMinHz,40.f,2500.f);
+            const float fMax = std::max(fMin+10.f,phaserMaxHz);
+            // v1 has the same effective sweep 220 -> 220+depth*3400.
+            // v2's min/max are explicit normalized controls.
+            const float fTop = fMin+(fMax-fMin)*std::clamp(phaserDepth,0.f,1.f);
+            float freqL = fMin + (fTop - fMin) * lfoL;
+            float freqR = fMin + (fTop - fMin) * lfoR;
 
             float tL = std::tan(PI_F * freqL / sr_);
             float aL = (1.0f - tL) / (1.0f + tL);
@@ -196,7 +220,7 @@ public:
             float yL = L + phaserLastL_ * std::clamp(phaserFb, 0.0f, 0.85f);
             float yR = R + phaserLastR_ * std::clamp(phaserFb, 0.0f, 0.85f);
 
-            for (int s = 0; s < 6; ++s) {
+            for (int s = 0; s < std::clamp(phaserStages,2,8); ++s) {
                 float outL = aL * yL + apStateL_[s];
                 apStateL_[s] = yL - aL * outL;
                 yL = outL;
@@ -270,7 +294,7 @@ private:
     float tremPhase_ = 0.0f;
     float phaserPhase_ = 0.0f;
     float chorusPhase_ = 0.0f;
-    float apStateL_[6] = {0.0f}, apStateR_[6] = {0.0f};
+    float apStateL_[8] = {0.0f}, apStateR_[8] = {0.0f};
     float phaserLastL_ = 0.0f, phaserLastR_ = 0.0f;
     std::vector<float> chorusBufL_, chorusBufR_;
     size_t writePos_ = 0;
@@ -282,22 +306,38 @@ class StereoDelayEffect {
 public:
     void init(float sr) {
         sr_ = sr;
-        size_t maxFrames = static_cast<size_t>(sr * 2.1f) + 64;
+        size_t maxFrames = static_cast<size_t>(sr * 8.1f) + 64;
         bufL_.assign(maxFrames, 0.0f);
         bufR_.assign(maxFrames, 0.0f);
         writePos_ = 0;
         lpL_ = lpR_ = 0.0f;
+        currentDelayFrames_=targetDelayFrames_=0;
+        transitionRemaining_=0;
+        transitionSamples_=std::max(16,int(sr_*.025f));
     }
 
     inline void processStereo(float& L, float& R, bool enabled, float timeMs, float feedback, float damping, float mix, bool pingPong) {
         if (!enabled || mix <= 0.001f || bufL_.empty()) return;
 
         const size_t sz = bufL_.size();
-        size_t delayFrames = static_cast<size_t>(std::clamp(timeMs * 0.001f * sr_, 32.0f, static_cast<float>(sz - 8)));
-        size_t readPos = (writePos_ + sz - delayFrames) % sz;
-
-        float dL = bufL_[readPos];
-        float dR = bufR_[readPos];
+        const size_t frames=static_cast<size_t>(std::clamp(timeMs*.001f*sr_,32.f,float(sz-8)));
+        if(currentDelayFrames_==0){ currentDelayFrames_=targetDelayFrames_=frames; }
+        else if(frames!=targetDelayFrames_){
+            // Two read heads with a short crossfade prevent hard jumps when the
+            // musician taps a new BPM or changes NOTE during a sustained tail.
+            if(transitionRemaining_>0)currentDelayFrames_=targetDelayFrames_;
+            targetDelayFrames_=frames;
+            transitionRemaining_=transitionSamples_;
+        }
+        const size_t oldPos=(writePos_+sz-currentDelayFrames_)%sz;
+        float dL=bufL_[oldPos],dR=bufR_[oldPos];
+        if(transitionRemaining_>0){
+            const size_t newPos=(writePos_+sz-targetDelayFrames_)%sz;
+            const float blend=1.f-float(transitionRemaining_)/float(transitionSamples_);
+            dL=dL+(bufL_[newPos]-dL)*blend;
+            dR=dR+(bufR_[newPos]-dR)*blend;
+            if(--transitionRemaining_==0)currentDelayFrames_=targetDelayFrames_;
+        }
 
         float dampCoef = std::clamp(damping * 0.82f, 0.05f, 0.85f);
         lpL_ = dL * (1.0f - dampCoef) + lpL_ * dampCoef;
@@ -323,6 +363,8 @@ private:
     std::vector<float> bufL_, bufR_;
     size_t writePos_ = 0;
     float lpL_ = 0.0f, lpR_ = 0.0f;
+    size_t currentDelayFrames_=0,targetDelayFrames_=0;
+    int transitionRemaining_=0,transitionSamples_=1024;
 };
 
 // ============================================================================
@@ -398,8 +440,10 @@ public:
         }
 
         // 5. Pitch Shifter Granular en Cuadratura (~165 ms de ventana para máxima suavidad sin vibrato artificial)
-        grainSize_ = static_cast<size_t>(sr_ * 0.165f);
+        grainSize_ = static_cast<size_t>(sr_ * 0.245f); // allocate maximum once
         if (grainSize_ < 4096) grainSize_ = 4096;
+        grainSpan_=grainSpanTarget_=std::min<float>(grainSize_-16.f,sr_*.165f);
+        grainSmoothCoef_=1.f-std::exp(-1.f/(sr_*.035f));
         grainBufL_.assign(grainSize_, 0.0f);
         grainBufR_.assign(grainSize_, 0.0f);
         grainWritePos_ = 0;
@@ -410,17 +454,22 @@ public:
 
         fbLowCut_.reset();
         fbHighCut_.reset();
+        wetLowCut_.reset();
+        wetHighCut_.reset();
         fbReturnL_ = fbReturnR_ = 0.0f;
         pitchReturnSmoothL_ = pitchReturnSmoothR_ = 0.0f;
 
         dcBlockerL_x1_ = dcBlockerL_y1_ = 0.0f;
         dcBlockerR_x1_ = dcBlockerR_y1_ = 0.0f;
         lfoPhase_ = 0.0f;
-        pitchLpCoef_ = 1.0f - std::exp(-2.0f*PI_F*4400.0f/sr_);
+        pitchLpCoef_ = 1.0f - std::exp(-2.0f*PI_F*3100.0f/sr_);
+        pitchGlideCoef_=1.f-std::exp(-1.f/(sr_*.012f));
 
         setParams(mix_, shiftSt_, feedback_, diffusion_, size_,
                   lowCutHz_, highCutHz_, modRateHz_, modDepth_,
                   pitchMode_, revMode_, color_);
+        pitchRatio_=pitchRatioTarget_;
+        pitchReturnGain_=pitchReturnGainTarget_;
     }
 
     void setParams(float mix, float shiftSemitones, float feedback,
@@ -429,7 +478,7 @@ public:
                    float modRateHz, float modDepth,
                    PitchMode pitchMode, ReverbMode revMode, ColorMode color) {
         mix_          = std::clamp(mix, 0.0f, 1.0f);
-        shiftSt_      = std::clamp(shiftSemitones, -12.0f, 12.0f);
+        shiftSt_      = std::clamp(shiftSemitones, -24.0f, 24.0f);
         feedback_     = std::clamp(feedback, 0.0f, 0.992f);
         diffusion_    = std::clamp(diffusion, 0.0f, 0.98f);
         size_         = std::clamp(size, 0.05f, 1.0f);
@@ -443,18 +492,22 @@ public:
 
         // Difusión estilo Golden Ratio (0.618 -> 0.78) para crear el ataque envolvente ("Bloom")
         apCoef_ = 0.25f + diffusion_ * 0.50f;
-        pitchRatio_ = std::pow(2.0, static_cast<double>(shiftSt_) / 12.0);
-        pitchReturnGain_ = 0.22f + std::pow(feedback_,0.75f)*0.37f;
-        tankDecay_ = 0.80f + std::pow(feedback_,0.52f)*0.182f;
-        if (revMode_ == ReverbMode::BigStereo) tankDecay_ = std::min(0.993f,tankDecay_+0.012f);
-        if (revMode_ == ReverbMode::SmallStereo) tankDecay_ *= 0.94f;
+        pitchRatioTarget_ = std::pow(2.0, static_cast<double>(shiftSt_) / 12.0);
+        // One knob controls decay across the full useful 0..0.992 range.
+        // A physically interpretable RT60 target maps to per-round-trip loss
+        // using the actual delay length: no arbitrary 0.84 feedback ceiling.
+        // Room size and stereo model affect the time between recirculations.
+        pitchReturnGainTarget_ = 0.15f + 0.50f * feedback_;
 
         fbLowCut_.setHighPass(sr_, lowCutHz_, 0.707f);
-        const float hcQ = (color_ == ColorMode::Dark) ? 0.55f : 0.707f;
-        const float hcFreq = (color_ == ColorMode::Dark)
-                             ? std::min(highCutHz_, 5200.0f)
-                             : highCutHz_;
-        fbHighCut_.setLowPass(sr_, hcFreq, hcQ);
+        const float hcQ = (color_ == ColorMode::Dark) ? 0.55f : 0.79f;
+        // Tone color changes damping and filter Q, but must not silently pin
+        // the HIGH CUT knob to a fixed ceiling in the Dark position.
+        fbHighCut_.setLowPass(sr_, highCutHz_, hcQ);
+        // Both cut controls shape the audible wet tank, not only the very quiet
+        // pitched regeneration. This makes each knob effective in all racks.
+        wetLowCut_.setHighPass(sr_, lowCutHz_, 0.707f);
+        wetHighCut_.setLowPass(sr_, highCutHz_, hcQ);
 
         // Escala espacial amplia según Size y ReverbMode (sin desbordar jamás el buffer de 3.5x)
         float sizeScale = 0.45f + size_ * 1.45f; // 0.45x a 1.90x
@@ -462,14 +515,29 @@ public:
         else if (revMode_ == ReverbMode::MediumStereo) sizeScale *= 1.05f;
         else if (revMode_ == ReverbMode::BigStereo)    sizeScale *= 1.60f; // Hasta 3.04x (< 3.5x reservado)
 
+        float meanDelaySamples = 0.0f;
         for (int i = 0; i < 8; ++i) {
             scaledDelayL_[i] = baseDelayL_[i] * sizeScale;
             scaledDelayR_[i] = baseDelayR_[i] * sizeScale;
+            meanDelaySamples += (scaledDelayL_[i] + scaledDelayR_[i]) * (1.0f / 16.0f);
         }
+        // Feedback is psychoacoustically non-linear: the last 20% of travel
+        // gives genuinely long atmospheric tails without destabilizing the FDN.
+        // This is a nominal RT60; damping and pitch-return also shape the tail.
+        const float normalized = feedback_ / 0.992f;
+        const float desiredT60 = 0.55f + 100.0f * std::pow(normalized, 3.4f);
+        tankDecay_ = std::clamp(std::exp(-6.907755279f * meanDelaySamples /
+                                    (sr_ * desiredT60)), 0.10f, 0.9995f);
     }
 
     inline void processStereo(float& L, float& R) {
         if (mix_ <= 0.001f || combL_[0].empty()) return;
+        // Smooth pitch and regeneration changes. Automation must not jump the
+        // grain-reader phase rate or feedback gain in one audio sample.
+        pitchRatio_+=(pitchRatioTarget_-pitchRatio_)*pitchGlideCoef_;
+        secondaryRatio_+=(secondaryRatioTarget_-secondaryRatio_)*pitchGlideCoef_;
+        grainSpan_+=(grainSpanTarget_-grainSpan_)*grainSmoothCoef_;
+        pitchReturnGain_+=(pitchReturnGainTarget_-pitchReturnGain_)*pitchGlideCoef_;
 
         // 1. PRE-DELAY ESTÉREO (Conserva la imagen estéreo original del piano con cruce suave)
         float inStereoL = L * 0.85f + R * 0.15f;
@@ -507,12 +575,16 @@ public:
         // 3. LFO MULTIFASE PARA MODULAR EL TANQUE (Crea amplitud coral y elimina resonancias estáticas)
         lfoPhase_ += modRateHz_ / sr_;
         if (lfoPhase_ >= 1.0f) lfoPhase_ -= 1.0f;
-        const float modExcursion = (8.0f + modDepth_ * 34.0f) * (sr_ / 44100.0f);
+        // At zero MOD DEPTH the delay taps must remain perfectly stationary.
+        const float modExcursion = modDepth_ * 42.0f * (sr_ / 44100.0f);
 
         // Curva de Decay Atmosférico: mapea feedback_ (0..0.98) a una ganancia de sostenimiento real (0.82..0.992)
         const float tankDecay = tankDecay_; // computed when the parameter changes, never per sample
 
-        const float dampCoef = (color_ == ColorMode::Dark) ? 0.34f : 0.16f;
+        // DAMPING (p1) is independent of HIGH CUT (p9) and COLOR (p14).
+        const float dampCoef = std::clamp(0.08f + damping_ * 0.70f +
+                                        (color_ == ColorMode::Dark ? 0.10f : 0.f),
+                                        0.08f, 0.94f);
 
         // 4. LECTURA DE LAS 8 LÍNEAS DEL TANQUE CON INTERPOLACIÓN FRACCIONAL
         float yL[8], yR[8];
@@ -596,11 +668,15 @@ public:
         float shiftedR = tankOutR;
 
         const bool isRev = (pitchMode_ == PitchMode::SingleReverse || pitchMode_ == PitchMode::DualReverse);
-        if (pitchMode_ != PitchMode::Bypass && (std::abs(shiftSt_) > 0.01f || isRev)) {
+        const bool dualActive=(pitchMode_==PitchMode::Dual || pitchMode_==PitchMode::DualReverse);
+        const bool secondaryNeedsShift=multiPitchEnabled_ && dualActive &&
+            std::abs(secondaryRatioTarget_-1.0)>0.01;
+        if (pitchMode_ != PitchMode::Bypass &&
+            (std::abs(shiftSt_) > 0.01f || isRev || secondaryNeedsShift)) {
             auto evalStereoGrains = [&](double phBaseL, double phBaseR, float& outGL, float& outGR) {
                 outGL = 0.0f;
                 outGR = 0.0f;
-                const double maxSpan = static_cast<double>(grainSize_ - 16);
+                const double maxSpan = static_cast<double>(grainSpan_ - 16.f);
                 for (int g = 0; g < 4; ++g) {
                     double offset = g * 0.25;
                     double phL = phBaseL + offset;
@@ -630,10 +706,14 @@ public:
             };
 
             float upL = 0.0f, upR = 0.0f;
-            evalStereoGrains(phasorUpL_, phasorUpR_, upL, upR);
+            if(std::abs(shiftSt_) < 0.01f && !isRev){
+                upL=tankOutL;upR=tankOutR;
+            }else{
+                evalStereoGrains(phasorUpL_, phasorUpR_, upL, upR);
+            }
 
             // Micro-detune estéreo (1.0018 en L y 0.9982 en R) para que el Shimmer tenga amplitud sinfónica
-            double stepUpBase = (isRev ? (1.0 + pitchRatio_) : (1.0 - pitchRatio_)) / static_cast<double>(grainSize_);
+            double stepUpBase = (isRev ? (1.0 + pitchRatio_) : (1.0 - pitchRatio_)) / static_cast<double>(grainSpan_);
             phasorUpL_ += stepUpBase * 1.0018;
             phasorUpL_ -= std::floor(phasorUpL_);
             phasorUpR_ += stepUpBase * 0.9982;
@@ -643,18 +723,22 @@ public:
                 float dnL = 0.0f, dnR = 0.0f;
                 evalStereoGrains(phasorDownL_, phasorDownR_, dnL, dnR);
                 // En modo Dual combinamos el intervalo principal con una quinta/octava complementaria
-                double dualRatio = (pitchRatio_ > 1.05) ? (pitchRatio_ * 0.5) : (1.0 / std::max(0.25, pitchRatio_));
-                double stepDownBase = (isRev ? (1.0 + dualRatio) : (1.0 - dualRatio)) / static_cast<double>(grainSize_);
+                const double dualRatio = multiPitchEnabled_ ? secondaryRatio_ :
+                    ((pitchRatio_ > 1.05) ? (pitchRatio_ * 0.5) : (1.0 / std::max(0.25, pitchRatio_)));
+                double stepDownBase = (isRev ? (1.0 + dualRatio) : (1.0 - dualRatio)) / static_cast<double>(grainSpan_);
                 phasorDownL_ += stepDownBase * 0.9985;
                 phasorDownL_ -= std::floor(phasorDownL_);
                 phasorDownR_ += stepDownBase * 1.0015;
                 phasorDownR_ -= std::floor(phasorDownR_);
 
-                shiftedL = upL * 0.72f + dnL * 0.22f;
-                shiftedR = upR * 0.72f + dnR * 0.22f;
+                const float a=multiPitchEnabled_?primaryGain_:.72f;
+                const float b=multiPitchEnabled_?secondaryMix_:.22f;
+                const float norm=1.f/std::max(1.f,a+b);
+                shiftedL = (upL*a + dnL*b)*norm;
+                shiftedR = (upR*a + dnR*b)*norm;
             } else {
-                shiftedL = upL;
-                shiftedR = upR;
+                shiftedL = upL*primaryGain_;
+                shiftedR = upR*primaryGain_;
             }
         }
 
@@ -669,13 +753,24 @@ public:
         const float pitchLp = pitchLpCoef_;
         pitchReturnSmoothL_ += pitchLp*(shiftedL-pitchReturnSmoothL_);
         pitchReturnSmoothR_ += pitchLp*(shiftedR-pitchReturnSmoothR_);
-        const float shimmerLoopGain = pitchReturnGain_;
+        const float shimmerLoopGain = pitchReturnGain_ * pitchAmount_;
         fbReturnL_ = softSaturate(pitchReturnSmoothL_*shimmerLoopGain);
         fbReturnR_ = softSaturate(pitchReturnSmoothR_*shimmerLoopGain);
 
         // 8. DIFUSIÓN TARDÍA DE SALIDA (Crea el efecto "Bloom" envolvente)
-        float outL = tankOutL * 0.96f + shiftedL * 0.32f;
-        float outR = tankOutR * 0.96f + shiftedR * 0.32f;
+        // Keep the shifted voice audible as an actual shimmer layer, rather
+        // than burying PITCH RETURN under the unshifted reverb tank.
+        const float harmonics=(pitchMode_==PitchMode::Bypass?0.f:pitchAmount_);
+        // Audibly shape the pitched output as well as its feedback return.
+        // Before v3 the tone filter only affected the regenerating loop,
+        // leaving TONE SHIFT almost inaudible in the wet output.
+        const float harmonicsGain=multiPitchEnabled_?.76f:.32f;
+        float outL = multiPitchEnabled_
+            ? tankOutL * .88f + pitchReturnSmoothL_ * harmonicsGain * harmonics
+            : tankOutL * .94f + shiftedL * .32f * pitchAmount_;
+        float outR = multiPitchEnabled_
+            ? tankOutR * .88f + pitchReturnSmoothR_ * harmonicsGain * harmonics
+            : tankOutR * .94f + shiftedR * .32f * pitchAmount_;
 
         const float outApGain = 0.618f; // Proporción áurea para máxima densidad suave
         for (int i = 0; i < 4; ++i) {
@@ -697,24 +792,56 @@ public:
         dcBlockerL_x1_ = outL; dcBlockerL_y1_ = cleanL;
         float cleanR = outR - dcBlockerR_x1_ + 0.995f * dcBlockerR_y1_;
         dcBlockerR_x1_ = outR; dcBlockerR_y1_ = cleanR;
+        wetLowCut_.processStereo(cleanL,cleanR);
+        wetHighCut_.processStereo(cleanL,cleanR);
 
         if (revMode_ != ReverbMode::Mono) {
             float mid  = (cleanL + cleanR) * 0.5f;
             float side = (cleanL - cleanR) * 0.5f;
             float widthBoost = (revMode_ == ReverbMode::BigStereo) ? 1.38f :
                                (revMode_ == ReverbMode::MediumStereo ? 1.25f : 1.12f);
-            side *= widthBoost;
+            side *= widthBoost*stereoWidth_;
             cleanL = mid + side;
             cleanR = mid - side;
         }
 
         // Mezcla Equi-Potencia Dry/Wet para que la señal del piano nunca pierda presencia al subir el Mix
         float dryGain = std::cos(mix_ * PI_F * 0.42f);
-        float wetGain = std::sin(mix_ * PI_F * 0.50f) * 1.35f;
+        float wetGain = std::sin(mix_ * PI_F * 0.50f) * 1.04f;
 
         L = L * dryGain + cleanL * wetGain;
         R = R * dryGain + cleanR * wetGain;
     }
+
+    // Multiple harmony layers inspired by the referenced MIT-licensed ShimmerVerb
+    // architecture. This implementation uses our own preallocated FDN/granular DSP.
+    // No JUCE dependency and no allocations on the audio thread.
+    void setMultiPitch(float secondSemitones,float secondLevel,float grainMs,
+                       float toneShift,float primaryLevel,float width) {
+        multiPitchEnabled_=true;
+        secondaryRatioTarget_=std::pow(2.0,std::clamp(secondSemitones,-24.f,24.f)/12.f);
+        secondaryMix_=std::clamp(secondLevel,0.f,1.f);
+        primaryGain_=std::clamp(primaryLevel,0.f,1.f);
+        stereoWidth_=std::clamp(width*2.f,0.f,2.f);
+        grainSpanTarget_=std::clamp(sr_*grainMs*.001f,1024.f,float(grainSize_)-16.f);
+        // TONE SHIFT changes the brightness of regenerated harmonics, independently
+        // from the user's HIGH CUT on the entire wet reverb output.
+        const float cutoff=std::clamp(3100.f*std::pow(4.f,2.f*(toneShift-.5f)),350.f,sr_*.45f);
+        pitchLpCoef_=1.f-std::exp(-2.f*PI_F*cutoff/sr_);
+    }
+    void setMultiPitchLegacy(){
+        multiPitchEnabled_=false;
+        secondaryRatioTarget_=secondaryRatio_;
+        secondaryMix_=.22f;
+        primaryGain_=1.f;
+        stereoWidth_=1.f;
+        grainSpanTarget_=std::min<float>(grainSize_-16.f,sr_*.165f);
+        pitchLpCoef_=1.f-std::exp(-2.f*PI_F*3100.f/sr_);
+    }
+    // Distinct control for pitched regeneration (0 = no harmonized return).
+    void setPitchReturnAmount(float value) { pitchAmount_=std::clamp(value,0.0f,1.0f); }
+    // Tank damping does not override the user's HIGH CUT frequency or COLOR.
+    void setDamping(float value) { damping_=std::clamp(value,0.0f,1.0f); }
 
     void setPreDelayMs(float ms) {
         if (preDelayBufL_.empty()) return;
@@ -754,10 +881,15 @@ private:
     double phasorUpL_ = 0.0, phasorUpR_ = 0.125;
     double phasorDownL_ = 0.25, phasorDownR_ = 0.375;
 
-    StereoBiquad fbLowCut_, fbHighCut_;
+    StereoBiquad fbLowCut_, fbHighCut_, wetLowCut_, wetHighCut_;
     float fbReturnL_ = 0.0f, fbReturnR_ = 0.0f;
     float pitchReturnSmoothL_ = 0.0f, pitchReturnSmoothR_ = 0.0f;
-    float pitchLpCoef_ = 0.4f, pitchReturnGain_ = 0.45f, tankDecay_ = 0.94f;
+    float pitchLpCoef_ = 0.4f, pitchReturnGain_ = 0.45f, pitchReturnGainTarget_ = 0.45f;
+    float pitchGlideCoef_=0.001f, tankDecay_ = 0.94f;
+    bool multiPitchEnabled_=false;
+    float secondaryMix_=.22f,primaryGain_=1.f,stereoWidth_=1.f;
+    double secondaryRatio_=1.5,secondaryRatioTarget_=1.5;
+    float grainSpan_=7920.f,grainSpanTarget_=7920.f,grainSmoothCoef_=.001f;
 
     float dcBlockerL_x1_ = 0.0f, dcBlockerL_y1_ = 0.0f;
     float dcBlockerR_x1_ = 0.0f, dcBlockerR_y1_ = 0.0f;
@@ -768,17 +900,21 @@ private:
     float feedback_ = 0.65f;
     float diffusion_ = 0.88f;
     float size_ = 0.72f;
+    float pitchAmount_ = 0.30f;
+    float damping_ = 0.35f;
     float lowCutHz_ = 140.0f;
     float highCutHz_ = 8500.0f;
     float modRateHz_ = 0.42f;
     float modDepth_ = 0.28f;
     float apCoef_ = 0.65f;
-    double pitchRatio_ = 2.0;
+    double pitchRatio_ = 2.0, pitchRatioTarget_ = 2.0;
 
     PitchMode pitchMode_ = PitchMode::Dual;
     ReverbMode revMode_ = ReverbMode::BigStereo;
     ColorMode color_ = ColorMode::Dark;
 };
+
+#include "NordAtmosphericShimmer.h"
 
 // ============================================================================
 //  NordReverbEffect — Enruta automáticamente el modo 3 (AMB / SHIMMER) al
@@ -787,7 +923,10 @@ private:
 // ============================================================================
 class NordReverbEffect {
 public:
-    void init(float sr) {
+    /** withShimmer=false: Room / Plate / Hall only, the Shimmer engine is never allocated
+     *  (per-layer inserts). Type 3 then falls back to Hall. */
+    void init(float sr, bool withShimmer = true) {
+        shimmerReady_ = withShimmer;
         sr_ = sr > 8000.0f ? sr : 48000.0f;
         const float scale = sr_ / 44100.0f;
         const int early[4] = {149, 223, 337, 521};
@@ -809,14 +948,23 @@ public:
         preL_.assign(static_cast<size_t>(sr_*0.26f)+16,0.0f);
         preR_.assign(preL_.size(),0.0f);
         prePos_=0; phase_=0.0f;
-        cachedType_=-1;cachedSize_=cachedDamp_=-1.0f;
+        cachedType_=-1;cachedSize_=cachedDamp_=cachedDecay_=-1.0f;
         dcXL_=dcYL_=dcXR_=dcYR_=0.0f;
-        shimmerEngine_.init(sr_);
+        if(withShimmer)shimmerEngine_.init(sr_);
+    }
+    /** Silences the tails without reallocating (safe on the audio thread). */
+    void clear() {
+        for(auto* group:{preDiffL_,preDiffR_,outDiffL_,outDiffR_})for(int i=0;i<4;i++)std::fill(group[i].begin(),group[i].end(),0.0f);
+        for(int i=0;i<8;i++){std::fill(tankL_[i].begin(),tankL_[i].end(),0.0f);std::fill(tankR_[i].begin(),tankR_[i].end(),0.0f);dampL_[i]=dampR_[i]=0.0f;}
+        std::fill(preL_.begin(),preL_.end(),0.0f);std::fill(preR_.begin(),preR_.end(),0.0f);
+        dcXL_=dcYL_=dcXR_=dcYR_=0.0f;
     }
 
     inline void processStereo(float& L,float& R,bool enabled,int type,float mix,float size,
-                              float damping,float preDelayMs,float shimmerAmt) {
+                              float damping,float preDelayMs,float shimmerAmt,
+                              float diffusion=.5f,float decay=.5f,float stereoWidth=.5f) {
         if(!enabled || mix<0.0001f || preL_.empty()) return;
+        if(type==3 && !shimmerReady_) type=2;
         if(type==3) {
             shimmerEngine_.setPreDelayMs(preDelayMs);
             const float highCut=11500.0f-std::clamp(damping,0.0f,1.0f)*7500.0f;
@@ -846,16 +994,18 @@ public:
         float earlyL=0.40f*preL_[(read+sz-er1)%sz]+0.19f*preR_[(read+sz-er2)%sz];
         float earlyR=0.40f*preR_[(read+sz-er1)%sz]+0.19f*preL_[(read+sz-er2)%sz];
         prePos_=(prePos_+1)%sz;
-        const float difCoef=(type==0)?0.52f:(type==1?0.74f:0.67f);
+        const float difBase=(type==0)?0.52f:(type==1?0.74f:0.67f);
+        const float difCoef=std::clamp(difBase+(diffusion-.5f)*.26f,.25f,.85f);
         for(int i=0;i<4;i++){
             inL=allpass(inL,preDiffL_[i],pdPosL_[i],difCoef);
             inR=allpass(inR,preDiffR_[i],pdPosR_[i],difCoef);
         }
         phase_+=0.31f/sr_; if(phase_>=1.0f)phase_-=1.0f;
         // Update expensive coefficients only when a reverb parameter changes.
-        if (cachedType_!=type || cachedSize_!=size || cachedDamp_!=damping) {
-            cachedType_=type;cachedSize_=size;cachedDamp_=damping;
-            const float rt60=(type==0?0.5f+size*1.7f:(type==1?1.0f+size*3.5f:1.5f+size*5.5f));
+        if (cachedType_!=type || cachedSize_!=size || cachedDamp_!=damping || cachedDecay_!=decay) {
+            cachedType_=type;cachedSize_=size;cachedDamp_=damping;cachedDecay_=decay;
+            const float baseRt60=(type==0?0.75f+size*2.65f:(type==1?1.4f+size*5.0f:2.0f+size*8.2f));
+            const float rt60=baseRt60*std::clamp(.35f+1.3f*decay,.35f,1.65f);
             cachedScale_=0.78f+size*0.87f;
             const float cutoff=std::clamp(15000.0f*std::pow(0.24f,damping),1100.0f,17000.0f);
             cachedLp_=1.0f-std::exp(-2.0f*PI_F*cutoff/sr_);
@@ -896,16 +1046,21 @@ public:
         wetL=wetL*tailGain+earlyL*(type==0?0.48f:0.29f);
         wetR=wetR*tailGain+earlyR*(type==0?0.48f:0.29f);
         for(int i=0;i<4;i++){
-            const float g=(type==0?0.43f:(type==1?0.69f:0.60f));
+            const float base=(type==0?0.43f:(type==1?0.69f:0.60f));
+            const float g=std::clamp(base+(diffusion-.5f)*.25f,.23f,.84f);
             wetL=allpass(wetL,outDiffL_[i],odPosL_[i],g);
             wetR=allpass(wetR,outDiffR_[i],odPosR_[i],g);
         }
         const float cleanL=wetL-dcXL_+0.995f*dcYL_;
         const float cleanR=wetR-dcXR_+0.995f*dcYR_;
         dcXL_=wetL;dcYL_=cleanL;dcXR_=wetR;dcYR_=cleanR;
+        // Output M/S width, with .5 = unmodified legacy response.
+        const float mid=(cleanL+cleanR)*.5f,side=(cleanL-cleanR)*.5f;
+        const float width=std::clamp(.25f+1.5f*stereoWidth,.25f,1.75f);
+        const float wideL=mid+side*width,wideR=mid-side*width;
         // Keep legacy dry-gain contract used by wet-only AUX subtraction in NordPianoEngine.
-        L=dryL*(1.0f-mix*0.28f)+cleanL*(mix*1.02f);
-        R=dryR*(1.0f-mix*0.28f)+cleanR*(mix*1.02f);
+        L=dryL*(1.0f-mix*0.28f)+wideL*(mix*1.02f);
+        R=dryR*(1.0f-mix*0.28f)+wideR*(mix*1.02f);
     }
 private:
     static float readDelay(const std::vector<float>& b,size_t write,float delay){
@@ -928,9 +1083,118 @@ private:
     float baseL_[8]{},baseR_[8]{},dampL_[8]{},dampR_[8]{};
     float dcXL_=0,dcYL_=0,dcXR_=0,dcYR_=0;
     int cachedType_=-1;
-    float cachedSize_=-1.0f,cachedDamp_=-1.0f,cachedScale_=1.0f,cachedLp_=0.4f;
+    float cachedSize_=-1.0f,cachedDamp_=-1.0f,cachedDecay_=-1.f,cachedScale_=1.0f,cachedLp_=0.4f;
     float cachedFbL_[8]{},cachedFbR_[8]{};
     ShimmerReverbEngine shimmerEngine_;
+    bool shimmerReady_ = true;
+};
+
+
+// Common stereo colour effects, available to MASTER, SYNTH and ORGAN.
+class NordColorEffects {
+public:
+    void init(float sr) { sr_ = sr > 8000.f ? sr : 48000.f; phase_=0.f; }
+    void processStereo(float& l,float& r, bool driveOn,float drive,
+                       bool panOn,float rate,float depth) {
+        if(driveOn) {
+            const float g=1.f+std::clamp(drive,0.f,1.f)*5.f;
+            const float norm=std::tanh(g);
+            l=std::tanh(l*g)/norm; r=std::tanh(r*g)/norm;
+        }
+        if(panOn) {
+            phase_+=std::clamp(rate,.05f,12.f)/sr_;
+            if(phase_>=1.f) phase_-=1.f;
+            const float d=std::clamp(depth,0.f,1.f);
+            const float sw=std::sin(6.28318530718f*phase_);
+            l*=1.f-d*.5f*(1.f+sw);
+            r*=1.f-d*.5f*(1.f-sw);
+        }
+    }
+private: float sr_=48000.f,phase_=0.f;
+};
+
+// Stereo modulated short delay (flanger). Circular buffers allocated only during init().
+// processStereo() does not allocate, lock, or perform system calls.
+class NordFlangerEffect {
+public:
+    void init(float sr) {
+        sr_ = std::max(8000.f, sr);
+        const size_t n=static_cast<size_t>(std::ceil(sr_*.022f))+8;
+        left_.assign(n,0.f); right_.assign(n,0.f); write_=0;phase_=0.f;
+    }
+    void processStereo(float& l,float& r,float rate,float depth,float feedback,float mix){
+        if(left_.empty() || mix<=.0001f) return;
+        rate=std::clamp(rate,.05f,5.f); depth=std::clamp(depth,0.f,1.f);
+        feedback=std::clamp(feedback,-.85f,.85f);mix=std::clamp(mix,0.f,1.f);
+        phase_+=rate/sr_; if(phase_>=1.f)phase_-=1.f;
+        const float phaseL=std::sin(6.28318530718f*phase_);
+        const float phaseR=std::sin(6.28318530718f*(phase_+.25f));
+        const size_t n=left_.size();
+        const auto read=[n,this](const std::vector<float>& buf,float ms){
+            float back=ms*.001f*sr_;
+            const float pos=static_cast<float>(write_)+static_cast<float>(n)-back;
+            const float fixed=pos-std::floor(pos/static_cast<float>(n))*static_cast<float>(n);
+            const size_t a=static_cast<size_t>(fixed)%n,b=(a+1)%n;
+            return buf[a]+(buf[b]-buf[a])*(fixed-static_cast<float>(a));
+        };
+        const float delayL=1.5f+depth*(6.f+4.f*phaseL);
+        const float delayR=1.5f+depth*(6.f+4.f*phaseR);
+        const float wetL=read(left_,delayL), wetR=read(right_,delayR);
+        left_[write_]=std::clamp(l+wetL*feedback,-3.f,3.f);
+        right_[write_]=std::clamp(r+wetR*feedback,-3.f,3.f);
+        write_=(write_+1)%n;
+        l+=wetL*mix*.7f; r+=wetR*mix*.7f;
+    }
+private:
+    float sr_=48000.f,phase_=0.f;
+    std::vector<float> left_,right_;
+    size_t write_=0;
+};
+
+// Independent effects chain for one instrument, with per-source wet bus sends.
+// Delays and reverbs keep their state between notes; only dry audio is bypassed.
+class NordModuleFxRack {
+public:
+    void init(float sr) { mod_.init(sr); delay_.init(sr); reverb_.init(sr); color_.init(sr); flanger_.init(sr); }
+    void process(float& wetL,float& wetR, const float in[3][2],const ModuleFxConfig& c) {
+        wetL=wetR=0.f;
+        if (c.chorusEnabled || c.phaserEnabled || c.tremoloEnabled || c.flangerEnabled) {
+            float l=in[0][0],r=in[0][1];
+            if(c.chorusEnabled || c.phaserEnabled || c.tremoloEnabled)
+                mod_.processStereo(l,r,c.tremoloEnabled,c.tremoloRate,c.tremoloDepth,
+                                   c.phaserEnabled,c.phaserRate,c.phaserDepth,c.phaserFeedback,c.phaserMix,
+                                   c.chorusEnabled,c.chorusRate,c.chorusDepth,c.chorusMix,
+                                   2,.85f,.08f,9500.f,16.f);
+            if(c.flangerEnabled)flanger_.processStereo(l,r,c.flangerRate,c.flangerDepth,c.flangerFeedback,c.flangerMix);
+            wetL+=l-in[0][0];wetR+=r-in[0][1];
+        }
+        if(c.delayEnabled) {
+            float l=in[1][0],r=in[1][1];
+            delay_.processStereo(l,r,true,c.delayMs,c.delayFeedback,.35f,c.delayMix,true);
+            wetL+=l-in[1][0];wetR+=r-in[1][1];
+        }
+        if(c.reverbEnabled) {
+            float l=in[2][0],r=in[2][1];
+            reverb_.processStereo(l,r,true,std::clamp(c.reverbType,0,3),
+                                  c.reverbMix,c.reverbSize,.40f,18.f,.3f);
+            const float gain=c.reverbType==3 ? std::cos(c.reverbMix*1.31947f) : 1.f-c.reverbMix*.28f;
+            wetL+=l-in[2][0]*gain;wetR+=r-in[2][1]*gain;
+        }
+        // Drive & autopan may be used without any of the classic three buses.
+        if(c.driveEnabled || c.autoPanEnabled){
+            float l=(in[0][0]+in[1][0]+in[2][0])*.3333f;
+            float r=(in[0][1]+in[1][1]+in[2][1])*.3333f;
+            const float origL=l,origR=r;
+            color_.processStereo(l,r,c.driveEnabled,c.driveAmount,c.autoPanEnabled,c.autoPanRate,c.autoPanDepth);
+            wetL+=l-origL;wetR+=r-origR;
+        }
+    }
+private:
+    ModulationRack mod_;
+    StereoDelayEffect delay_;
+    NordReverbEffect reverb_;
+    NordColorEffects color_;
+    NordFlangerEffect flanger_;
 };
 
 } // namespace NordDSP
