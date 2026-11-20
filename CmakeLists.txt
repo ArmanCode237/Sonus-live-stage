@@ -3,6 +3,10 @@ project(SonusLiveStage VERSION 1.1.4 LANGUAGES CXX)
 if(WIN32)
     enable_language(RC)   # application icon (resources/SonusLiveStage.rc)
 endif()
+project(SonusLiveStage VERSION 1.1.4 LANGUAGES CXX)
+if(WIN32)
+    enable_language(RC)   # application icon (resources/SonusLiveStage.rc)
+endif()
 
 # Real-time audio must never ship unoptimized: single-config generators
 # (Ninja, MinGW/Unix Makefiles) default to no flags when no type is given.
@@ -22,6 +26,12 @@ if(MSVC AND STAGE_BUILD_PLUGIN)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
     set(STAGE_STATIC_MSVCRT ON)
 endif()
+# v32.4: the VST3 must load in any DAW without the Visual C++ Redistributable, so the
+# plug-in build links the MSVC runtime statically (/MT) for every target.
+if(MSVC AND STAGE_BUILD_PLUGIN)
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    set(STAGE_STATIC_MSVCRT ON)
+endif()
 # Evitar colisión del target "uninstall" entre RtAudio y RtMidi y activar ASIO/WASAPI
 set(RTAUDIO_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 # Match the application default /MD runtime when using MSVC (avoid LNK2038).
@@ -30,8 +40,18 @@ if(STAGE_STATIC_MSVCRT)
 else()
     set(RTAUDIO_STATIC_MSVCRT OFF CACHE BOOL "" FORCE)
 endif()
+if(STAGE_STATIC_MSVCRT)
+    set(RTAUDIO_STATIC_MSVCRT ON CACHE BOOL "" FORCE)
+else()
+    set(RTAUDIO_STATIC_MSVCRT OFF CACHE BOOL "" FORCE)
+endif()
 set(RTAUDIO_BUILD_TESTING OFF CACHE BOOL "" FORCE)
 set(RTAUDIO_TARGETNAME_UNINSTALL "uninstall_rtaudio" CACHE STRING "" FORCE)
+if(APPLE)
+    # Explicit CoreAudio/CoreMIDI backends for native Apple Silicon builds.
+    set(RTAUDIO_API_CORE ON CACHE BOOL "" FORCE)
+    set(RTMIDI_API_CORE ON CACHE BOOL "" FORCE)
+endif()
 if(APPLE)
     # Explicit CoreAudio/CoreMIDI backends for native Apple Silicon builds.
     set(RTAUDIO_API_CORE ON CACHE BOOL "" FORCE)
@@ -98,6 +118,32 @@ if(STAGE_NATIVE_WINDOW AND (WIN32 OR APPLE))
     FetchContent_MakeAvailable(webview)
 endif()
 
+# One React console on both systems: WebView2 on Windows, WKWebView on macOS.
+# Kept opt-in on Linux; no changes to the real-time audio engine.
+if(WIN32 OR APPLE)
+    option(STAGE_NATIVE_WINDOW "Use a native window for the React console" ON)
+endif()
+if(APPLE AND STAGE_NATIVE_WINDOW)
+    enable_language(OBJCXX) # webview uses Objective-C++ for WKWebView
+endif()
+if(STAGE_NATIVE_WINDOW AND (WIN32 OR APPLE))
+    if(WIN32)
+        set(MSWebView2_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/third_party/webview2")
+        set(WEBVIEW_USE_COMPAT_MINGW ON CACHE BOOL "" FORCE)
+    endif()
+    set(WEBVIEW_BUILD_SHARED_LIBRARY OFF CACHE BOOL "" FORCE)
+    set(WEBVIEW_BUILD_STATIC_LIBRARY ON CACHE BOOL "" FORCE)
+    set(WEBVIEW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+    set(WEBVIEW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+    set(WEBVIEW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+    set(WEBVIEW_INSTALL_TARGETS OFF CACHE BOOL "" FORCE)
+    set(WEBVIEW_INSTALL_DOCS OFF CACHE BOOL "" FORCE)
+    set(WEBVIEW_ENABLE_CHECKS OFF CACHE BOOL "" FORCE)
+    set(WEBVIEW_ENABLE_PACKAGING OFF CACHE BOOL "" FORCE)
+    FetchContent_Declare(webview GIT_REPOSITORY https://github.com/webview/webview.git GIT_TAG 0.12.0 GIT_SHALLOW TRUE)
+    FetchContent_MakeAvailable(webview)
+endif()
+
 # MT-32: Munt's libmt32emu (LGPL-2.1+, third_party/mt32emu/COPYING.LESSER.txt), static,
 # C++ API only. It needs the user's own MT-32 control + PCM ROM dumps at run time
 # (Roland's ROMs are copyrighted and are not part of this project).
@@ -119,10 +165,15 @@ target_link_libraries(stage_msfa PUBLIC mt32emu)
 link_libraries(stage_msfa mt32emu)
 
 add_executable(SonusLiveStage
+add_executable(SonusLiveStage
     src/main.cpp
+    src/app/NativeWindow.cpp
     src/app/NativeWindow.cpp
     src/app/StageApp.cpp
     src/app/AudioCallbacks.cpp
+    src/app/MidiInput.cpp
+    src/app/AudioBackend.cpp
+    src/app/RtAudioBackend.cpp
     src/app/MidiInput.cpp
     src/app/AudioBackend.cpp
     src/app/RtAudioBackend.cpp
@@ -145,6 +196,9 @@ add_executable(SonusLiveStage
     src/app/routes/BrowserRoutes.cpp
     src/app/routes/MidiRoutingRoutes.cpp
     src/app/routes/AboutRoutes.cpp
+    src/app/routes/BrowserRoutes.cpp
+    src/app/routes/MidiRoutingRoutes.cpp
+    src/app/routes/AboutRoutes.cpp
     src/app/StateHub.cpp
     src/core/WorkstationHost.cpp
     src/control/ControlMappings.cpp
@@ -158,9 +212,16 @@ add_executable(SonusLiveStage
     src/modules/StagePianoEngine.cpp
     src/modules/StageSynthModule.cpp
     src/modules/StageOrganModule.cpp
+    src/modules/StagePianoEngine.cpp
+    src/modules/StageSynthModule.cpp
+    src/modules/StageOrganModule.cpp
     src/control/MidiOscMapper.cpp
 )
 
+# Version shown in ACERCA DE (and the plug-in).
+target_compile_definitions(SonusLiveStage PRIVATE STAGE_VERSION="${PROJECT_VERSION}")
+
+target_include_directories(SonusLiveStage PRIVATE
 # Version shown in ACERCA DE (and the plug-in).
 target_compile_definitions(SonusLiveStage PRIVATE STAGE_VERSION="${PROJECT_VERSION}")
 
@@ -179,15 +240,18 @@ target_include_directories(SonusLiveStage PRIVATE
 
 if(WIN32)
     target_compile_definitions(SonusLiveStage PRIVATE
+    target_compile_definitions(SonusLiveStage PRIVATE
         _WIN32_WINNT=0x0A00
         __WINDOWS_WASAPI__
         __WINDOWS_MM__
         $<$<BOOL:${STAGE_ENABLE_ASIO}>:__WINDOWS_ASIO__>
     )
     target_link_libraries(SonusLiveStage PRIVATE
+    target_link_libraries(SonusLiveStage PRIVATE
         rtaudio
         rtmidi
         nlohmann_json::nlohmann_json
+        shell32        # ACERCA DE: links open in the default browser
         shell32        # ACERCA DE: links open in the default browser
         winmm
         ole32
@@ -198,6 +262,8 @@ if(WIN32)
         ws2_32
     )
 elseif(APPLE)
+    target_compile_definitions(SonusLiveStage PRIVATE __MACOSX_CORE__)
+    target_link_libraries(SonusLiveStage PRIVATE
     target_compile_definitions(SonusLiveStage PRIVATE __MACOSX_CORE__)
     target_link_libraries(SonusLiveStage PRIVATE
         rtaudio
@@ -212,6 +278,8 @@ elseif(UNIX)
     # Linux (sin probar): RtAudio/RtMidi vía ALSA
     find_package(Threads REQUIRED)
     find_package(ALSA REQUIRED)
+    target_compile_definitions(SonusLiveStage PRIVATE __LINUX_ALSA__)
+    target_link_libraries(SonusLiveStage PRIVATE
     target_compile_definitions(SonusLiveStage PRIVATE __LINUX_ALSA__)
     target_link_libraries(SonusLiveStage PRIVATE
         rtaudio
@@ -232,6 +300,9 @@ if(STAGE_BUILD_SAMPLE_TESTS)
     src/modules/StagePianoEngine.cpp
     src/modules/StageSynthModule.cpp
     src/modules/StageOrganModule.cpp)
+    src/modules/StagePianoEngine.cpp
+    src/modules/StageSynthModule.cpp
+    src/modules/StageOrganModule.cpp)
   target_include_directories(LiveStageSampleEngineCheck PRIVATE
     src src/core src/modules src/dsp third_party)
   if(UNIX AND NOT APPLE)
@@ -245,6 +316,9 @@ if(STAGE_BUILD_SAMPLE_TESTS)
   # prefixes and organ phase continuity (no audio interface needed).
   add_executable(LiveStageClickFreeCheck
     tests/v23_clickfree_regression.cpp
+    src/modules/StagePianoEngine.cpp
+    src/modules/StageSynthModule.cpp
+    src/modules/StageOrganModule.cpp)
     src/modules/StagePianoEngine.cpp
     src/modules/StageSynthModule.cpp
     src/modules/StageOrganModule.cpp)
@@ -281,6 +355,9 @@ if(STAGE_BUILD_SAMPLE_TESTS)
     src/modules/StagePianoEngine.cpp
     src/modules/StageSynthModule.cpp
     src/modules/StageOrganModule.cpp)
+    src/modules/StagePianoEngine.cpp
+    src/modules/StageSynthModule.cpp
+    src/modules/StageOrganModule.cpp)
   target_include_directories(LiveStageSoundEqVelocityCheck PRIVATE
     src src/core src/modules src/dsp third_party)
   if(UNIX AND NOT APPLE)
@@ -289,9 +366,13 @@ if(STAGE_BUILD_SAMPLE_TESTS)
   add_test(NAME sound_eq_velocity_v2823 COMMAND LiveStageSoundEqVelocityCheck)
 
   # v24: reference-decoder-derived STK word markers, exact Q23 hold, periodic factory
+  # v24: reference-decoder-derived STK word markers, exact Q23 hold, periodic factory
   # loops (including four frames), alternate recordings and key-up transients.
   add_executable(LiveStageFactoryLoopCheck
     tests/v24_factory_loop_metadata.cpp
+    src/modules/StagePianoEngine.cpp
+    src/modules/StageSynthModule.cpp
+    src/modules/StageOrganModule.cpp)
     src/modules/StagePianoEngine.cpp
     src/modules/StageSynthModule.cpp
     src/modules/StageOrganModule.cpp)
@@ -365,6 +446,7 @@ if(STAGE_BUILD_SAMPLE_TESTS)
 
   # v31: synth engines (contours, 24 dB filters, BLEP sync, FM4, LA, transients, LFO).
   add_executable(LiveStageSynthEnginesCheck tests/v31_synth_engines.cpp src/modules/StageSynthModule.cpp)
+  add_executable(LiveStageSynthEnginesCheck tests/v31_synth_engines.cpp src/modules/StageSynthModule.cpp)
   target_include_directories(LiveStageSynthEnginesCheck PRIVATE src src/core src/dsp)
   target_link_libraries(LiveStageSynthEnginesCheck PRIVATE nlohmann_json::nlohmann_json)
   add_test(NAME synth_engines_v31 COMMAND LiveStageSynthEnginesCheck)
@@ -388,13 +470,16 @@ if(STAGE_BUILD_SAMPLE_TESTS)
   # and studio-slot crossfades / spill-over, idle effects, master limiter).
   add_executable(LiveStageLiveClickFreeCheck tests/v32_live_clickfree.cpp
     src/modules/StagePianoEngine.cpp src/modules/StageSynthModule.cpp src/modules/StageOrganModule.cpp)
+    src/modules/StagePianoEngine.cpp src/modules/StageSynthModule.cpp src/modules/StageOrganModule.cpp)
   target_include_directories(LiveStageLiveClickFreeCheck PRIVATE src src/core src/modules src/dsp third_party)
   add_test(NAME live_clickfree_v32 COMMAND LiveStageLiveClickFreeCheck)
   # v32.2: DX7 layer on msfa with the factory cartridges.
   add_executable(LiveStageDx7Check tests/v32_dx7_engine.cpp src/modules/StageSynthModule.cpp)
+  add_executable(LiveStageDx7Check tests/v32_dx7_engine.cpp src/modules/StageSynthModule.cpp)
   target_include_directories(LiveStageDx7Check PRIVATE src src/core src/modules src/dsp third_party)
   add_test(NAME dx7_engine_v32 COMMAND LiveStageDx7Check ${CMAKE_CURRENT_SOURCE_DIR}/presets/synth/dx7/factory)
   # v32.3: synth modulation matrix (global / per-voice sources, ranges, insert targets).
+  add_executable(LiveStageModMatrixCheck tests/v32_mod_matrix.cpp src/modules/StageSynthModule.cpp)
   add_executable(LiveStageModMatrixCheck tests/v32_mod_matrix.cpp src/modules/StageSynthModule.cpp)
   target_include_directories(LiveStageModMatrixCheck PRIVATE src src/core src/modules src/dsp third_party)
   add_test(NAME mod_matrix_v32 COMMAND LiveStageModMatrixCheck)
@@ -407,6 +492,8 @@ if(STAGE_BUILD_SAMPLE_TESTS)
   add_executable(LiveStageVintagePresetsCheck tests/v31_vintage_presets.cpp
     src/core/WorkstationHost.cpp
     src/control/ControlMappings.cpp
+    src/control/ParamValueReader.cpp src/modules/StagePianoEngine.cpp
+    src/modules/StageSynthModule.cpp src/modules/StageOrganModule.cpp)
     src/control/ParamValueReader.cpp src/modules/StagePianoEngine.cpp
     src/modules/StageSynthModule.cpp src/modules/StageOrganModule.cpp)
   target_include_directories(LiveStageVintagePresetsCheck PRIVATE src src/core src/dsp src/modules third_party)
@@ -425,10 +512,24 @@ if(STAGE_BUILD_SAMPLE_TESTS)
   target_include_directories(LiveStageLiveSafetyCheck PRIVATE src src/core src/dsp src/modules third_party)
   target_link_libraries(LiveStageLiveSafetyCheck PRIVATE nlohmann_json::nlohmann_json rtaudio)
   add_test(NAME live_safety_v324 COMMAND LiveStageLiveSafetyCheck)
+  # v32.4: live safety (patch-change hold vs a concurrent audio thread, transactional presets).
+  add_executable(LiveStageLiveSafetyCheck tests/v324_live_safety.cpp
+    src/app/AudioCallbacks.cpp
+    src/app/MidiInput.cpp
+    src/app/AudioBackend.cpp
+    src/app/RtAudioBackend.cpp
+    src/core/WorkstationHost.cpp
+    src/control/ControlMappings.cpp
+    src/control/ParamValueReader.cpp src/modules/StagePianoEngine.cpp
+    src/modules/StageSynthModule.cpp src/modules/StageOrganModule.cpp)
+  target_include_directories(LiveStageLiveSafetyCheck PRIVATE src src/core src/dsp src/modules third_party)
+  target_link_libraries(LiveStageLiveSafetyCheck PRIVATE nlohmann_json::nlohmann_json rtaudio)
+  add_test(NAME live_safety_v324 COMMAND LiveStageLiveSafetyCheck)
 endif()
 
 # v27: opt-in standalone cold-load measurement with a user-provided NPNo.
 # The command reports the time until every sample is playable, RAM recall,
+# persistent cache reload and an exact PCM16 checksum. No third-party sample bank is bundled.
 # persistent cache reload and an exact PCM16 checksum. No third-party sample bank is bundled.
 option(STAGE_BUILD_NPNO_BENCHMARK "Build real-file NPNo cold-load benchmark" OFF)
 if(STAGE_BUILD_NPNO_BENCHMARK)
@@ -493,10 +594,54 @@ if(APPLE)
         target_compile_definitions(SonusLiveStage PRIVATE STAGE_NATIVE_WINDOW=1)
         target_link_libraries(SonusLiveStage PRIVATE webview::core_static)
     endif()
+  if(MINGW)
+    target_link_options(LiveStageAudioProbe PRIVATE -static -static-libgcc -static-libstdc++)
+  endif()
+  install(TARGETS LiveStageAudioProbe RUNTIME DESTINATION . COMPONENT app)
+endif()
+
+# v32.4 distributable MinGW build: libstdc++, libgcc and winpthread are linked
+# statically, so the .exe runs on any Windows 10/11 PC without MinGW on the PATH.
+if(MINGW)
+  target_link_options(SonusLiveStage PRIVATE -static -static-libgcc -static-libstdc++)
+endif()
+if(WIN32 AND STAGE_NATIVE_WINDOW)
+  # A window application: no console behind the window (--console opens one for debugging).
+  set_target_properties(SonusLiveStage PROPERTIES WIN32_EXECUTABLE ON)
+  target_compile_definitions(SonusLiveStage PRIVATE STAGE_NATIVE_WINDOW=1)
+  target_link_libraries(SonusLiveStage PRIVATE webview::core_static)
+  if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/resources/SonusLiveStage.rc")
+    target_sources(SonusLiveStage PRIVATE resources/SonusLiveStage.rc)   # icon (resource id 1)
+  endif()
+endif()
+
+if(APPLE)
+    # Finder-launched, arm64-native macOS app. Do not change the Windows executable.
+    set(STAGE_MACOS_EXECUTABLE_NAME "Sonus Live Stage")
+    set(STAGE_MACOS_DEPLOYMENT_TARGET "${CMAKE_OSX_DEPLOYMENT_TARGET}")
+    if(NOT STAGE_MACOS_DEPLOYMENT_TARGET)
+        set(STAGE_MACOS_DEPLOYMENT_TARGET "11.0")
+    endif()
+    configure_file(resources/macos/Info.plist.in
+        "${CMAKE_BINARY_DIR}/SonusLiveStage-Info.plist" @ONLY)
+    set_target_properties(SonusLiveStage PROPERTIES
+        MACOSX_BUNDLE ON
+        OUTPUT_NAME "${STAGE_MACOS_EXECUTABLE_NAME}"
+        MACOSX_BUNDLE_INFO_PLIST "${CMAKE_BINARY_DIR}/SonusLiveStage-Info.plist"
+        MACOSX_BUNDLE_GUI_IDENTIFIER "com.sonus.livestage")
+    if(STAGE_NATIVE_WINDOW)
+        target_compile_definitions(SonusLiveStage PRIVATE STAGE_NATIVE_WINDOW=1)
+        target_link_libraries(SonusLiveStage PRIVATE webview::core_static)
+    endif()
 endif()
 
 # Build options: standalone is always available; JUCE VST3/AU is opt-in.
 option(STAGE_BUILD_PLUGIN "Build native VST3 (and AU on macOS) using JUCE" OFF)
+if(STAGE_BUILD_PLUGIN AND MINGW)
+  message(FATAL_ERROR "Live Stage: the JUCE VST3 needs MSVC (Visual Studio 2022 / Build Tools, "
+                      "workload 'Desktop development with C++'). MinGW is not supported by JUCE. "
+                      "Use scripts/build-vst3.ps1, which configures the Visual Studio generator.")
+endif()
 if(STAGE_BUILD_PLUGIN AND MINGW)
   message(FATAL_ERROR "Live Stage: the JUCE VST3 needs MSVC (Visual Studio 2022 / Build Tools, "
                       "workload 'Desktop development with C++'). MinGW is not supported by JUCE. "
@@ -552,11 +697,56 @@ endif()
 set(CPACK_INSTALL_CMAKE_PROJECTS "${CMAKE_BINARY_DIR};SonusLiveStage;app;/")
 set(CPACK_PACKAGE_NAME "Sonus Live Stage")
 set(CPACK_PACKAGE_VENDOR "Sonus")
+# Distribution resources. macOS apps have a read-only Contents/Resources directory;
+# never write programs, caches or session files there (use ~/Library/Application Support).
+if(APPLE)
+  set(STAGE_MAC_APP "Applications/Sonus Live Stage.app")
+  set(STAGE_MAC_RES "${STAGE_MAC_APP}/Contents/Resources")
+  install(TARGETS SonusLiveStage BUNDLE DESTINATION Applications COMPONENT app)
+  install(DIRECTORY ui/app/ DESTINATION "${STAGE_MAC_RES}/ui/app" COMPONENT app)
+  install(DIRECTORY presets/ DESTINATION "${STAGE_MAC_RES}/presets" COMPONENT app)
+  install(FILES programs.json hardware_config.json DESTINATION "${STAGE_MAC_RES}" COMPONENT app)
+  install(FILES config/links.json DESTINATION "${STAGE_MAC_RES}/config" COMPONENT app)
+  install(FILES LICENSE docs/GUIA-DE-USO.md docs/THIRD_PARTY_MACOS.md
+          DESTINATION "${STAGE_MAC_RES}/docs" COMPONENT app)
+  if(EXISTS "${CMAKE_SOURCE_DIR}/NOTICE.md")
+    install(FILES NOTICE.md DESTINATION "${STAGE_MAC_RES}/docs" COMPONENT app)
+  endif()
+  if(EXISTS "${CMAKE_SOURCE_DIR}/roms/mt32/LEEME.txt")
+    install(FILES roms/mt32/LEEME.txt DESTINATION "${STAGE_MAC_RES}/roms/mt32" COMPONENT app)
+  endif()
+else()
+  install(TARGETS SonusLiveStage RUNTIME DESTINATION . COMPONENT app)
+  install(DIRECTORY ui/app/ DESTINATION ui/app COMPONENT app)
+  install(DIRECTORY presets/ DESTINATION presets COMPONENT app)
+  install(FILES programs.json hardware_config.json DESTINATION . COMPONENT app)
+  install(FILES roms/mt32/LEEME.txt DESTINATION roms/mt32 OPTIONAL COMPONENT app)
+  install(FILES docs/AUDITORIA-LIVE-ESTUDIO.md DESTINATION docs OPTIONAL COMPONENT app)
+  install(FILES LICENSE DESTINATION . COMPONENT app)
+  if(EXISTS "${CMAKE_SOURCE_DIR}/NOTICE.md")
+    install(FILES NOTICE.md DESTINATION . COMPONENT app)
+  endif()
+  install(FILES config/links.json DESTINATION config COMPONENT app)
+  install(FILES docs/GUIA-DE-USO.md DESTINATION docs COMPONENT app)
+endif()
+# Package only the "app" component of this build tree (build dir;project;component;subdir).
+set(CPACK_INSTALL_CMAKE_PROJECTS "${CMAKE_BINARY_DIR};SonusLiveStage;app;/")
+set(CPACK_PACKAGE_NAME "Sonus Live Stage")
+set(CPACK_PACKAGE_VENDOR "Sonus")
 set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "Sonus Live Stage")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "Sonus Live Stage")
 if(WIN32)
   set(CMAKE_INSTALL_SYSTEM_RUNTIME_COMPONENT app)   # MSVC runtime DLLs (MSVC builds only)
+  set(CMAKE_INSTALL_SYSTEM_RUNTIME_COMPONENT app)   # MSVC runtime DLLs (MSVC builds only)
   include(InstallRequiredSystemLibraries)
+  # ZIP (portable) always; the NSIS installer only when makensis is installed.
+  find_program(STAGE_MAKENSIS makensis PATHS "C:/Program Files (x86)/NSIS" "C:/Program Files/NSIS")
+  if(STAGE_MAKENSIS)
+    set(CPACK_GENERATOR "NSIS;ZIP")
+  else()
+    set(CPACK_GENERATOR "ZIP")
+  endif()
   # ZIP (portable) always; the NSIS installer only when makensis is installed.
   find_program(STAGE_MAKENSIS makensis PATHS "C:/Program Files (x86)/NSIS" "C:/Program Files/NSIS")
   if(STAGE_MAKENSIS)
@@ -570,7 +760,13 @@ if(WIN32)
   # Start-menu shortcut "Live Stage" -> SonusLiveStage.exe (NSIS installer).
   set(CPACK_PACKAGE_EXECUTABLES "SonusLiveStage" "Live Stage")
   set(CPACK_PACKAGE_FILE_NAME "SonusLiveStage-${PROJECT_VERSION}-win64")
+  set(CPACK_NSIS_PACKAGE_NAME "Sonus Live Stage ${PROJECT_VERSION}")
+  set(CPACK_NSIS_INSTALLED_ICON_NAME "SonusLiveStage.exe")
+  # Start-menu shortcut "Live Stage" -> SonusLiveStage.exe (NSIS installer).
+  set(CPACK_PACKAGE_EXECUTABLES "SonusLiveStage" "Live Stage")
+  set(CPACK_PACKAGE_FILE_NAME "SonusLiveStage-${PROJECT_VERSION}-win64")
 elseif(APPLE)
+  set(CPACK_GENERATOR "ZIP") # scripts/build_macos.sh creates the actual .pkg
   set(CPACK_GENERATOR "ZIP") # scripts/build_macos.sh creates the actual .pkg
 else()
   set(CPACK_GENERATOR "TGZ")
