@@ -7,7 +7,7 @@
 #include <filesystem>
 #include <set>
 namespace fs=std::filesystem;
-namespace NordDSP {
+namespace SonusDSP {
 SampleLibraryManager::~SampleLibraryManager(){cancel_.store(true);if(worker_.joinable())worker_.join();}
 void SampleLibraryManager::cancel(){cancel_.store(true,std::memory_order_release);}
 SampleLibraryManager::Progress SampleLibraryManager::progress()const{std::lock_guard<std::mutex> g(mutex_);return status_;}

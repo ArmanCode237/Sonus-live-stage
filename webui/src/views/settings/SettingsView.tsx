@@ -1,10 +1,14 @@
 // Configuration: audio device, MIDI ports, MIDI CC / OSC mapping, system.
 import { useEffect, useMemo, useState } from 'react';
-import { api } from '../../api/client';
+import { api, type SystemSettings } from '../../api/client';
+import { MidiRouting } from './MidiRouting';
 import type { ControlState, HardwareStatus, MapScope } from '../../api/types';
 import { notify, runAction } from '../../store/notify';
 import { ParamKnob } from '../../ui/Knob';
 import { THEMES, useTheme } from '../../store/theme';
+import { setUiPref, useUiPrefs } from '../../store/uiPrefs';
+import { useEngine } from '../../store/hooks';
+import { HttpAccess, OscDevice } from './NetworkSettings';
 import { describeConflict, loadMappings, refLabel, setMappingState, sourceLabel, useMappings } from '../../store/mappings';
 import { openMappingMenu } from '../../ui/MappingLayer';
 import { Btn, Empty, Field, Panel, Row, Segmented, Select } from '../../ui/controls';
@@ -44,7 +48,8 @@ function Audio({ hw, setHw }: { hw: HardwareStatus | null; setHw: (h: HardwareSt
         <Field label="Buffer"><Select label="Buffer" value={selBuffer} options={BUFFERS.map(b => ({ value: b, label: `${b} samples` }))} onChange={v => setBuffer(Number(v))} /></Field>
       </div>
       <Row>
-        <span className="hint">Latencia estimada {latency.toFixed(2)} ms</span>
+        <span className="hint">Latencia estimada {latency.toFixed(2)} ms{selRate !== 48000 && rates.includes(48000)
+          ? ' · Para directo se recomiendan 48 kHz: muchas interfaces USB son más estables y la latencia baja con el mismo buffer.' : ''}</span>
         <span className="grow" />
         <Btn onClick={() => runAction(() => api.testTone(), 'Tono de prueba 440 Hz')}>TONO DE PRUEBA</Btn>
         <Btn onClick={async () => { const r = await runAction(() => api.rescanHardware(), 'Hardware re-escaneado'); if (r) setHw(r); }}>RE-ESCANEAR</Btn>
@@ -146,9 +151,82 @@ function Mapping() {
             <input className="input" inputMode="numeric" placeholder={String(state?.osc.port ?? 9000)} value={oscPort} onChange={e => setOscPort(e.target.value)} aria-label="Puerto OSC" />
             <Btn type="submit" disabled={!oscPort}>CAMBIAR PUERTO</Btn>
           </form>
+          <OscDevice />
         </div>
       </div>
     </Panel>
+  );
+}
+
+/** Header monitor (MIDI · voices · pedal · LIVE): a per-browser display preference. */
+function StatusBarChoice() {
+  const { statusBar } = useUiPrefs();
+  return (
+    <Row>
+      <Btn small led active={statusBar} aria-pressed={statusBar} onClick={() => setUiPref('statusBar', !statusBar)}
+        title="Muestra u oculta en la barra superior el monitor de entrada MIDI, voces, pedal y LIVE">MONITOR MIDI</Btn>
+      <span className="hint">Barra superior: entrada MIDI, voces, pedal y LIVE{statusBar ? '' : ' (oculta; los cortes de audio, la carga DSP alta y la reconexión de audio siguen avisando)'}.</span>
+    </Row>
+  );
+}
+
+/** v32.4 live safety: sample-RAM budget, audio telemetry and MIDI clock follow. */
+function LiveSafety() {
+  const [sys, setSys] = useState<SystemSettings | null>(null);
+  useEffect(() => { api.system().then(setSys).catch(() => setSys(null)); }, []);
+  const underflows = useEngine(s => s?.audioUnderflows ?? 0);
+  const over = useEngine(s => s?.audioOverBudgetCallbacks ?? 0);
+  const peak = useEngine(s => s?.dspPeak ?? 0);
+  const maxRender = useEngine(s => s?.maxRenderMicros ?? 0);
+  const recoveries = useEngine(s => s?.audioRecoveries ?? 0);
+  const clock = useEngine(s => s?.midiClockSync ?? false);
+  const budgets = [2048, 4096, 8192, 16384];
+  const setMidi = async (patch: { midiProgramChannel?: number; midiAllNotesOff?: boolean }, label: string) => {
+    const r = await runAction(() => api.setSystem(patch), label);
+    if (r) setSys(r);
+  };
+  const setBudget = async (mb: number) => {
+    const r = await runAction(() => api.setSampleMemoryBudget(mb), `RAM de samples: ${mb / 1024} GB`);
+    if (r) setSys(r);
+  };
+  return (
+    <div className="live-safety">
+      <Row wrap>
+        <span className="live-safety__label">RAM DE SAMPLES</span>
+        <Segmented label="Presupuesto de RAM de samples" options={budgets.map(b => `${b / 1024} GB`)} values={budgets}
+          value={sys?.sampleMemoryBudgetMB ?? 4096} onChange={v => void setBudget(Number(v))} />
+        <span className="hint">{sys ? `${Math.round(sys.sampleResidentMB)} MB en uso.` : ''} Por encima del presupuesto se liberan los
+          instrumentos sin usar (nunca los de los 8 programas ni las capas activas).</span>
+      </Row>
+      <Row wrap>
+        <span className="live-safety__label">AUDIO</span>
+        <span className="hint">DSP pico <b>{Math.round(peak * 100)} %</b> · render máx. <b>{maxRender} µs</b> · XRUN <b>{underflows}</b> ·
+          bloques lentos <b>{over}</b> · recuperaciones <b>{recoveries}</b></span>
+        <Btn small onClick={() => void runAction(() => api.resetAudioCounters(), 'Contadores de audio reiniciados')}>RESET XRUN</Btn>
+      </Row>
+      <Row wrap>
+        <span className="live-safety__label">MIDI CLOCK</span>
+        <Btn small led active={clock} onClick={() => void runAction(() => api.setParam('midiClockSync', clock ? 0 : 1), clock ? 'Tempo interno' : 'Tempo: MIDI CLOCK externo')}>EXT CLOCK</Btn>
+        <span className="hint">El tempo master sigue al reloj externo y START reinicia los secuenciadores.</span>
+      </Row>
+      <Row wrap>
+        <span className="live-safety__label">PROGRAM CHANGE</span>
+        <select className="input" aria-label="Canal de Program Change" value={sys?.midiProgramChannel ?? 0}
+          onChange={e => void setMidi({ midiProgramChannel: Number(e.target.value) }, 'Program Change actualizado')}>
+          <option value={-1}>IGNORAR</option>
+          <option value={0}>OMNI (todos los canales)</option>
+          {Array.from({ length: 16 }, (_, i) => <option key={i} value={i + 1}>CANAL {i + 1}</option>)}
+        </select>
+        <span className="hint">Program Change n recupera el programa n mod 8. Elige un canal para que otros controladores (pads, pedaleras) no cambien el programa en directo.</span>
+      </Row>
+      <Row wrap>
+        <span className="live-safety__label">ALL NOTES OFF</span>
+        <Btn small led active={sys?.midiAllNotesOff ?? true}
+          onClick={() => void setMidi({ midiAllNotesOff: !(sys?.midiAllNotesOff ?? true) }, (sys?.midiAllNotesOff ?? true) ? 'CC 120/123 ignorados' : 'CC 120/123 aceptados')}>
+          CC 120 / 123</Btn>
+        <span className="hint">Encendido: los mensajes MIDI «all notes off» cortan el sonido (estándar). Apágalo si un controlador los envía al conectarse. PANIC siempre funciona.</span>
+      </Row>
+    </div>
   );
 }
 
@@ -164,10 +242,23 @@ export default function SettingsView() {
   return (
     <div className="view view--settings">
       <div className="stack">
-        <Audio hw={hw} setHw={setHw} />
-        <Midi hw={hw} setHw={setHw} />
+        {hw?.host === 'plugin' ? (
+          <Panel title="AUDIO · MIDI" className="cfg-audio">
+            <p className="hint">Live Stage funciona como plug-in: el DAW gestiona la salida de audio, la frecuencia de muestreo, el buffer
+              y las entradas MIDI (la pista donde está insertado). Los Programs, presets, mapeos y la biblioteca son los mismos que en la app.</p>
+          </Panel>
+        ) : (
+          <>
+            <Audio hw={hw} setHw={setHw} />
+            <Midi hw={hw} setHw={setHw} />
+          </>
+        )}
+        <MidiRouting />
         <Panel title="SYSTEM" className="cfg-system" actions={<ThemeChoice />}>
           <div className="knobs"><ParamKnob id="maxVoices" label="MAX VOICES" /><ParamKnob id="tune" label="MASTER TUNE" /></div>
+          <StatusBarChoice />
+          <LiveSafety />
+          <HttpAccess />
           <p className="hint">Interfaz única React · sincronización de parámetros en tiempo real con el motor C++.</p>
         </Panel>
       </div>

@@ -84,7 +84,7 @@ export function sourceLabel(a: Pick<Assignment, 'midi' | 'osc'>): string {
 export function midiLabel(m: MidiSource): string {
   const names = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
   const what = m.type === 'note' ? `NOTE ${names[m.number % 12]}${Math.floor(m.number / 12) - 1}` : `CC ${m.number}`;
-  return `${what}${m.channel ? ` · ch ${m.channel}` : ''}`;
+  return `${what}${m.channel ? ` · ch ${m.channel}` : ''}${m.port ? ` · ${m.port}` : ''}`;
 }
 export const midiOverlaps = (a: MidiSource | null, b: MidiSource | null) =>
   Boolean(a && b && a.type === b.type && a.number === b.number && (a.channel === 0 || b.channel === 0 || a.channel === b.channel));

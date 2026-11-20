@@ -15,7 +15,7 @@
 #include <mutex>
 #include <vector>
 
-namespace NordDSP {
+namespace SonusDSP {
 
 /** Counts completed audio callbacks. advance() is called by the audio thread at the
     end of every render; control threads read it to know when retired data is free. */
@@ -76,4 +76,4 @@ private:
     mutable std::mutex mutex_;
 };
 
-} // namespace NordDSP
+} // namespace SonusDSP

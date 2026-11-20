@@ -2,11 +2,11 @@
 // v31 synth fields (FM4, LA hybrid, attack transient, analog drift) shared by every
 // JSON path: programs/Sounds (ParamSerialization) and module presets (WorkstationHost).
 // Missing keys keep the value already in the config, so older files load unchanged.
-#include "NordTypes.h"
+#include "StageTypes.h"
 #include <nlohmann/json.hpp>
 #include <algorithm>
 
-namespace NordDSP {
+namespace SonusDSP {
 
 inline void synthLayerExtrasToJson(const SynthLayerConfig& c, nlohmann::json& out) {
     out["analog"] = c.analog;
@@ -51,4 +51,4 @@ inline void synthLayerExtrasFromJson(const nlohmann::json& in, SynthLayerConfig&
     c.transientTone = std::clamp(in.value("transientTone", c.transientTone), 0.f, 1.f);
 }
 
-} // namespace NordDSP
+} // namespace SonusDSP

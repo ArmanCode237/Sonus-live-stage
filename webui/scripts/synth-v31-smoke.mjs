@@ -1,4 +1,4 @@
-// v31 synth end-to-end check against a running NordVirtualStage (http://localhost:8080):
+// v31 synth end-to-end check against a running SonusLiveStage (http://localhost:8080):
 //  1. every vintage preset (97-144) loads through /api/synth/factory/load and the engine
 //     state matches its JSON file;
 //  2. the new parameter IDs (FM4, LA, transient, analog, LFO delay/sync) round-trip;
@@ -85,11 +85,13 @@ try {
     await page.locator('.synth-deck__tabs .tabs__tab', { hasText: 'EXPRESIÓN' }).click();
     const wheel = await page.locator('.synth-deck .segmented', { hasText: 'VIBRATO' }).first().textContent();
     check(wheel.includes('VIB+CUSTOM') && wheel.includes('OFF'), `mod-wheel modes use engine order (${wheel})`);
-    await page.locator('.patch-bar .btn', { hasText: 'BROWSER' }).click(); await sleep(300);
-    const cats = await page.locator('.synth-browser .segmented__item').allTextContents();
+    await page.locator('.patch-bar .btn', { hasText: 'BROWSER' }).click();
+    await page.waitForSelector('.sb .sb__row');
+    await page.locator('.sb__facet--factory').click(); await sleep(200);
+    const cats = await page.locator('.sb__filters .sb__facet span').allTextContents();
     check(['D-50', 'DX7', 'JUPITER-8', 'JUNO-60', 'PROPHET-5', 'MINIMOOG'].every(c => cats.includes(c)), 'vintage categories in the factory browser');
-    await page.locator('.synth-browser .segmented__item', { hasText: 'MINIMOOG' }).click();
-    check(await page.locator('.synth-browser .browser__item').count() === 8, 'MINIMOOG category lists 8 presets');
+    await page.locator('.sb__filters .sb__facet', { hasText: /^MINIMOOG\d+$/ }).click(); await sleep(200);
+    check(await page.locator('.sb__row').count() === 8, 'MINIMOOG category lists 8 presets');
   } finally {
     await browser.close();
   }

@@ -1,5 +1,6 @@
 #include "app/AudioCallbacks.h"
 #include "app/AppCommon.h"
+#include "app/MidiInput.h"
 #include "core/WorkstationHost.h"
 #include <algorithm>
 #include <chrono>
@@ -21,6 +22,14 @@ int audioCallback(void* outputBuffer, void* /*inputBuffer*/, unsigned int nBuffe
     // Set every callback: some drivers recreate or reuse threads.
     _MM_SET_FLUSH_ZERO_MODE(_MM_FLUSH_ZERO_ON);
     _MM_SET_DENORMALS_ZERO_MODE(_MM_DENORMALS_ZERO_ON);
+#elif defined(__APPLE__) && defined(__aarch64__)
+    // ARM64 FPCR.FZ (bit 24): flush subnormal floating-point results to zero.
+    // The audio callback has its own thread; set every call in case the driver
+    // recreates or migrates its callback thread (same intent as SSE FTZ/DAZ).
+    unsigned long long fpcr = 0;
+    __asm__ __volatile__("mrs %0, fpcr" : "=r"(fpcr));
+    fpcr |= (1ULL << 24);
+    __asm__ __volatile__("msr fpcr, %0" :: "r"(fpcr));
 #endif
     const auto begin=std::chrono::steady_clock::now();
     engine->render(out,nBufferFrames);
@@ -33,38 +42,10 @@ int audioCallback(void* outputBuffer, void* /*inputBuffer*/, unsigned int nBuffe
 }
 
 void midiCallback(double /*deltatime*/, std::vector<unsigned char>* message, void* userData) {
-    if (!message || message->size() < 2) return;
-    auto* host = static_cast<WorkstationHost*>(userData);
-
-    unsigned char status = (*message)[0] & 0xF0;
-    unsigned char data1  = (*message)[1] & 0x7F;
-    unsigned char data2  = (message->size() > 2) ? ((*message)[2] & 0x7F) : 0;
-
-    const int channel = ((*message)[0] & 0x0F) + 1;
-    auto& mappings = host->getMappings();
-    if (status == 0x90 && data2 > 0) {
-        // A note mapped to a control (pads, buttons) does not play.
-        if (mappings.handleMidi(MidiKind::Note, channel, data1, data2)) return;
-        host->noteOn(data1, data2);
-    } else if (status == 0x80 || (status == 0x90 && data2 == 0)) {
-        if (mappings.handleMidi(MidiKind::Note, channel, data1, 0)) return;
-        host->noteOff(data1);
-    } else if (status == 0xD0) {
-        host->setAftertouch(data1 / 127.f);              // channel pressure: synth mod source
-    } else if (status == 0xE0 && message->size() >= 3) {
-        const int bend14 = (static_cast<int>(data2) << 7) | static_cast<int>(data1);
-        const float centered = bend14 >= 8192 ? (bend14 - 8192) / 8191.f : (bend14 - 8192) / 8192.f;
-        host->setPitchBend(centered); // ±2 semitones, center=8192
-    } else if (status == 0xB0) {
-        // The wheel always drives the modules' own CC1 routing; mappings may add targets.
-        if (data1 == 1) host->setModWheel(data2 / 127.f);
-        if (mappings.handleMidi(MidiKind::CC, channel, data1, data2)) return;
-        // MIDI-standard messages only. Former implicit CC 7/10/74/71 controls are now
-        // explicit, visible SYSTEM mappings (see StageApp::loadControlMappings).
-        if (data1 == 121) { host->setModWheel(0.f); host->setPitchBend(0.f); return; }
-        if (data1 == 64) host->setSustainPedal(data2 >= 64);
-        else if (data1 == 120 || data1 == 123) host->allNotesOff();
-    }
+    if (!message || message->empty() || !userData) return;
+    // v33: userData is the port's MidiSourceTag (stable for the port's lifetime).
+    const auto* tag = static_cast<const MidiSourceTag*>(userData);
+    if (tag->host) dispatchMidiMessage(*tag->host, message->data(), message->size(), tag->source);
 }
 
 std::string normalizeMidiPortName(const std::string& rawName) {

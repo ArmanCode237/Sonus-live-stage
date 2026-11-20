@@ -1,7 +1,7 @@
 // Generated from the former monolithic main.cpp: route bodies are unchanged.
 #include "app/routes/RouteCommon.h"
 
-using namespace NordDSP;
+using namespace SonusDSP;
 
 // v28.2 Sound Manager: each Sound owns a module-specific DSP snapshot, not PCM.
 // Local-only CRUD. Legacy Piano preset files are never modified by migration.
@@ -173,6 +173,7 @@ void StageApp::registerSoundRoutes() {
             const bool ok=restoreModulePatch(mi,patch);
             if(ok){
                 selectedSoundRefs[module]=id;
+                if(mi>0)selectedSoundRefs[module+"Preset"]=nullptr;   // a Sound replaces the preset
                 if(mi==0){ensurePianoSoundRefs();for(auto& ref:selectedSoundRefs["pianoLayers"])ref=nullptr;}
             }
             auto bank=engine.getInstrument();

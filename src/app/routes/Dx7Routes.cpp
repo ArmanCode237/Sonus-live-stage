@@ -29,11 +29,11 @@ fs::path dx7UserDir() {
     return dir;
 }
 
-bool readCartridge(const fs::path& file, std::vector<NordDSP::Dx7Voice>& voices, std::string& error) {
+bool readCartridge(const fs::path& file, std::vector<SonusDSP::Dx7Voice>& voices, std::string& error) {
     std::ifstream in(file, std::ios::binary);
     if (!in) { error = "No se pudo abrir el cartucho"; return false; }
     std::vector<uint8_t> bytes((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
-    return NordDSP::parseDx7Sysex(bytes, voices, error);
+    return SonusDSP::parseDx7Sysex(bytes, voices, error);
 }
 
 // "factory/SynprezFM_03" or "user/MyBank" -> file inside its own folder (no path escapes).
@@ -49,10 +49,10 @@ bool resolveBank(const std::string& id, fs::path& file) {
 }
 
 json bankJson(const std::string& source, const fs::path& file) {
-    std::vector<NordDSP::Dx7Voice> voices; std::string error;
+    std::vector<SonusDSP::Dx7Voice> voices; std::string error;
     if (!readCartridge(file, voices, error)) return json();
     json names = json::array();
-    for (const auto& v : voices) names.push_back(NordDSP::dx7VoiceName(v));
+    for (const auto& v : voices) names.push_back(SonusDSP::dx7VoiceName(v));
     const std::string name = file.stem().string();
     return {{"id", source + "/" + name}, {"name", name}, {"source", source}, {"voices", names}};
 }
@@ -130,6 +130,7 @@ void StageApp::registerDx7Routes() {
             }
             engine.applyParamById("synthEnabled", 1.f, false);
             moduleDirty[1].store(true);
+            selectedSoundRefs["synthPreset"] = json{{"name", D50::patchName(patch)}, {"kind", "D-50"}};
             paramRevCounter.fetch_add(1);
         }
         res.set_content(json({{"ok", true}, {"name", D50::patchName(patch)}, {"mode", D50::keyModeName(patch)}}).dump(), "application/json");
@@ -159,7 +160,7 @@ void StageApp::registerDx7Routes() {
             res.set_content(R"json({"ok":false,"error":"Se requiere layer (0-3), bank y voice validos"})json", "application/json");
             return;
         }
-        std::vector<NordDSP::Dx7Voice> voices; std::string error;
+        std::vector<SonusDSP::Dx7Voice> voices; std::string error;
         if (!readCartridge(file, voices, error) || index >= int(voices.size())) {
             res.status = 400;
             res.set_content(json({{"ok", false}, {"error", error.empty() ? "Voz fuera de rango" : error}}).dump(), "application/json");
@@ -168,16 +169,17 @@ void StageApp::registerDx7Routes() {
         {
             std::lock_guard<std::mutex> lock(dataMutex);
             const std::string prefix = "L" + std::to_string(layer + 1) + "_";
+            SonusDSP::PatchChangeGuard hold(engine.multiSynth_);   // 155-byte voice: never read half-written
             auto& cfg = engine.multiSynth_.layers[size_t(layer)].cfg;
             cfg.dx7Voice = voices[size_t(index)];
-            cfg.dx7Revision = NordDSP::nextDx7Revision();
+            cfg.dx7Revision = SonusDSP::nextDx7Revision();
             engine.applyParamById(prefix + "synthType", 5.f, false);
             engine.applyParamById(prefix + "en", 1.f, false);
             engine.applyParamById("synthEnabled", 1.f, false);
             moduleDirty[1].store(true);
             paramRevCounter.fetch_add(1);
         }
-        res.set_content(json({{"ok", true}, {"layer", layer}, {"name", NordDSP::dx7VoiceName(voices[size_t(index)])}}).dump(), "application/json");
+        res.set_content(json({{"ok", true}, {"layer", layer}, {"name", SonusDSP::dx7VoiceName(voices[size_t(index)])}}).dump(), "application/json");
     });
 
     svr.Post("/api/synth/dx7/import", [](const httplib::Request& req, httplib::Response& res) {
@@ -188,8 +190,8 @@ void StageApp::registerDx7Routes() {
             return !(std::isalnum(static_cast<unsigned char>(c)) || c == ' ' || c == '_' || c == '-' || c == '.');
         }), name.end());
         if (name.size() > 4 && name.substr(name.size() - 4) == ".syx") name.resize(name.size() - 4);
-        std::vector<uint8_t> bytes; std::vector<NordDSP::Dx7Voice> voices; std::string error;
-        if (name.empty() || !hexToBytes(hex, bytes) || !NordDSP::parseDx7Sysex(bytes, voices, error)) {
+        std::vector<uint8_t> bytes; std::vector<SonusDSP::Dx7Voice> voices; std::string error;
+        if (name.empty() || !hexToBytes(hex, bytes) || !SonusDSP::parseDx7Sysex(bytes, voices, error)) {
             res.status = 400;
             res.set_content(json({{"ok", false}, {"error", error.empty() ? "Archivo .syx no valido" : error}}).dump(), "application/json");
             return;
@@ -203,7 +205,7 @@ void StageApp::registerDx7Routes() {
     });
 
     svr.Get("/api/synth/mt32/status", [](const httplib::Request&, httplib::Response& res) {
-        const auto st = NordDSP::Mt32Roms::status();
+        const auto st = SonusDSP::Mt32Roms::status();
         res.set_content(json({{"ok", true}, {"loaded", st.loaded}, {"control", st.control}, {"pcm", st.pcm},
             {"message", st.message}, {"folders", st.folders}, {"sounds", st.sounds}}).dump(), "application/json");
     });
@@ -227,7 +229,7 @@ void StageApp::registerDx7Routes() {
             moduleDirty[1].store(true);
             paramRevCounter.fetch_add(1);
         }
-        const auto st = NordDSP::Mt32Roms::status();
+        const auto st = SonusDSP::Mt32Roms::status();
         res.set_content(json({{"ok", true}, {"layer", layer}, {"program", program}, {"romsLoaded", st.loaded},
             {"name", program < int(st.sounds.size()) ? st.sounds[size_t(program)] : std::string()}}).dump(), "application/json");
     });
@@ -237,11 +239,11 @@ void StageApp::registerDx7Routes() {
         for (const auto& c : engine.multiSynth_.getModMatrix())
             list.push_back({{"source", c.source}, {"target", c.target}, {"amount", c.amount}, {"bipolar", c.bipolar}, {"curve", c.curve}});
         json sources = json::array();
-        for (int s = 0; s < NordDSP::MOD_SOURCE_COUNT; ++s)
-            sources.push_back({{"id", s}, {"name", NordDSP::modSourceName(s)}, {"voice", NordDSP::modSourceIsVoice(s)}, {"bipolar", NordDSP::modSourceIsBipolar(s)}});
+        for (int s = 0; s < SonusDSP::MOD_SOURCE_COUNT; ++s)
+            sources.push_back({{"id", s}, {"name", SonusDSP::modSourceName(s)}, {"voice", SonusDSP::modSourceIsVoice(s)}, {"bipolar", SonusDSP::modSourceIsBipolar(s)}});
         json targets = json::array();
-        for (const auto& t : NordDSP::modTargets()) targets.push_back({{"suffix", t.suffix}, {"voice", t.voice != NordDSP::MVT_NONE}});
-        return json({{"ok", true}, {"connections", list}, {"sources", sources}, {"targets", targets}, {"max", NordDSP::MOD_MAX_CONNECTIONS}});
+        for (const auto& t : SonusDSP::modTargets()) targets.push_back({{"suffix", t.suffix}, {"voice", t.voice != SonusDSP::MVT_NONE}});
+        return json({{"ok", true}, {"connections", list}, {"sources", sources}, {"targets", targets}, {"max", SonusDSP::MOD_MAX_CONNECTIONS}});
     };
     svr.Get("/api/synth/mod", [modJson](const httplib::Request&, httplib::Response& res) {
         res.set_content(modJson().dump(), "application/json");

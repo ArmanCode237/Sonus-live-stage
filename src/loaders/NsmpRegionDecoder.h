@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <vector>
 
-namespace NordDSP {
+namespace SonusDSP {
 
 // Word offsets are relative to the start of a compressed STK stream. Samples
 // count interleaved channel samples; convert to per-channel frames only here.
@@ -61,4 +61,4 @@ inline NsmpDecodedRegions decodeNsmpRegions(const uint8_t* stk, size_t size,
     }
     return result;
 }
-} // namespace NordDSP
+} // namespace SonusDSP

@@ -56,7 +56,8 @@ const LAYER_FIELDS: Record<string, string> = {
   wheelVibrato: 'wheelVibratoCents', wheelVibRate: 'wheelVibratoRateHz', wheelWtMorph: 'wheelWtMorph',
   voiceMode: 'voiceMode', portamentoOn: 'portamentoEnabled', portamento: 'portamento', glideMode: 'glideMode',
   slide: 'slide', keyLow: 'keyLow', keyHigh: 'keyHigh', keyTrans: 'keyTranspose',
-  seqOn: 'seqEnabled', seqBpm: 'seqBpm', seqSteps: 'seqSteps', seqGate: 'seqGate', seqDiv: 'seqDivision', seqSync: 'seqSync',
+  seqOn: 'seqEnabled', seqBpm: 'seqBpm', seqSteps: 'seqSteps', seqGate: 'seqGate', seqDiv: 'seqDivision', seqSync: 'seqSync', gain: 'outGainDb',
+  eqOn: 'eqEnabled', eqHp: 'eqHighPass', eqLp: 'eqLowPass', eqHpSlope: 'eqHighPassSlope', eqLpSlope: 'eqLowPassSlope',
   analog: 'analog', fm4Algo: 'fm4Algorithm', fm4Fb: 'fm4Feedback', fm4Vel: 'fm4VelMod', laMix: 'laMix', laRing: 'laRing',
   trType: 'transientType', trLevel: 'transientLevel', trDecay: 'transientDecay', trBright: 'transientTone',
 };
@@ -73,7 +74,7 @@ const INSERT_FIELDS: Record<string, string> = {
   type: 'type', damp: 'damping', predelay: 'preDelayMs',
 };
 const BUS: Record<string, string> = { Mod: 'modulation', Delay: 'delay', Reverb: 'reverb' };
-const ZONE_EDGE: Record<string, string> = { Low: 'low', High: 'high' };
+const ZONE_EDGE: Record<string, string> = { Low: 'low', High: 'high', Oct: 'octave', Semi: 'transpose' };
 /** Module FX fields: id suffix → synthFx / organFx key. */
 const MODULE_FX: Record<string, string> = {
   ChorusOn: 'chorusEnabled', ChorusRate: 'chorusRate', ChorusDepth: 'chorusDepth', ChorusMix: 'chorusMix',
@@ -100,6 +101,7 @@ const RULES: Rule[] = [
   [/^L([1-4])_fx([0-5])_(\w+)$/, (p, m) => at(p, 'synthLayers', +m[1] - 1, 'insertFx', +m[2], INSERT_FIELDS[m[3]] ?? '')],
   [/^L([1-4])_seqStep(\d+)$/, (p, m) => at(p, 'synthLayers', +m[1] - 1, 'seqNotes', +m[2])],
   [/^synthMacro([1-4])$/, (p, m) => at(p, 'synthMacros', +m[1] - 1)],
+  [/^L([1-4])_eq([FQG])([0-2])$/, (p, m) => at(p, 'synthLayers', +m[1] - 1, ({ F: 'eqFreq', Q: 'eqQ', G: 'eqGain' } as Record<string, string>)[m[2]], +m[3])],
   [/^L([1-4])_seqAcc(\d+)$/, (p, m) => at(p, 'synthLayers', +m[1] - 1, 'seqAccent', +m[2])],
   [/^L([1-4])_seqSlide(\d+)$/, (p, m) => at(p, 'synthLayers', +m[1] - 1, 'seqSlide', +m[2])],
   [/^L([1-4])_op([1-4])(Ratio|Level|Atk|Dec|Sus)$/, (p, m) => at(p, 'synthLayers', +m[1] - 1, OP_FIELDS[m[3]], +m[2] - 1)],
@@ -111,7 +113,7 @@ const RULES: Rule[] = [
   [/^pianoSample([0-4])(\w+)$/, (p, m) => at(p, 'pianoSampleConfig', +m[1], SAMPLE_FIELDS[m[2]] ?? '')],
   [/^pianoLayerVol([0-4])$/, (p, m) => at(p, 'pianoLayers', +m[1], 'volume')],
   [/^pianoLayerEnabled([0-4])$/, (p, m) => at(p, 'pianoLayers', +m[1], 'enabled')],
-  [/^pianoZone([0-4])(Low|High)$/, (p, m) => at(p, 'pianoLayerZones', +m[1], ZONE_EDGE[m[2]])],
+  [/^pianoZone([0-4])(Low|High|Oct|Semi)$/, (p, m) => at(p, 'pianoLayerZones', +m[1], ZONE_EDGE[m[2]])],
   [/^(piano|synth|organ)Zone(Low|High)$/, (p, m) => at(p, `${m[1]}Zone`, ZONE_EDGE[m[2]])],
   [/^eqGain([0-4])$/, (p, m) => at(p, 'eqBands', +m[1], 'gainDb')],
   [/^eqFreq([0-4])$/, (p, m) => at(p, 'eqBands', +m[1], 'freqHz')],

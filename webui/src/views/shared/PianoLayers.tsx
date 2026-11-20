@@ -1,16 +1,18 @@
 // Piano module shared by MAIN and PIANO: sound bank (category + ◀ ▶ + browser)
 // and the five sample layers.
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
 import type { LibraryItem } from '../../api/types';
-import { PIANO_LAYER_COUNT } from '../../data/constants';
-import { useEngine } from '../../store/hooks';
+import { PIANO_LAYER_COUNT, noteName } from '../../data/constants';
+import { useEngine, useParam } from '../../store/hooks';
+import { SourceMeter } from '../../ui/LevelMeter';
 import { libraryGroups, useLibrary } from '../../store/library';
 import { runAction } from '../../store/notify';
 import { ParamKnob } from '../../ui/Knob';
-import { Btn, Lcd, Panel, ParamLed, Select } from '../../ui/controls';
+import { Btn, Lcd, Panel, ParamLed, ParamToggle, Select } from '../../ui/controls';
 import { PixelText } from '../../ui/PixelText';
-import { SampleBrowser } from '../piano/SampleBrowser';
+import { PianoSoundBrowser } from '../../browser/ModuleBrowsers';
 
 export const cleanName = (name: string | undefined) => (name ?? '').replace(/\s{2,}/g, ' ').trim();
 const baseName = (file: string) => file.replace(/\.[^.]+$/, '');
@@ -21,15 +23,28 @@ export function LayerRow({ layer, selected, onSelect, onBrowse }: {
   const name = useEngine(s => cleanName(s?.pianoLayers?.[layer]?.name));
   const hasSample = useEngine(s => Boolean(s?.pianoLayers?.[layer]?.sourcePath));
   const clear = () => runAction(() => api.clearPianoLayer(layer), `L${layer + 1} vaciada`, true);
+  const low = Math.round(useParam(`pianoZone${layer}Low`).value ?? 0);
+  const high = Math.round(useParam(`pianoZone${layer}High`).value ?? 127);
+  const zLow = Math.round(useParam('pianoZoneLow').value ?? 0), zHigh = Math.round(useParam('pianoZoneHigh').value ?? 127);
+  const effLow = Math.max(low, zLow), effHigh = Math.min(high, zHigh);
+  const limited = effLow !== low || effHigh !== high;
+  const oct = Math.round(useParam(`pianoZone${layer}Oct`).value ?? 0);
+  const semi = Math.round(useParam(`pianoZone${layer}Semi`).value ?? 0);
+  const shift = [oct ? `${oct > 0 ? '+' : ''}${oct} OCT` : '', semi ? `${semi > 0 ? '+' : ''}${semi} ST` : ''].filter(Boolean).join(' ');
   return (
-    <div className={`layer-row${selected ? ' is-selected' : ''}`}>
+    <div className={`layer-row${selected ? ' is-selected' : ''}${hasSample ? ' has-sample' : ''}`}>
       <ParamLed id={`pianoLayerEnabled${layer}`} label={`Capa L${layer + 1}`} />
       <button type="button" className="layer-row__tag" aria-pressed={selected} onClick={onSelect} title="Seleccionar capa">L{layer + 1}</button>
       <button type="button" className="layer-row__name" onClick={onBrowse} title="Cargar instrumento">
-        {hasSample ? name || 'Instrumento' : <span className="muted">VACÍA · cargar…</span>}
+        <span className="layer-row__title">{hasSample ? name || 'Instrumento' : <span className="muted">VACÍA · cargar…</span>}</span>
+        {hasSample && <span className={`layer-row__range${limited ? ' is-limited' : ''}`}
+          title={limited ? `Rango ${noteName(low)}–${noteName(high)}, limitado por la zona del módulo` : 'Rango de teclas de la capa'}>
+          {effLow > effHigh ? 'FUERA DE ZONA' : `${noteName(effLow)}–${noteName(effHigh)}`}
+          {shift && <b className="layer-row__shift" title="Octava / semitonos de la capa (ZONES)"> · {shift}</b>}</span>}
       </button>
       {hasSample && <button type="button" className="icon-btn" aria-label={`Vaciar capa L${layer + 1}`} onClick={clear}>×</button>}
       <ParamKnob id={`pianoLayerVol${layer}`} label="LEVEL" size="sm" />
+      {hasSample && <span className="layer-row__meter" aria-hidden="true"><SourceMeter source={layer} /></span>}
     </div>
   );
 }
@@ -81,7 +96,44 @@ function LayerQuick({ layer }: { layer: number }) {
       <ParamKnob id={`${p}Cut`} label="CUTOFF" size="sm" />
       <ParamKnob id={`${p}Gain`} label="GAIN" size="sm" />
       <ParamKnob id={`${p}Pan`} label="PAN" size="sm" />
+      <div className="layer-quick__voice">
+        <ParamToggle id={`${p}Mono`} label="MONO" small />
+        <ParamToggle id={`${p}Legato`} label="LEGATO" small />
+      </div>
     </div>
+  );
+}
+
+const KEY_FIRST = 21, KEY_LAST = 108;   // 88 keys: A0 .. C8
+const keyPct = (n: number) => ((Math.min(KEY_LAST, Math.max(KEY_FIRST, n)) - KEY_FIRST) / (KEY_LAST - KEY_FIRST + 1)) * 100;
+
+function ZoneMapBar({ layer }: { layer: number }) {
+  const on = (useParam(`pianoLayerEnabled${layer}`).value ?? 0) >= .5;
+  const loaded = useEngine(s => Boolean(s?.pianoLayers?.[layer]?.sourcePath));
+  const low = Math.round(useParam(`pianoZone${layer}Low`).value ?? 0);
+  const high = Math.round(useParam(`pianoZone${layer}High`).value ?? 127);
+  if (!loaded) return <div className="zone-map__lane" />;
+  const l = Math.max(low, KEY_FIRST), h = Math.min(high, KEY_LAST);
+  return (
+    <div className="zone-map__lane">
+      {l <= h && <span className={`zone-map__bar${on ? '' : ' is-off'}`} style={{ left: `${keyPct(l)}%`, width: `${keyPct(h + 1) - keyPct(l)}%` }}>L{layer + 1}</span>}
+    </div>
+  );
+}
+
+/** 88-key overview of the five layers' ranges (splits / layers at a glance). */
+function ZoneMap() {
+  const zLow = Math.round(useParam('pianoZoneLow').value ?? 0), zHigh = Math.round(useParam('pianoZoneHigh').value ?? 127);
+  return (
+    <Link to="/piano?tab=zones" className="zone-map" title="Rangos de las capas · abrir el editor de KEYZONES">
+      <span className="zone-map__title">KEYZONES <span aria-hidden="true">↗</span></span>
+      <div className="zone-map__lanes">
+        {Array.from({ length: PIANO_LAYER_COUNT }, (_, l) => <ZoneMapBar key={l} layer={l} />)}
+        <span className="zone-map__module" style={{ left: `${keyPct(Math.max(zLow, KEY_FIRST))}%`, width: `${keyPct(Math.min(zHigh, KEY_LAST) + 1) - keyPct(Math.max(zLow, KEY_FIRST))}%` }} />
+      </div>
+      <div className="zone-map__keys" aria-hidden="true">{['C1', 'C2', 'C3', 'C4', 'C5', 'C6', 'C7'].map((c, i) => (
+        <span key={c} style={{ left: `${keyPct(24 + i * 12)}%` }}>{c}</span>))}</div>
+    </Link>
   );
 }
 
@@ -101,8 +153,9 @@ export function PianoLayersModule({ selected, onSelect, actions, quick }: {
             onBrowse={() => { onSelect(l); setBrowse(l); }} />
         ))}
       </div>
+      {quick && <ZoneMap />}
       {quick && <LayerQuick layer={selected} />}
-      {browse !== null && <SampleBrowser layer={browse} onClose={() => setBrowse(null)} />}
+      {browse !== null && <PianoSoundBrowser layer={browse} onClose={() => setBrowse(null)} />}
     </Panel>
   );
 }

@@ -6,13 +6,13 @@ for i in range(1,385):
 fields=['enabled','synthesisType','waveType','volume','cutoffHz','resonanceQ','attackSec','decaySec','sustainLevel','releaseSec','filterType','fmIndex','fmRatio','wavetableIdx','wavetableMorph','unisonVoices','osc2Level','wheelWtMorph']
 lfields=['enabled','rateHz','depth','destPitch','destCutoff','destVolume','destPan']
 code='''// Generated regression fixture from 384 JSON factory sources. Do not edit by hand.
-#include "../src/modules/NordSynthModule.h"
+#include "../src/modules/StageSynthModule.h"
 #include <cmath>
 #include <iostream>
 #include <vector>
 #include <algorithm>
 #include <array>
-using namespace NordDSP;
+using namespace SonusDSP;
 struct FX{bool on;float mix,rate,depth,feedback,time;bool sync;int division;};
 struct V{bool on;int architecture,wave;float vol,cut,res,atk,dec,sus,rel;int filter;float fmIndex,fmRatio;int wt;float morph;int unison;float osc2,wheelWt;FX fx[5];};
 struct LFO{bool on;float rate,depth;int pitch,cut;float amp,pan;};
@@ -36,7 +36,7 @@ code+='''};
 int main(){
  int counts[5]{},fm=0,wt=0,chorus=0,phaser=0,delay=0,lfo=0;
  for(int sampleRate:{44100,48000,96000}){
-  NordSynthModule m;m.init(sampleRate);m.synthEnabled=true;
+  StageSynthModule m;m.init(sampleRate);m.synthEnabled=true;
   std::vector<float> out(512*2);
   for(int i=0;i<384;i++){
    m.loadBuiltInSynthPreset(i+1);

@@ -1,4 +1,4 @@
-// Piano Sounds / Performances end-to-end check (v31) against a running NordVirtualStage:
+// Piano Sounds / Performances end-to-end check (v31) against a running SonusLiveStage:
 //  - a layer's inserts (reverb) and a SONIDO mapping are saved with its Sound;
 //  - the Sound loaded into ANOTHER layer brings its effects and its mapping (retargeted);
 //  - a Performance is a copy: its values win over later edits;

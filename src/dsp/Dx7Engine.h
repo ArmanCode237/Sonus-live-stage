@@ -14,7 +14,7 @@
 #include <string>
 #include <vector>
 
-namespace NordDSP {
+namespace SonusDSP {
 
 constexpr int DX7_VOICE_BYTES = 156;           // 155 VCED bytes + operator on/off mask
 using Dx7Voice = std::array<uint8_t, DX7_VOICE_BYTES>;
@@ -68,4 +68,4 @@ private:
     std::unique_ptr<Impl> impl_;
 };
 
-} // namespace NordDSP
+} // namespace SonusDSP

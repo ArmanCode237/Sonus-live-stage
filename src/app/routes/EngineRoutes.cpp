@@ -1,7 +1,7 @@
 // Generated from the former monolithic main.cpp: route bodies are unchanged.
 #include "app/routes/RouteCommon.h"
 
-using namespace NordDSP;
+using namespace SonusDSP;
 
 void StageApp::registerEngineRoutes() {
     // New four-rack architecture: local PIANO/SYNTH/ORGAN processing then
@@ -66,8 +66,10 @@ void StageApp::registerEngineRoutes() {
         int key = b.value("key", 60);
         int vel = b.value("vel", 100);
         bool on = b.value("on", true);
-        if (on) engine.noteOn(key, vel);
-        else engine.noteOff(key);
+        // v33: src (0 internal, 1-15 MIDI ports) and ch (1-16) simulate a keyboard for routing tests.
+        const int src = std::clamp(b.value("src", 0), 0, 15), ch = std::clamp(b.value("ch", 0), 0, 16);
+        if (on) engine.noteOn(key, vel, src, ch);
+        else engine.noteOff(key, src, ch);
         res.set_content("{\"ok\":true}", "application/json");
     });
 

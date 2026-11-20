@@ -1,15 +1,15 @@
 #pragma once
 // Per-layer insert parameters (synth layers and, since v31, piano layers).
 // Units: 0 Chorus I, 1 Chorus II, 2 Phaser I, 3 Phaser II, 4 Echo, 5 Reverb.
-// The DSP chain lives in LayerInsertChain.h (it needs NordDspEffects.h, which
-// itself includes NordTypes.h → this header).
+// The DSP chain lives in LayerInsertChain.h (it needs StageDspEffects.h, which
+// itself includes StageTypes.h → this header).
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <vector>
 #include "StageTempo.h"
 
-namespace NordDSP {
+namespace SonusDSP {
 struct SynthLayerFxParams {
     bool enabled = false;
     float rateHz = 0.55f;    // LFO frequency (chorus/phaser)
@@ -39,4 +39,4 @@ inline float insertTailSeconds(const InsertFxChain& fx) {
     return (fx[INSERT_ECHO].enabled || fx[INSERT_REVERB].enabled) ? 9.f : 1.5f;
 }
 
-} // namespace NordDSP
+} // namespace SonusDSP

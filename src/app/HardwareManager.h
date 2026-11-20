@@ -1,4 +1,5 @@
 #pragma once
+#include <map>
 // Audio/MIDI device discovery, persistence and hot-plug (RtAudio / RtMidi).
 // Header-only: every method is defined inline in the class body.
 #include "app/AppCommon.h"
@@ -63,6 +64,51 @@ public:
 
     void scanAllAudioDevices() {
         std::lock_guard<std::mutex> lock(hwMutex_);
+        scanAllAudioDevicesInternal();
+    }
+
+    // ---- v32.4 audio watchdog (maintenance thread, ~every 500 ms) ------------------------
+    // A stream that stopped (USB interface unplugged, driver reset, ASIO panel change) or
+    // whose callbacks stalled for 1.5 s is reopened on the SAME device, with back-off
+    // (1, 2, 4… max 10 s). It never falls back to another output on its own: on stage,
+    // sound out of the laptop speakers is worse than a clear "AUDIO REINTENTANDO" warning.
+    void checkAudioWatchdog() {
+        std::unique_lock<std::mutex> lock(hwMutex_, std::try_to_lock);
+        if (!lock.owns_lock()) return;                         // being configured right now
+        if (watchApi_.empty()) return;                          // never had a working stream
+        const auto now = std::chrono::steady_clock::now();
+        bool stalled = !dac_ || !dac_->isStreamOpen() || !dac_->isStreamRunning();
+        if (!stalled) {
+            const uint64_t count = engine_.getAudioCallbackCount();
+            if (count != watchCallbacks_) { watchCallbacks_ = count; watchLastProgress_ = now; }
+            else if (now - watchLastProgress_ > std::chrono::milliseconds(1500)) stalled = true;
+        }
+        if (!stalled) { audioRecovering_ = false; recoveryAttempts_ = 0; return; }
+        if (now < nextRecovery_) return;
+        audioRecovering_ = true;
+        ++recoveryAttempts_;
+        std::cerr << "[Audio/WATCHDOG] La salida [" << watchApi_ << "] " << watchDevice_
+                  << " se detuvo. Reintento " << recoveryAttempts_ << "...\n";
+        scanAllAudioDevicesInternal();
+        int uid = -1;
+        for (const auto& d : devices_) if (d.apiName == watchApi_ && d.name == watchDevice_) { uid = d.uid; break; }
+        std::string msg;
+        if (uid >= 0 && tryOpenInternal(uid, watchRate_, watchBuffer_, msg)) {
+            std::cout << "[Audio/WATCHDOG] Audio recuperado: " << msg << "\n";
+            audioRecovering_ = false; recoveryAttempts_ = 0; ++audioRecoveries_;
+            watchCallbacks_ = engine_.getAudioCallbackCount(); watchLastProgress_ = std::chrono::steady_clock::now();
+            return;
+        }
+        const int backoff = std::min(10, 1 << std::min(recoveryAttempts_ - 1, 4));
+        nextRecovery_ = now + std::chrono::seconds(backoff);
+        lastAudioError_ = uid < 0 ? "Dispositivo de audio desconectado: " + watchDevice_ + " (reintentando)" : msg;
+    }
+    bool audioRecovering() const { return audioRecovering_.load(); }
+    int audioRecoveryAttempts() const { return recoveryAttempts_; }
+    int audioRecoveries() const { return audioRecoveries_; }
+
+private:
+    void scanAllAudioDevicesInternal() {
         stopAudioInternal();
         devices_.clear();
         availableApis_.clear();
@@ -115,6 +161,8 @@ public:
         probeApi(RtAudio::MACOSX_CORE, "CoreAudio");
 #endif
     }
+
+public:
 
     void restoreOrInitAudio() {
         std::lock_guard<std::mutex> lock(hwMutex_);
@@ -238,8 +286,8 @@ public:
                     try {
                         slot.handle = std::make_unique<RtMidiIn>();
                         slot.handle->openPort(hwIdx);
-                        slot.handle->ignoreTypes(true, true, true);
-                        slot.handle->setCallback(&midiCallback, &engine_);
+                        slot.handle->ignoreTypes(true, false, true)   /* v32.4: timing (MIDI Clock) is received */;
+                        slot.handle->setCallback(&midiCallback, tagFor(clean));
                         std::cout << "[MIDI] Reconectado automáticamente: " << clean << "\n";
                     } catch (...) {
                         slot.handle.reset();
@@ -258,8 +306,8 @@ public:
                     try {
                         it->handle = std::make_unique<RtMidiIn>();
                         it->handle->openPort(hwIdx);
-                        it->handle->ignoreTypes(true, true, true);
-                        it->handle->setCallback(&midiCallback, &engine_);
+                        it->handle->ignoreTypes(true, false, true)   /* v32.4: timing (MIDI Clock) is received */;
+                        it->handle->setCallback(&midiCallback, tagFor(clean));
                     } catch (...) {
                         it->handle.reset();
                     }
@@ -295,8 +343,8 @@ public:
                     try {
                         slot.handle = std::make_unique<RtMidiIn>();
                         slot.handle->openPort(static_cast<unsigned int>(slot.portIndex));
-                        slot.handle->ignoreTypes(true, true, true);
-                        slot.handle->setCallback(&midiCallback, &engine_);
+                        slot.handle->ignoreTypes(true, false, true)   /* v32.4: timing (MIDI Clock) is received */;
+                        slot.handle->setCallback(&midiCallback, tagFor(slot.cleanName));
                         std::cout << "[MIDI] Activado: " << slot.cleanName << "\n";
                     } catch (...) {
                         slot.handle.reset();
@@ -341,6 +389,20 @@ public:
             midiSlots_.end()
         );
         saveConfigInternal();
+    }
+
+    /** v33 (M2): every known port with its routing source id (0 = never opened this session). */
+    struct MidiSourceInfo { std::string name; int id = 0; bool connected = false; bool enabled = false; };
+    std::vector<MidiSourceInfo> midiSourcesSnapshot() {
+        std::lock_guard<std::mutex> lock(hwMutex_);
+        std::vector<MidiSourceInfo> out;
+        for (const auto& s : midiSlots_) out.push_back({s.cleanName, sourceIdOf(s.cleanName), s.connected, s.enabled});
+        return out;
+    }
+    /** v33: the MIDI source id of a port name (1..15, stable for the session; 0 if never opened). */
+    int sourceIdOf(const std::string& cleanName) const {
+        auto it = sourceTags_.find(cleanName);
+        return it == sourceTags_.end() ? 0 : it->second->source;
     }
 
     json getHardwareStatusJson() {
@@ -393,7 +455,8 @@ public:
                 {"name", s.cleanName},
                 {"rawName", s.rawName},
                 {"connected", s.connected},
-                {"enabled", s.enabled}
+                {"enabled", s.enabled},
+                {"source", sourceIdOf(s.cleanName)}      // v33: MIDI routing source id (1..15)
             });
         }
         j["midiPorts"] = midiPorts;
@@ -545,6 +608,10 @@ private:
                 activeDeviceName_ = target->name;
                 activeSampleRate_ = actualSr;
                 activeBufferSize_ = bufFrames;
+                // The watchdog keeps this device (and its settings) as the one to recover.
+                watchApi_ = activeApiName_; watchDevice_ = activeDeviceName_;
+                watchRate_ = actualSr; watchBuffer_ = bufFrames;
+                watchLastProgress_ = std::chrono::steady_clock::now();
                 outMsg = "Activo: [" + activeApiName_ + "] " + activeDeviceName_ +
                     " @ " + std::to_string(actualSr) + " Hz (" + std::to_string(bufFrames) + " samples)";
                 if (candidate != requested)
@@ -597,7 +664,26 @@ private:
 
     std::set<std::string> savedEnabledMidiPorts_;
     std::set<std::string> savedKnownMidiPorts_;
+    // v33: one callback tag per port name. Never erased during the session, so a callback
+    // still running on a closing port never sees a dangling pointer. Declared BEFORE midiSlots_: destroyed after the ports. Caller holds hwMutex_.
+    std::map<std::string, std::unique_ptr<MidiSourceTag>> sourceTags_;
+    MidiSourceTag* tagFor(const std::string& cleanName) {
+        auto& tag = sourceTags_[cleanName];
+        if (!tag) {
+            tag = std::make_unique<MidiSourceTag>();
+            tag->host = &engine_;
+            tag->source = std::min<int>(15, int(sourceTags_.size()));   // 1..15 (16th+ ports share 15)
+        }
+        return tag.get();
+    }
     std::vector<MidiPortSlot> midiSlots_;
     std::chrono::steady_clock::time_point lastHotPlugCheck_;
     std::mutex hwMutex_;
+    // v32.4 watchdog state (hwMutex_)
+    std::string watchApi_, watchDevice_;
+    unsigned int watchRate_ = 48000, watchBuffer_ = 128;
+    uint64_t watchCallbacks_ = 0;
+    std::chrono::steady_clock::time_point watchLastProgress_{}, nextRecovery_{};
+    std::atomic<bool> audioRecovering_{false};
+    int recoveryAttempts_ = 0, audioRecoveries_ = 0;
 };

@@ -1,0 +1,6 @@
+{
+  "_info": "Enlaces del modal ACERCA DE de Sonus Live Stage. Escribe URLs completas (https://...). Un campo vacío oculta su botón. Se abren en el navegador predeterminado del sistema. Tras editarlo, recompila (build-exe.cmd / build-vst3.cmd) o edita la copia instalada junto al ejecutable.",
+  "supportUrl": "https://paypal.me/theMusicman2237",
+  "websiteUrl": "https://livestageproject.netlify.app",
+  "sourceUrl": ""
+}

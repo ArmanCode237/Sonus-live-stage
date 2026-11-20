@@ -60,7 +60,7 @@ const modules=entries.map(({id,code,map,file})=>
 const bundle=`/* Live Stage | offline-compatible bundled React production GUI */\n(function(){\n'use strict';\nconst process={env:{NODE_ENV:'production'}};\nconst modules={${modules}};\nconst cache={};\nfunction load(id){\n if(cache[id]) return cache[id].exports;\n const record=modules[id]; if(!record) throw new Error('Module '+id+' not found');\n const mod={exports:{}};cache[id]=mod;\n const [fn,bindings,file]=record;\n const localRequire=(spec)=>{if(!Object.hasOwn(bindings,spec)) throw new Error('Unknown import '+spec+' from '+file); if(bindings[spec]<0)return {};return load(bindings[spec]);};\n fn(mod,mod.exports,localRequire);return mod.exports;\n}\nload(${entry});\n})();`;
 fs.mkdirSync(path.join(dest,'assets'),{recursive:true});
 fs.writeFileSync(path.join(dest,'assets/app.js'),bundle);
-for(const file of ['theme.css','components.css','views.css','pro-console.css','perform-polish.css','nord-buttons.css']){
+for(const file of ['theme.css','components.css','views.css','pro-console.css','perform-polish.css','stage-buttons.css']){
   styles.push('/* '+file+' */\n'+fs.readFileSync(path.join(root,'src/styles',file),'utf8'));
 }
 fs.writeFileSync(path.join(dest,'assets/app.css'),styles.join('\n'));

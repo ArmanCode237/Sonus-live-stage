@@ -8,7 +8,7 @@
 #include <iostream>
 
 namespace fs=std::filesystem;
-namespace NordDSP {
+namespace SonusDSP {
 
 InstrumentPool::~InstrumentPool(){
     if(preloadThread_.joinable())preloadThread_.join();
@@ -82,6 +82,7 @@ std::shared_ptr<PianoInstrument> InstrumentPool::getOrLoad(const std::string& pa
         if(!slot)slot=std::make_shared<Entry>();
         entry=slot;
         while(entry->loading)entry->cv.wait(lock);
+        entry->lastUse=std::chrono::steady_clock::now();
         if(entry->instrument && entry->mtime==modified && entry->size==bytes){
             outStatusMsg="Instrumento en RAM: "+entry->instrument->name;
             return entry->instrument;
@@ -161,6 +162,10 @@ void InstrumentPool::preloadSetlistAsync(
             if(source.first.empty())continue;
             std::string status;
             auto bank=getOrLoad(source.first,status,source.second);
+            {   // setlist instruments stay in RAM for instant program changes
+                std::lock_guard<std::mutex> lock(mutex_);
+                for(auto& [key,e]:entries_) if(e && e->instrument==bank && bank) e->pinned=true;
+            }
             // Avoid decompressing eight large banks simultaneously. Do not
             // block API callbacks: this wait runs only on the prefetch worker.
             if(bank){
@@ -180,4 +185,36 @@ void InstrumentPool::preloadSetlistAsync(
     });
 }
 
-} // namespace NordDSP
+double InstrumentPool::residentMB(){
+    std::lock_guard<std::mutex> lock(mutex_);
+    double total=0;
+    for(const auto& [key,e]:entries_) if(e && e->instrument) total+=e->instrument->memoryMB;
+    return total;
+}
+
+double InstrumentPool::trimUnused(uint64_t budgetMB){
+    std::lock_guard<std::mutex> lock(mutex_);
+    double total=0;
+    for(const auto& [key,e]:entries_) if(e && e->instrument) total+=e->instrument->memoryMB;
+    if(total<=double(budgetMB)) return 0;
+    // Candidates: loaded, not pinned, not loading, and referenced ONLY by the pool
+    // (use_count 1: no layer, sounding voice, retired list or cache writer holds it).
+    std::vector<std::pair<std::chrono::steady_clock::time_point,std::string>> lru;
+    for(const auto& [key,e]:entries_)
+        if(e && e->instrument && !e->pinned && !e->loading && e->instrument.use_count()==1) lru.emplace_back(e->lastUse,key);
+    std::sort(lru.begin(),lru.end());
+    double released=0;
+    for(const auto& [when,key]:lru){
+        if(total<=double(budgetMB)) break;
+        auto it=entries_.find(key);
+        if(it==entries_.end() || !it->second || !it->second->instrument) continue;
+        const double mb=it->second->instrument->memoryMB;
+        std::cout<<"[RAM] Liberando "<<it->second->instrument->name<<" ("<<int(mb)<<" MB, sin uso)\n";
+        it->second->instrument.reset();
+        entries_.erase(it);
+        total-=mb; released+=mb;
+    }
+    return released;
+}
+
+} // namespace SonusDSP

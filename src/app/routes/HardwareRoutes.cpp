@@ -1,18 +1,16 @@
 // Generated from the former monolithic main.cpp: route bodies are unchanged.
 #include "app/routes/RouteCommon.h"
 
-using namespace NordDSP;
+using namespace SonusDSP;
 
 void StageApp::registerHardwareRoutes() {
     svr.Get("/api/hardware", [this](const httplib::Request&, httplib::Response& res) {
-        res.set_content(hw->getHardwareStatusJson().dump(), "application/json");
+        res.set_content(hw->statusJson().dump(), "application/json");
     });
 
     svr.Post("/api/hardware/rescan", [this](const httplib::Request&, httplib::Response& res) {
-        hw->scanAllAudioDevices();
-        hw->restoreOrInitAudio();
-        hw->refreshMidiPorts();
-        auto st = hw->getHardwareStatusJson();
+        hw->rescanAll();
+        auto st = hw->statusJson();
         st["message"] = "Hardware re-escaneado y configuracion verificada.";
         res.set_content(st.dump(), "application/json");
     });
@@ -24,7 +22,7 @@ void StageApp::registerHardwareRoutes() {
         unsigned int bufSize = body.value("bufferSize", 128u);
         std::string msg;
         bool ok = hw->configureAudio(uid, sr, bufSize, msg);
-        auto st = hw->getHardwareStatusJson();
+        auto st = hw->statusJson();
         st["ok"] = ok;
         st["message"] = msg;
         res.set_content(st.dump(), "application/json");
@@ -35,7 +33,7 @@ void StageApp::registerHardwareRoutes() {
         if (body.value("refresh", false)) {
             hw->refreshMidiPorts();
         } else if (body.contains("forgetName")) {
-            hw->forgetDisconnectedMidiPort(body.value("forgetName", ""));
+            hw->forgetMidiPort(body.value("forgetName", ""));
         } else {
             std::string portName = body.value("name", "");
             bool enabled = body.value("enabled", false);
@@ -45,6 +43,6 @@ void StageApp::registerHardwareRoutes() {
                 hw->setMidiPortEnabledByIndex(body.value("index", -1), enabled);
             }
         }
-        res.set_content(hw->getHardwareStatusJson().dump(), "application/json");
+        res.set_content(hw->statusJson().dump(), "application/json");
     });
 }

@@ -1,0 +1,36 @@
+name: Build Sonus Live Stage - Apple Silicon
+on:
+  workflow_dispatch:
+  push:
+    branches: [macos-arm64]
+permissions:
+  contents: read
+jobs:
+  macos-arm64:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: webui/package-lock.json
+      - name: Confirm Apple Silicon runner
+        run: test "$(uname -m)" = "arm64"
+      - name: Install tools
+        run: brew install cmake ninja
+      - name: Build app, VST3 and unsigned test installer
+        run: ./scripts/build_macos.sh
+      - name: Check CPU architecture, bundle and installer
+        run: |
+          file 'dist/macos-arm64/payload/Applications/Sonus Live Stage.app/Contents/MacOS/Sonus Live Stage'
+          test -f 'dist/macos-arm64/payload/Applications/Sonus Live Stage.app/Contents/Resources/ui/app/index.html'
+          test -f 'dist/macos-arm64/payload/Library/Audio/Plug-Ins/VST3/Sonus Live Stage.vst3/Contents/Resources/ui/app/index.html'
+          pkgutil --check-signature dist/macos-arm64/*.pkg || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SonusLiveStage-macOS-arm64-unsigned
+          path: dist/macos-arm64/*.pkg
+          if-no-files-found: error
+# Never store Developer ID private keys or notarization credentials in this repository.
+# Use a protected build/signing machine or protected CI secrets for distribution.

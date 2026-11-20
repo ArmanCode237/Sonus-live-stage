@@ -12,13 +12,13 @@
 //    never overwritten, saved modulated or lost.
 //  - Per-voice sources (velocity, key, amp envelope, filter envelope) work inside each
 //    voice on the voice targets: cutoff, level, pan and pitch.
-#include "../core/NordTypes.h"
+#include "../core/StageTypes.h"
 #include <array>
 #include <cmath>
 #include <string>
 #include <vector>
 
-namespace NordDSP {
+namespace SonusDSP {
 
 enum ModSource : int {
     MOD_WHEEL = 0, MOD_BEND, MOD_AFTERTOUCH, MOD_VELOCITY, MOD_KEY, MOD_AMP_ENV, MOD_FILTER_ENV,
@@ -150,4 +150,4 @@ inline bool modResolveTarget(const std::string& id, int& layer, int& index) {
     return false;
 }
 
-} // namespace NordDSP
+} // namespace SonusDSP

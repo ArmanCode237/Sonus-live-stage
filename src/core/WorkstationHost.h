@@ -1,6 +1,6 @@
 #pragma once
-#include "../modules/NordPianoEngine.h"
-#include "../modules/NordSynthModule.h"   // ← Necesario para Wavetable, SYNTH_NUM_LFOS, etc.
+#include "../modules/StagePianoEngine.h"
+#include "../modules/StageSynthModule.h"   // ← Necesario para Wavetable, SYNTH_NUM_LFOS, etc.
 #include "ParameterRegistry.h"
 #include "../control/ControlMappings.h"
 #include <nlohmann/json.hpp>              // ← Necesario para json
@@ -8,11 +8,11 @@
 #include <string>
 #include <vector>
 
-namespace NordDSP {
+namespace SonusDSP {
 
 using json = nlohmann::json;              // ← Alias global al namespace
 
-class WorkstationHost : public NordPianoEngine {
+class WorkstationHost : public StagePianoEngine {
 public:
     WorkstationHost();
 
@@ -29,6 +29,7 @@ public:
     json getSynthEnvelopesJson() const;
     json getOrganParamsJson() const;
     void applySynthPresetJson(const json& p);
+    void applySynthPresetJsonImpl(const json& p);
     /** One synth layer from its preset JSON (missing fields take the defaults). */
     void applySynthLayerJson(size_t layer, const json& lp);
     void applyOrganPresetJson(const json& p);
@@ -43,4 +44,4 @@ private:
     ControlMappings mappings_{registry_};   // after registry_: constructed from it
 };
 
-} // namespace NordDSP
+} // namespace SonusDSP

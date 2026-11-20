@@ -18,11 +18,14 @@
   padding:0 clamp(10px,1.2vw,20px); background:var(--head-bg); border-bottom:1px solid var(--head-edge);
   box-shadow:0 1px 0 rgba(255,255,255,.06) inset;
 }
-.brand{display:flex;align-items:center;gap:10px;flex:none;margin:0;text-decoration:none;color:var(--on-chassis)}
-.brand__mark{display:grid;place-items:center;width:32px;height:32px;flex:none;background:linear-gradient(145deg,#f8747a,#b62436);border-radius:9px;transform:rotate(-8deg);box-shadow:0 4px 12px #0006,0 0 0 1px #ffffff2c inset}
-.brand__mark span{width:13px;height:13px;border:3px solid #fff;border-radius:50%;box-shadow:0 0 12px #ffffff42}
+.brand{display:flex;align-items:center;gap:10px;flex:none;margin:0;padding:2px 6px 2px 2px;text-decoration:none;color:var(--on-chassis);background:none;border:0;border-radius:10px;cursor:pointer;font:inherit;text-align:left}
+.brand:hover .brand__mark{transform:rotate(0deg) scale(1.05)}
+.brand:focus-visible{outline:2px solid var(--on-chassis);outline-offset:2px}
+.brand__mark{flex:none;transform:rotate(-6deg);transition:transform .15s ease;filter:drop-shadow(0 4px 8px #0007)}
+
 .brand__copy{display:flex;flex-direction:column;gap:2px;line-height:1.1;min-width:0}
 .brand__copy strong{font-size:14px;font-weight:850;letter-spacing:.075em;color:var(--on-chassis);white-space:nowrap}
+.brand__copy strong span{font-weight:650;opacity:.82}
 .crumb{display:flex;align-items:center;gap:6px;font:800 9.5px/1 var(--display);letter-spacing:.16em;color:var(--on-chassis-soft);white-space:nowrap}
 .nav{display:flex;align-items:center;justify-content:center;gap:10px;flex:1 1 auto;min-width:0}
 /* Two groups: instruments (modules) and tools (FX/MIX, ZONES, LIBRARY, SETTINGS). */
@@ -238,6 +241,7 @@ button.list__main:hover,.browser__item:hover:not(:disabled){background:var(--sur
   .status__item+.status__item{padding-left:7px}
 }
 @media (max-width:1480px){
+  .brand__copy strong span{display:none}   /* SONUS only: the tabs keep their full labels */
   .nav__icon{display:none}
   .status__item:nth-child(3){display:none}
 }
@@ -336,7 +340,7 @@ button.list__main:hover,.browser__item:hover:not(:disabled){background:var(--sur
 .view--fx-module{display:block;overflow:auto}
 .module-fx-tab{display:flex;flex-direction:column;gap:var(--gap);min-height:100%}
 
-/* 11 · HARDWARE CONTROLS (Nord-style skin shared by every page)
+/* 11 · HARDWARE CONTROLS (hardware-style skin shared by every page)
    Buttons: square cap, central oval, LED, label underneath.
    Faders: slot with tick marks + square LED strip. Drawbars: footage caps on a 0-8 scale.
    Screens: one OLED look for every display. */
@@ -538,3 +542,66 @@ body.is-mod-dragging .knob.is-mod-voice-only .knob__svg{cursor:not-allowed}
 .sound-page{display:flex;flex-direction:column;gap:var(--gap)}
 .layer-tools{display:flex;gap:6px;margin-left:auto}
 .macro-knobs{border-left:1px solid var(--line);padding-left:8px;margin-left:4px}
+
+/* v32.4 HEADER CLUSTER: monitor, tempo and the STAGE / MAP / KEYS group share the
+   navigation's metrics (40 px boxes, 34 px keys) so the whole bar reads as one panel. */
+.status{height:40px;border-radius:10px;padding:0 12px;box-shadow:inset 0 1px 6px #000c}
+.tempo{height:40px;gap:8px;padding:0 3px 0 12px;border-radius:10px;background:var(--oled-bg);border:1px solid var(--line);box-shadow:inset 0 1px 6px #000c}
+.tempo__label,.tempo__unit{font:600 9px/1 var(--display);letter-spacing:.14em;color:var(--oled-dim)}
+.tempo__input{width:3.4ch;height:26px;padding:0;background:transparent;border:0;border-radius:4px;color:#fff;font:700 17px/1 var(--display);letter-spacing:.04em;text-shadow:0 0 6px #ffffff40}
+.tempo__input:focus{outline:1px solid var(--cyan);outline-offset:1px;background:#ffffff0d}
+.tempo__tap{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;margin-left:2px;cursor:pointer;
+  font:800 10px/1 var(--font);letter-spacing:.1em;color:var(--on-chassis);
+  background:linear-gradient(180deg,var(--rubber-hi),var(--rubber));border:1px solid var(--rubber-edge);border-radius:7px;
+  box-shadow:inset 0 1px 0 #ffffff14,0 2px 4px #0006;transition:filter .12s,transform .06s}
+.tempo__tap:hover{filter:brightness(1.18)}
+.tempo__tap:active{transform:translateY(1px);box-shadow:inset 0 1px 3px #0008}
+.tempo__beat{width:6px;height:6px}
+.tempo__beat.is-flash{animation:tempo-beat .22s ease-out}
+@keyframes tempo-beat{0%{background:var(--led);box-shadow:0 0 8px var(--led)}100%{background:var(--led-off);box-shadow:none}}
+
+.head-group{display:flex;align-items:center;gap:3px;flex:none;padding:2px;border-radius:10px;background:var(--chrome-box);border:1px solid var(--line)}
+.head-switch{display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 11px;cursor:pointer;
+  font:750 10px/1 var(--font);letter-spacing:.07em;white-space:nowrap;color:var(--on-chassis-soft);
+  background:transparent;border:1px solid transparent;border-radius:8px;transition:background .16s,color .16s,border-color .16s}
+.head-switch:hover{background:var(--nav-hover);color:var(--on-chassis)}
+.head-switch.is-active{color:#fff;background:linear-gradient(180deg,var(--rubber-hi),var(--rubber));border-color:var(--rubber-edge);box-shadow:inset 0 1px 0 #ffffff14,0 2px 6px #0004}
+.head-switch .led{width:7px;height:7px}
+.head-switch:focus-visible{outline:2px solid var(--focus-ring,var(--cyan));outline-offset:1px}
+.map-switch.is-active{box-shadow:inset 0 0 0 1px var(--cyan),0 2px 6px #0004}
+.map-switch.is-active .led{background:var(--cyan);box-shadow:0 0 7px var(--cyan)}
+@media (max-width:1320px){
+  .head-switch{padding:0 9px}
+  .theme-switch .head-btn__text{display:none}
+}
+@media (max-width:1100px){ .tempo__tap{padding:0 9px} }
+
+/* v32.4 live safety: PANIC, EXT clock, DSP / alerts in the monitor, missing-samples chip */
+.head-panic{flex:none;height:40px;padding:0 14px;cursor:pointer;border-radius:10px;
+  font:850 11px/1 var(--font);letter-spacing:.14em;color:#fff;
+  background:linear-gradient(180deg,#e2414b,#a51f29);border:1px solid #ff6a6f80;box-shadow:inset 0 1px 0 #ffffff30,0 2px 6px #0006}
+.head-panic:hover{filter:brightness(1.12)}
+.head-panic:active{transform:translateY(1px);box-shadow:inset 0 2px 4px #0008}
+.tempo__ext{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 8px;cursor:pointer;border-radius:6px;
+  font:800 9px/1 var(--font);letter-spacing:.1em;color:var(--oled-dim);background:transparent;border:1px solid var(--line)}
+.tempo__ext .led{width:6px;height:6px}
+.tempo__ext.is-on{color:#fff;border-color:var(--cyan)}
+.tempo__ext.is-on .led{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+.tempo__ext.is-on.is-receiving .led{background:var(--green);box-shadow:0 0 6px var(--green)}
+.status__item.is-bad{color:#ff5a4e;font-weight:800}
+.status__dsp b{min-width:2ch;text-align:right}
+.head-alert{display:inline-flex;align-items:center;gap:6px;flex:none;height:40px;padding:0 12px;cursor:pointer;border-radius:10px;
+  font:800 9px/1 var(--font);letter-spacing:.1em;color:#ffcf6a;background:var(--oled-bg);border:1px solid #ffb02e80}
+.head-alert .led{width:7px;height:7px;background:var(--amber);box-shadow:0 0 6px var(--amber)}
+.live-safety{display:flex;flex-direction:column;gap:8px;margin-top:8px;padding-top:8px;border-top:1px solid var(--line)}
+.live-safety__label{min-width:9.5em;font:800 9px/1 var(--font);letter-spacing:.14em;color:var(--label)}
+@media (max-width:1320px){ .head-panic{padding:0 10px} .tempo__ext{padding:0 6px} }
+/* v32.4: room for PANIC / EXT / DSP without truncating the navigation */
+@media (max-width:1600px){ .tempo__label{display:none} .head-panic{padding:0 11px;letter-spacing:.1em} }
+@media (max-width:1700px){
+  .status__item:nth-child(2){display:none}            /* VOICES (also on PERFORM's display) */
+  .theme-switch .head-btn__text{display:none}
+  .head-switch{padding:0 9px}
+  .nav__link{padding-inline:7px}
+}
+@media (max-width:1300px){ .tempo__unit{display:none} .status__dsp{display:none} }

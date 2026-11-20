@@ -8,10 +8,10 @@
 // MIX is smoothed (no clicks). A unit that has faded out is wiped before it is used
 // again, so stale echoes never come back; maintain() spreads that wipe over several
 // blocks instead of one multi-megabyte memset in the audio callback.
-#include "NordDspEffects.h"
+#include "StageDspEffects.h"
 #include "SynthLayerInsertFx.h"
 
-namespace NordDSP {
+namespace SonusDSP {
 class SynthLayerInsertDSP {
     struct ModDelay {
         std::array<std::vector<float>, 2> line;
@@ -28,7 +28,7 @@ class SynthLayerInsertDSP {
     std::array<ModDelay, 2> chorus_{};
     std::array<Phaser, 2> phasers_{};
     ModDelay echo_{};
-    NordReverbEffect reverb_{};   // Room / Plate / Hall only: no Shimmer engine is allocated
+    StageReverbEffect reverb_{};   // Room / Plate / Hall only: no Shimmer engine is allocated
     float sr_ = 48000.f;
     float junoPreK_ = .6f, junoPostK_ = .75f;   // one-pole coefficients, 7237 Hz / 10644 Hz
     float gateStep_ = 1.f / 576.f;   // 12 ms at 48 kHz
@@ -219,4 +219,4 @@ public:
         right=std::isfinite(channels[1])?channels[1]:0.f;
     }
 };
-} // namespace NordDSP
+} // namespace SonusDSP

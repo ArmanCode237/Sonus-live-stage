@@ -1,4 +1,4 @@
-// Frequency response of the engine equalizers (src/dsp/NordDspEffects.h MasterEqualizer):
+// Frequency response of the engine equalizers (src/dsp/StageDspEffects.h MasterEqualizer):
 // Butterworth HP/LP cascades (12/24/48 dB/oct; any other slope behaves as 12, like
 // normalizeEqSlope) + RBJ peaking bands, evaluated as complex biquads at 48 kHz.
 
@@ -87,7 +87,7 @@ export function logFrequencies(n: number, lo = 20, hi = 20000): number[] {
   return Array.from({ length: n }, (_, i) => lo * Math.pow(hi / lo, i / (n - 1)));
 }
 
-/** PARAMETRIC EQ studio slot (type 12): normalized params → model (NordSlotFxRack syncParameters). */
+/** PARAMETRIC EQ studio slot (type 12): normalized params → model (StageSlotFxRack syncParameters). */
 export function slotEqModel(p: readonly number[]): EqModel {
   const c = (i: number) => clamp(p[i] ?? 0, 0, 1);
   const lo = [50, 250, 1000], hi = [500, 4000, 16000], qParam = [9, 13, 14];

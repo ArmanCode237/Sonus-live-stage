@@ -20,7 +20,7 @@
 #include <cmath>
 #include <cstring>
 
-namespace NordDSP {
+namespace SonusDSP {
 
 namespace {
 constexpr int kVcedBytes = 155;
@@ -271,4 +271,4 @@ void Dx7LayerEngine::render(float* out, unsigned numFrames) {
     }
 }
 
-} // namespace NordDSP
+} // namespace SonusDSP

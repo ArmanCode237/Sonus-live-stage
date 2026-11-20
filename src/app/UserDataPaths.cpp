@@ -1,6 +1,8 @@
 #include "app/UserDataPaths.h"
-#include "app/AppCommon.h"
+#include <filesystem>
+namespace fs = std::filesystem;
 #include <cstdlib>
+
 
 // Per-user writable storage: Program Files and app bundles are not writable.
 std::filesystem::path stageUserDataDir(){
@@ -19,11 +21,20 @@ std::filesystem::path stageUserDataDir(){
     std::error_code ec;fs::create_directories(dir,ec);
     return dir;
 }
+static std::string& stageAssetRoot() { static std::string root; return root; }
+void setStageAssetRoot(const std::string& root) { stageAssetRoot() = root; }
+
 std::string stageUserFile(const char* name){
     const auto path=stageUserDataDir()/name;
-    if(!std::filesystem::exists(path) && std::filesystem::is_regular_file(name)){
-        std::error_code ec;std::filesystem::create_directories(path.parent_path(),ec);
-        std::filesystem::copy_file(name,path,std::filesystem::copy_options::skip_existing,ec);
+    if(!std::filesystem::exists(path)) {
+        const auto source = (!stageAssetRoot().empty() &&
+                             std::filesystem::is_regular_file(std::filesystem::path(stageAssetRoot())/name))
+                            ? std::filesystem::path(stageAssetRoot())/name
+                            : std::filesystem::path(name);
+        if(std::filesystem::is_regular_file(source)){
+            std::error_code ec;std::filesystem::create_directories(path.parent_path(),ec);
+            std::filesystem::copy_file(source,path,std::filesystem::copy_options::skip_existing,ec);
+        }
     }
     return path.string();
 }
@@ -35,7 +46,9 @@ std::string stageUserPresetFile(const char* module){
     std::error_code ec;fs::create_directories(file.parent_path(),ec);
     if(!fs::exists(file)){
         const std::string legacy=std::string(module)+"_presets.json";
-        const fs::path source=fs::exists(legacy)?fs::path(legacy):fs::path(sub);
+        const fs::path bundle=fs::path(stageAssetRoot())/sub;
+        const fs::path source=fs::exists(legacy)?fs::path(legacy):
+                              fs::is_regular_file(bundle)?bundle:fs::path(sub);
         if(fs::is_regular_file(source))fs::copy_file(source,file,ec);
     }
     return file.string();
@@ -43,6 +56,10 @@ std::string stageUserPresetFile(const char* module){
 std::string findUiDir() {
     // Locate shipped UI/preset assets even when launched from build/Release.
     std::error_code ec;
+    if(!stageAssetRoot().empty()){
+        const auto bundled=fs::path(stageAssetRoot())/"ui";
+        if(fs::is_directory(bundled,ec))return bundled.generic_string();
+    }
     auto probe=fs::current_path(ec);
     if(!ec)for(int depth=0;depth<7;++depth){
         for(const auto& sub:{"ui","Resources/ui","resources/ui"}){

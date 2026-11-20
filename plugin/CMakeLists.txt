@@ -29,9 +29,9 @@ target_sources(LiveStageInstrument PRIVATE
     ../src/loaders/BankLoader.cpp
     ../src/loaders/Sf2Loader.cpp
     ../src/loaders/NsmpLoader.cpp
-    ../src/modules/NordPianoEngine.cpp
-    ../src/modules/NordSynthModule.cpp
-    ../src/modules/NordOrganModule.cpp
+    ../src/modules/StagePianoEngine.cpp
+    ../src/modules/StageSynthModule.cpp
+    ../src/modules/StageOrganModule.cpp
 )
 target_include_directories(LiveStageInstrument PRIVATE ../src ../src/core ../src/modules ../src/loaders ../src/dsp ../third_party)
 target_compile_definitions(LiveStageInstrument PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_VST3_CAN_REPLACE_VST2=0)

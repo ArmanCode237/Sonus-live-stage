@@ -23,7 +23,7 @@
 
 namespace fs = std::filesystem;
 
-namespace NordDSP {
+namespace SonusDSP {
 
 namespace {
 
@@ -233,11 +233,11 @@ ClaviaHeaderInfo BankLoader::inspectClaviaHeader(const std::string& filePath) {
             }
         }
 
-        if (info.signature == "npno") info.formatCategory = "Nord Piano v" + info.versionStr;
+        if (info.signature == "npno") info.formatCategory = "Piano NPNO v" + info.versionStr;
         else if (info.signature == "nsmp" || info.signature == "nsm3" || info.signature == "nsm4")
-            info.formatCategory = "Nord Sample (" + info.signature + ")";
+            info.formatCategory = "Sample NSMP (" + info.signature + ")";
         else
-            info.formatCategory = "Nord (" + info.signature + ")";
+            info.formatCategory = "Sample (" + info.signature + ")";
     }
     return info;
 }
@@ -454,7 +454,7 @@ bool BankLoader::loadNpnoNativeImpl(const std::string& filePath, PianoInstrument
     if (!hdr.variant.empty()) outInstrument.name += " [" + hdr.variant + "]";
     outInstrument.variant = hdr.variant;
     outInstrument.version = hdr.versionStr;
-    outInstrument.formatType = hdr.formatCategory.empty() ? "NORD PIANO (.npno)" : hdr.formatCategory;
+    outInstrument.formatType = hdr.formatCategory.empty() ? "PIANO NPNO (.npno)" : hdr.formatCategory;
     outInstrument.sourcePath = filePath;
     outInstrument.isV6 = (version >= CNSP_V6);
     outInstrument.channels = channels;
@@ -638,7 +638,7 @@ bool BankLoader::loadNpnoNativeImpl(const std::string& filePath, PianoInstrument
                 s.hikey = std::min(127, s.actualRootMidi + 1);
             }
 
-            // Calcular el rango equivalente lovel..hivel según la curva de atenuación de Nord
+            // Calcular el rango equivalente lovel..hivel según la curva de atenuación del formato
             int softIdx = totalL - 1 - lIdx;
             s.lovel = (softIdx == 0) ? 1 : (softIdx * 127) / totalL + 1;
             s.hivel = (softIdx == totalL - 1) ? 127 : ((softIdx + 1) * 127) / totalL;
@@ -1099,7 +1099,7 @@ bool BankLoader::loadClaviaProgramPreset(const std::string& filePath, PianoInstr
     p.attackSec = 0.001f + std::pow(bAtk / 255.0f, 2.5f) * 1.2f;
     p.releaseSec = 0.10f + (bRel / 255.0f) * 1.8f;
 
-    outStatusMsg = "Preset Nord aplicado: " + hdr.displayName + " sobre el instrumento actual.";
+    outStatusMsg = "Preset de piano aplicado: " + hdr.displayName + " sobre el instrumento actual.";
     return true;
 }
 
@@ -1360,7 +1360,7 @@ bool BankLoader::loadAny(const std::string& pathStr, PianoInstrument& outInstrum
 
     if (fs::is_directory(p)) {
         if (loadFromDirectory(p.string(), outInstrument)) {
-            outStatusMsg = "Piano Nord activo: " + outInstrument.name +
+            outStatusMsg = "Piano activo: " + outInstrument.name +
                            " (" + std::to_string(outInstrument.strokes.size()) + " muestras PCM)";
             return true;
         }
@@ -1497,4 +1497,4 @@ std::vector<LibraryEntry> BankLoader::scanLibraryDirectory(const std::string& ro
     return entries;
 }
 
-} // namespace NordDSP
+} // namespace SonusDSP

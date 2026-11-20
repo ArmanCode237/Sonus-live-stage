@@ -11,6 +11,7 @@ import { Btn, Empty, Lcd, Panel, ParamSegmented, ParamToggle, Row } from '../../
 import { Drawbar } from '../shared/Drawbar';
 import { DirtyTag } from '../../ui/DirtyTag';
 import { ModuleTabs } from '../shared/ModuleTabs';
+import { OrganSoundBrowser } from '../../browser/ModuleBrowsers';
 
 function DrawbarPresets() {
   const setAll = (values: number[]) => values.forEach((v, i) => engine.set(`drawbar${i}`, v / 8));
@@ -28,9 +29,12 @@ function DrawbarPresets() {
 function ModelPanel() {
   const model = useEngine(s => s?.params?.organModel ?? 0);
   const [factory, setFactory] = useState<{ factoryId: number; name: string }[]>([]);
+  const [browsing, setBrowsing] = useState(false);
   useEffect(() => { api.organFactory().then(setFactory).catch(() => {}); }, []);
   return (
-    <Panel title="ORGAN" power={{ id: 'organEnabled', label: 'Organ' }} className="panel--module organ-model" actions={<DirtyTag module={2} />}>
+    <Panel title="ORGAN" power={{ id: 'organEnabled', label: 'Organ' }} className="panel--module organ-model"
+      actions={<><DirtyTag module={2} /><Btn small variant="browse" onClick={() => setBrowsing(true)} title="Buscar y organizar presets de fábrica y de usuario">BROWSER</Btn></>}>
+      {browsing && <OrganSoundBrowser onClose={() => setBrowsing(false)} />}
       <Lcd className="patch-lcd">
         <div className="patch-lcd__top"><span>MODEL {String(Math.round(model) + 1).padStart(2, '0')} / {ORGAN_MODELS.length}</span></div>
         <div className="patch-lcd__name">{ORGAN_MODELS[Math.round(model)] ?? '—'}</div>

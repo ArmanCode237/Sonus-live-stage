@@ -10,7 +10,7 @@
 #include "app/routes/RouteCommon.h"
 #include "app/StateHub.h"
 
-using namespace NordDSP;
+using namespace SonusDSP;
 
 void StageApp::registerRealtimeRoutes() {
     svr.WebSocket("/ws", [this](const httplib::Request&, httplib::ws::WebSocket& ws) {

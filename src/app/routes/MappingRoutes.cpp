@@ -11,7 +11,7 @@
 //     inject {midi:{type,channel,number,value}} | {osc:{address,value}}   virtual input (tests, on-screen pads)
 #include "app/routes/RouteCommon.h"
 
-using namespace NordDSP;
+using namespace SonusDSP;
 
 namespace {
 json mappingState(ControlMappings& m, MidiOscMapper& osc) {
@@ -99,7 +99,7 @@ void StageApp::registerMappingRoutes() {
                 if (number < 0 || number > 127) return fail(400, "Mensaje MIDI inválido");
                 // Same order as the MIDI callback: the wheel always reaches the modules.
                 if (kind == MidiKind::CC && number == 1) engine.setModWheel(value / 127.f);
-                m.handleMidi(kind, channel, number, value);
+                m.handleMidi(kind, channel, number, value, std::clamp(v.value("src", 0), 0, 15));   // v33: simulated keyboard
             } else if (b.contains("osc") && b["osc"].is_object()) {
                 const auto& v = b["osc"];
                 m.handleOsc(v.value("address", std::string{}), v.value("value", 0.f));

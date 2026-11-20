@@ -4,7 +4,7 @@
 #include <iostream>
 #include <iterator>
 
-using namespace NordDSP;
+using namespace SonusDSP;
 
 // Reject DNS-rebinding (Host must be loopback or a literal IP) and
 // cross-site requests from browser pages (Origin must match Host).
@@ -27,10 +27,29 @@ void StageApp::installHttpGuard() {
         };
         const auto rawHost=req.get_header_value("Host");
         const auto host=hostOnly(rawHost);
-        if(!isLoopback(host)&&!(httpLanAccess&&isIpLiteral(host)))return deny();
+        if(!isLoopback(host)&&!(lanActive&&isIpLiteral(host)))return deny();
         if(req.has_header("Origin")){
             const auto origin=req.get_header_value("Origin");
             if(origin!="http://"+rawHost)return deny();
+        }
+        // v32.4: with web access off, only the native window (session token) may connect.
+        if(!webAllowed()){
+            // v33: one cookie per port. Cookies ignore the port, so the app (8080) and several
+            // plug-in instances on 127.0.0.1 would otherwise overwrite each other's session.
+            const std::string cookieName="ls_session_"+std::to_string(servicePort_);
+            const std::string cookie=req.get_header_value("Cookie");
+            bool ok=cookie.find(cookieName+"="+sessionToken)!=std::string::npos;
+            if(!ok && req.has_param("k") && req.get_param_value("k")==sessionToken){
+                ok=true;
+                res.set_header("Set-Cookie",cookieName+"="+sessionToken+"; Path=/; HttpOnly; SameSite=Strict");
+            }
+            if(!ok){
+                res.status=403;
+                res.set_content("<!doctype html><meta charset=utf-8><title>Live Stage</title><body style=\"font:16px system-ui;background:#111;color:#ddd;padding:40px\">"
+                                "<h2>Acceso desde el navegador desactivado</h2><p>Abre Live Stage desde su ventana, o activa "
+                                "<b>SETTINGS &rarr; SYSTEM &rarr; ACCESO WEB</b> para usarlo en un navegador.</p>","text/html; charset=utf-8");
+                return httplib::Server::HandlerResponse::Handled;
+            }
         }
         // Page routes of the React console (ui/app). Handled here because
         // httplib serves the "/" file mount before regular GET handlers.

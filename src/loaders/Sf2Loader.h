@@ -1,9 +1,9 @@
 #pragma once
-#include "../core/NordTypes.h"
+#include "../core/StageTypes.h"
 #include <string>
 #include <vector>
 
-namespace NordDSP {
+namespace SonusDSP {
 // Importa muestras PCM16 de SoundFont 2.x; selector preset opcional (índice phdr).
 class Sf2Loader {
 public:

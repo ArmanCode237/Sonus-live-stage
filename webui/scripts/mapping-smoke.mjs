@@ -1,4 +1,4 @@
-// MIDI / OSC mapping end-to-end check (v31) against a running NordVirtualStage.
+// MIDI / OSC mapping end-to-end check (v31) against a running SonusLiveStage.
 // Virtual MIDI goes through POST /api/mappings {op:"inject"}, i.e. the same code path
 // as the MIDI callback. Uses CC 102-106 on channel 16 and a temporary synth preset;
 // everything created is removed at the end. Programs are never stored.

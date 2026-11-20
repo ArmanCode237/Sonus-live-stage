@@ -1,7 +1,7 @@
 // Generated from the former monolithic main.cpp: route bodies are unchanged.
 #include "app/routes/RouteCommon.h"
 
-using namespace NordDSP;
+using namespace SonusDSP;
 
 // Apply all new expression fields together. Used by raw bank reset, legacy
 // module presets, per-layer Sounds and automatic Sound recall.
@@ -144,7 +144,9 @@ json StageApp::modulePatch(int module){
     const std::vector<std::string> fields=module==0?
         std::vector<std::string>{"pianoEnabled","pianoVolume","pianoPan","pianoTune","pianoLayers","pianoSampleConfig","pianoZone","pianoLayerZones","fxSends"}:
         module==1?
-        std::vector<std::string>{"synthEnabled","synthPresetId","synthMasterVol","synthPan","synthTune","synthMacroCutoff","synthWheelGlobalCutoff","synthWheelGlobalAmpDb","synthVoiceMaster","synthVoiceMode","synthPortamentoEnabled","synthPortamento","synthGlideMode","synthSlide","synthZone","synthFx","synthFxSends"}:
+        std::vector<std::string>{"synthEnabled","synthPresetId","synthMasterVol","synthPan","synthTune","synthMacroCutoff","synthWheelGlobalCutoff","synthWheelGlobalAmpDb","synthOutGainDb","synthVoiceMaster","synthVoiceMode","synthPortamentoEnabled","synthPortamento","synthGlideMode","synthSlide","synthZone","synthFx","synthFxSends",
+                                 // v32.4: user / edited presets keep their modulation, macros and sequencer globals
+                                 "modMatrix","synthMacros","synthSeqGlobalClock","synthSeqSharePattern"}:
         std::vector<std::string>{"organEnabled","organVolume","organPan","organTune","organZone","organFx","organFxSends"};
     for(const auto& key:fields)if(all.contains(key))patch[key]=all[key];
     patch["studioRack"]=all["studioRacks"][module];
@@ -197,6 +199,8 @@ bool StageApp::restoreModulePatch(int module,const json& patch){
             engine.setPianoLayerVolume(layer,p.pianoLayerVolume[layer]);
             engine.setPianoZone(layer,false,p.pianoLayerZones[layer].low);
             engine.setPianoZone(layer,true,p.pianoLayerZones[layer].high);
+            engine.setPianoLayerOctave(layer,p.pianoLayerZones[layer].octave);
+            engine.setPianoLayerSemi(layer,p.pianoLayerZones[layer].transpose);
             const auto& c=p.pianoLayerSample[layer];
             const float v[10]={c.attackSec,c.decaySec,c.sustainLevel,c.releaseSec,c.loopHold,
                 c.pan,c.fineTuneCents,c.cutoffHz,c.resonanceQ,c.gainDb};

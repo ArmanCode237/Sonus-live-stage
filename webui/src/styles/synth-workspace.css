@@ -31,15 +31,15 @@
   border: 1px solid var(--line); border-radius: 8px; background: var(--inset); transition: border-color .15s, background .15s; }
 .layer-tab.is-active { border-color: var(--cyan); background: color-mix(in srgb, var(--cyan) 9%, var(--inset));
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--cyan) 30%, transparent) inset; }
-.layer-tab__main { flex: 1 1 auto; min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto 3px;
+.layer-tab__main { flex: 1 1 auto; min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto 5px;
   column-gap: 8px; row-gap: 4px; align-items: center; padding: 5px 4px; background: none; border: 0; color: inherit; cursor: pointer; text-align: left; }
 .layer-tab__letter { grid-row: 1 / span 2; font: 800 20px/1 var(--display, var(--font)); color: var(--label); }
 .layer-tab.is-active .layer-tab__letter { color: var(--cyan); }
 .layer-tab__info { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; min-width: 0; }
 .layer-tab__engine { min-width: 0; font: 800 10px/1.2 var(--font); letter-spacing: .06em; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .layer-tab__range { flex: none; font: 600 10px/1 var(--mono); color: var(--muted); }
-.layer-tab__level { display: block; height: 3px; border-radius: 2px; background: #0007; overflow: hidden; }
-.layer-tab__level > span { display: block; height: 100%; background: var(--cyan); border-radius: 2px; transition: width .2s; }
+.layer-tab__gain { flex: none; margin-left: auto; padding: 1px 4px; font: 700 9px/1 var(--mono); color: var(--amber, #ffb02e); border: 1px solid color-mix(in srgb, var(--amber, #ffb02e) 45%, transparent); border-radius: 3px; }
+.layer-tab__level { display: flex; height: 5px; }
 .layer-tabs .layer-tools { flex: none; align-items: center; margin-left: 4px; }
 
 /* ---------- modulation rail ---------- */
@@ -66,9 +66,9 @@
 /* ---------- editor ---------- */
 .synth-editor { grid-area: editor; display: grid; grid-template-rows: auto auto minmax(132px, 1fr); gap: 8px; min-width: 0; min-height: 0; }
 .synth-editor__row { min-width: 0; }
-.synth-editor__row--engine > .editor-grid { grid-template-columns: minmax(0, .95fr) minmax(0, 1.2fr) minmax(0, .95fr); gap: 8px; align-items: stretch; }
+.synth-editor__row--engine > .editor-grid { grid-template-columns: minmax(250px, 1fr) max-content max-content; gap: 8px; align-items: stretch; }
 .synth-editor__row--engine > .editor-grid:has(> :nth-child(2):last-child) { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); }
-.synth-editor__row--engine > .editor-grid:has(> :nth-child(4)) { grid-template-columns: minmax(0, .9fr) minmax(0, .6fr) minmax(0, 1.1fr) minmax(0, 1.1fr); }
+.synth-editor__row--engine > .editor-grid:has(> :nth-child(4)) { grid-template-columns: minmax(230px, 1fr) minmax(110px, .45fr) max-content max-content; }
 /* DX7 / MT-32 in the engine row: compact (the full browser lives in the library overlay) */
 .synth-editor__row--engine .group--wide { grid-column: auto; }
 .synth-editor__row--engine .dx7 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); align-items: center; gap: 6px 8px; }
@@ -79,25 +79,51 @@
 .synth-editor__row--engine .dx7 .dx7__voices { max-height: 58px; overflow: auto; scrollbar-width: thin; }
 .synth-editor__row--engine .dx7 .mt32__missing { max-height: 74px; overflow: auto; }
 .synth-editor__row--shape { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) minmax(0, 1fr); gap: 8px; align-items: stretch; }
-.synth-editor .group { gap: 6px; padding: 8px 10px; }
+.synth-editor .group { gap: 6px; padding: 8px 10px; min-inline-size: 0; min-width: 0; }
 .synth-editor .group > legend { padding: 0 4px; }
 .synth-editor .knobs { gap: 6px 10px; }
 .synth-editor .env-graph { max-width: none; height: 44px; margin: 0; }
 
-/* engine card: selects side by side, LEVEL / PAN at the end of the row, screen below */
-.synth-editor .engine-card { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: end; gap: 6px 8px; }
-.engine-card > .field { min-width: 0; }
-.engine-card > .field:first-of-type:nth-last-child(3) { grid-column: 1 / 3; }
-.engine-card > .hint, .engine-card > .synth-screen, .engine-card > .segmented { grid-column: 1 / -1; }
-.engine-card > .engine-card__level { grid-column: 3; grid-row: 1; flex-wrap: nowrap; gap: 4px 6px; }
-.engine-card > .synth-screen { order: 10; }
+/* engine card: selects stacked (their values speak for themselves), screen beside them,
+   output knobs at the end when the engine has no MIXER card */
+.synth-editor .engine-card { display: grid; grid-template-columns: minmax(100px, 1fr) minmax(110px, 1.15fr); grid-auto-rows: auto; align-items: center; gap: 4px 8px; }
+.synth-editor .engine-card:has(> .out-knobs) { grid-template-columns: minmax(100px, 1fr) minmax(110px, 1.15fr) auto; }
+.engine-card > .field { grid-column: 1; min-width: 0; }
+.engine-card > .field select { font-size: 11px; padding-inline: 6px 2px; letter-spacing: 0; }
+.engine-card > .field > .field__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.engine-card > .synth-screen { grid-column: 2; grid-row: 1 / span 2; align-self: stretch; }
+.engine-card > .synth-screen .synth-screen__svg { flex: 1 1 0; height: 0; min-height: 50px; }
+.engine-card > .out-knobs { grid-column: 3; grid-row: 1 / span 2; }
+.engine-card > .hint { grid-column: 1 / -1; margin: 0; font-size: 10px; }
+
+/* mixer + output: one row of knobs, the card is as wide as its knobs */
+.synth-editor .mixer-card .knobs { flex-wrap: nowrap; }
+.knobs__sep { align-self: stretch; width: 1px; margin: 0 2px; background: var(--line); }
+.out-knobs { flex-wrap: nowrap; }
+.mixer-card .out-knobs { display: contents; }
+/* OSC 2: waveform buttons on the same line as the knobs when there is room */
+.synth-editor .osc2-card { flex-direction: row; flex-wrap: nowrap; align-items: center; }
+.synth-editor .osc2-card > .segmented { flex: none; flex-direction: column; gap: 3px; }
+.synth-editor .osc2-card > .knobs { flex: 1 1 auto; flex-wrap: nowrap; }
+.synth-editor__row--engine .knobs { gap: 4px 6px; }
+/* filter: response screen with the type grid beside it, knobs below */
+.synth-editor .filter-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: stretch; gap: 6px 8px; }
+.filter-card > .synth-screen .synth-screen__svg { flex: 1 1 0; height: 0; min-height: 50px; }
+.filter-card > .segmented { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; align-content: center; }
+.filter-card > .knobs { grid-column: 1 / -1; }
+.filter-card > .segmented .segmented__item { min-height: 22px; padding: 0 8px; font-size: 9px; }
+.filter-card > .knobs { align-items: flex-end; }
+/* envelopes: the graph takes whatever height the row leaves */
+.synth-editor .env-card > .env-graph { flex: 1 1 0; height: 0; min-height: 34px; }
+.env-graph path, .env-graph line { vector-effect: non-scaling-stroke; }
 
 /* ---------- OLED screens ---------- */
-.synth-screen { display: flex; flex-direction: column; min-width: 0; border-radius: 5px; border: 1px solid #192426; background: var(--oled-glass, #05090a); overflow: hidden; }
+.synth-screen { position: relative; display: flex; flex-direction: column; min-width: 0; border-radius: 5px; border: 1px solid #192426; background: var(--oled-glass, #05090a); overflow: hidden; }
 .synth-screen__bar { display: flex; justify-content: space-between; gap: 8px; padding: 3px 7px; font: 700 9px/1.2 var(--mono); letter-spacing: .1em;
-  color: color-mix(in srgb, var(--oled-text, #7df9e0) 70%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--oled-text, #7df9e0) 14%, transparent); }
+  color: color-mix(in srgb, var(--oled-text, #7df9e0) 70%, transparent); position: absolute; inset: 0 0 auto 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--oled-glass, #05090a) 85%, transparent), transparent); }
 .synth-screen__bar > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.synth-screen__svg { display: block; width: 100%; height: 52px; }
+.synth-screen__svg { display: block; width: 100%; height: 60px; }
 .synth-screen__axis { stroke: color-mix(in srgb, var(--oled-text, #7df9e0) 12%, transparent); stroke-dasharray: 2 3; }
 .synth-screen__line { fill: none; stroke: var(--oled-text, #7df9e0); stroke-width: 1.5; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 2px var(--oled-text, #7df9e0)); }
 .synth-screen__fill { fill: color-mix(in srgb, var(--oled-text, #7df9e0) 12%, transparent); }
@@ -108,7 +134,32 @@
 
 /* ---------- bottom deck ---------- */
 .synth-deck { display: flex; flex-direction: column; min-height: 0; border: 1px solid var(--line); border-radius: 10px; background: var(--inset); overflow: hidden; }
-.synth-deck__tabs { padding: 5px 8px 0; margin: 0; }
+.synth-deck__tabs { padding: 5px 8px 0; margin: 0; align-items: center; }
+.synth-deck__expand { margin-left: auto; padding: 4px 9px; font: 800 9px/1 var(--font); letter-spacing: .12em; color: var(--label);
+  background: var(--surface-1); border: 1px solid var(--line); border-radius: 5px; cursor: pointer; }
+.synth-deck__expand:hover, .synth-deck__expand.is-on { color: #fff; border-color: var(--cyan); }
+.synth-editor.is-deck-expanded { grid-template-rows: auto minmax(0, 1fr); }
+.synth-editor.is-deck-expanded > .synth-editor__row--shape { display: none; }
+/* INSERTS: layer EQ in one row above the six effect units */
+.synth-inserts { display: flex; flex-direction: column; gap: 6px; }
+.synth-eq { flex-direction: row; flex-wrap: wrap; align-items: stretch; gap: 6px 14px; padding: 6px 10px; min-inline-size: 0; }
+.synth-eq__screen { flex: 1 1 220px; min-width: 200px; max-width: 360px; margin: 0; }
+.synth-eq__screen .eq-screen__canvas { height: 76px; }
+.synth-eq__cut, .synth-eq__band { display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 4px; }
+.synth-eq__cut:first-of-type { justify-content: center; }
+.synth-eq__band { padding: 0 0 0 12px; border-left: 1px solid var(--line); }
+.synth-eq__title { font: 800 8px/1 var(--font); letter-spacing: .14em; color: var(--label); white-space: nowrap; }
+.synth-eq .segmented__item { min-height: 20px; padding: 0 6px; font-size: 9px; }
+.synth-eq .knobs { flex-wrap: nowrap; gap: 4px 6px; }
+.synth-deck .inserts { grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(0, 1.3fr) minmax(0, 1.15fr); gap: 6px; }
+.synth-deck .inserts > .group { padding: 6px 8px; gap: 4px; }
+.synth-deck .inserts .knobs { gap: 4px 6px; flex-wrap: wrap; justify-content: space-between; }
+.synth-deck .inserts .knob--sm { min-width: 0; }
+.synth-deck .inserts .knobs { flex-wrap: nowrap; gap: 2px; }
+.synth-deck .inserts .knob__value { min-width: 0; padding-inline: 3px; font-size: 9px; }
+.synth-deck .inserts .knob__label { font-size: 8px; letter-spacing: .04em; }
+.synth-deck .inserts .row { gap: 6px; flex-wrap: nowrap; align-items: center; }
+.synth-deck .inserts .row .field__label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .synth-deck__body { flex: 1 1 auto; min-height: 0; overflow: auto; scrollbar-gutter: stable; padding: 8px; }
 .synth-deck__body > .editor-grid, .synth-deck__body > .deck-row { gap: 8px; }
 .deck-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px; align-items: start; }
@@ -132,6 +183,14 @@
   .patch-bar__knobs { gap: 4px 6px; }
   .patch-bar__lcd { flex-basis: 260px; }
 }
+@media (max-width: 1400px) {
+  .synth-editor__row--engine > .editor-grid { grid-template-columns: minmax(200px, .72fr) max-content minmax(0, 1fr); }
+  .synth-editor .mixer-card .knobs { gap: 4px; }
+  .synth-editor__row--engine > .editor-grid:has(> :nth-child(4)) { grid-template-columns: minmax(170px, .6fr) minmax(110px, .4fr) max-content minmax(0, 1fr); }
+  .synth-editor .osc2-card { flex-wrap: wrap; align-content: center; }
+  .synth-editor .osc2-card > .segmented { flex-direction: row; }
+  .synth-editor .osc2-card > .knobs { flex-wrap: wrap; }
+}
 @media (max-width: 1280px) {
   .synth-workspace { grid-template-columns: 128px minmax(0, 1fr); }
   .synth-editor__row--shape { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr); }
@@ -147,13 +206,11 @@
   .lfo-deck__controls { flex-direction: row; flex-wrap: wrap; align-items: flex-end; gap: 4px 10px; }
   .lfo-deck__controls > .row { flex-wrap: nowrap; }
   .lfo-deck .hint { display: none; }
-  .synth-screen__svg { height: 40px; }
-  .synth-editor .env-graph { height: 34px; }
+  .synth-screen__svg { height: 50px; }
 }
 @media (max-height: 760px) {
   .synth-editor { grid-template-rows: auto auto minmax(108px, 1fr); }
-  .synth-screen__svg { height: 30px; }
-  .synth-editor .env-graph { height: 28px; }
+  .synth-screen__svg { height: 44px; }
   .patch-bar .knob__value { display: none; }
   .synth-editor .group { padding: 6px 9px; gap: 4px; }
 }

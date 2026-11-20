@@ -72,7 +72,7 @@ export const optionValue = (index: number, count: number): number => (index + 0.
 
 export const reverbModel = (slot: StudioSlot): number => optionIndex(slot.params[5] ?? 0, 4);
 
-// Room / Plate / Hall v2: diffusion, decay and stereo width (NordSlotFxRack.h).
+// Room / Plate / Hall v2: diffusion, decay and stereo width (StageSlotFxRack.h).
 const REVERB_V2_EXTRAS: readonly ControlDef[] = [[6, 'DIFFUSION', '%'], [7, 'DECAY', '%'], [8, 'WIDTH', '%']];
 // Shimmer v3+: dual pitch-shifter voice (setMultiPitch); v4 adds BLOOM.
 const SHIMMER_V3_EXTRAS: readonly ControlDef[] = [
@@ -81,7 +81,7 @@ const SHIMMER_V3_EXTRAS: readonly ControlDef[] = [
 ];
 const SHIMMER_V4_EXTRAS: readonly ControlDef[] = [[22, 'BLOOM', '%']];
 
-/** Shimmer Atmosphere v4 (NordAtmosphericShimmer) needs slot version 4. */
+/** Shimmer Atmosphere v4 (StageAtmosphericShimmer) needs slot version 4. */
 export const SHIMMER_ATMOSPHERE_VERSION = 4;
 export const SHIMMER_FREEZE_PARAM = 23;
 export const isShimmer = (slot: StudioSlot): boolean => slot.type === 6 && reverbModel(slot) === 3;
@@ -154,7 +154,7 @@ export function slotValueText(value: number, unit: string, type: number, param: 
   }
   if (type === 6) {
     // Units decide: p6–p8 are pitch/decay/low-cut on Shimmer but diffusion/
-    // decay/width on Room, Plate and Hall. Formulas match NordSlotFxRack.h.
+    // decay/width on Room, Plate and Hall. Formulas match StageSlotFxRack.h.
     if (unit === 'st' && param === 6) return `${((version >= 3 ? -24 : -12) + (version >= 3 ? 48 : 24) * value).toFixed(1)} st`;
     if (unit === 'st' && param === 16) return `${(-24 + 48 * value).toFixed(1)} st`;
     if (unit === 'ms' && param === 18) return `${Math.round(65 + 140 * value)} ms`;

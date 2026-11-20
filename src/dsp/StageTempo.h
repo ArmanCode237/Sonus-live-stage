@@ -2,7 +2,7 @@
 // SONUS master tempo: an index is persisted, not an absolute millisecond delay.
 // Audio-thread safe (no allocations or locks), all divisions relative to quarter-note beats.
 #include <algorithm>
-namespace NordDSP {
+namespace SonusDSP {
 constexpr int TEMPO_DIVISION_COUNT=16;
 inline float noteBeats(int index) noexcept {
     constexpr float beats[TEMPO_DIVISION_COUNT]={4.f,6.f,3.f,2.f,4.f/3.f,1.f,1.5f,0.5f,

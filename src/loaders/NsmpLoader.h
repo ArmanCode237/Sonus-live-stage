@@ -1,8 +1,8 @@
 #pragma once
-#include "NordTypes.h"
+#include "StageTypes.h"
 #include <string>
 
-namespace NordDSP {
+namespace SonusDSP {
 
 class NsmpLoader {
 public:
@@ -10,4 +10,4 @@ public:
     static bool loadNsmpFallback(const std::string& filePath, PianoInstrument& outInstrument, std::string& outStatusMsg);
 };
 
-} // namespace NordDSP
+} // namespace SonusDSP

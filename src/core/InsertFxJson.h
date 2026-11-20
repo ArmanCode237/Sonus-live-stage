@@ -2,11 +2,11 @@
 // JSON for a per-layer insert chain (synth layers and piano layers). Shared by every
 // serializer so the six units and their fields are written and read in one place.
 // Older files with five units (no reverb) load unchanged: the reverb stays off.
-#include "NordTypes.h"
+#include "StageTypes.h"
 #include <nlohmann/json.hpp>
 #include <algorithm>
 
-namespace NordDSP {
+namespace SonusDSP {
 
 inline nlohmann::json insertFxToJson(const InsertFxChain& chain) {
     nlohmann::json arr = nlohmann::json::array();
@@ -38,4 +38,4 @@ inline void insertFxFromJson(const nlohmann::json& arr, InsertFxChain& chain) {
     }
 }
 
-} // namespace NordDSP
+} // namespace SonusDSP

@@ -4,7 +4,7 @@
 #include <filesystem>
 #include <string>
 
-namespace NordDSP {}
-using namespace NordDSP;
+namespace SonusDSP {}
+using namespace SonusDSP;
 using json = nlohmann::json;
 namespace fs = std::filesystem;

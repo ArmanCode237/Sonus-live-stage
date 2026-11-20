@@ -57,7 +57,7 @@ public:
             else if(message.isNoteOff())instrument.noteOff(message.getNoteNumber());
             else if(message.isController()){
                 const int cc=message.getControllerNumber(),value=message.getControllerValue();
-                if(!instrument.getMappings().handleMidi(NordDSP::MidiKind::CC,message.getChannel(),cc,value)){
+                if(!instrument.getMappings().handleMidi(SonusDSP::MidiKind::CC,message.getChannel(),cc,value)){
                     if(cc==1)instrument.setModWheel(float(value)/127.f);
                     if(cc==64)instrument.setSustainPedal(value>=64);
                     if(cc==121){instrument.setModWheel(0);instrument.setPitchBend(0);}
@@ -84,7 +84,7 @@ public:
         if(size>=4)setCurrentProgram(stream.readInt());
     }
 private:
-    NordDSP::WorkstationHost instrument;
+    SonusDSP::WorkstationHost instrument;
     std::vector<float> interleaved;
     int currentPreset=0;
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(LiveStageInstrumentProcessor)

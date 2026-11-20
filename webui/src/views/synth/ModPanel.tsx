@@ -134,7 +134,7 @@ export function EnvGraph({ ids, label }: { ids: [string, string, string, string]
   const x1 = px(t(a)), x2 = px(t(a) + t(d)), x3 = px(t(a) + t(d) + hold), x4 = px(total);
   const path = `M${px(0)} ${py(0)}L${x1} ${py(1)}L${x2} ${py(s)}L${x3} ${py(s)}L${x4} ${py(0)}`;
   return (
-    <svg className="env-graph" viewBox={`0 0 ${w} ${h}`} role="img" aria-label={`${label}: A ${a.toFixed(2)} s, D ${d.toFixed(2)} s, S ${(s * 100).toFixed(0)} %, R ${r.toFixed(2)} s`}>
+    <svg className="env-graph" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" role="img" aria-label={`${label}: A ${a.toFixed(2)} s, D ${d.toFixed(2)} s, S ${(s * 100).toFixed(0)} %, R ${r.toFixed(2)} s`}>
       <path className="env-graph__fill" d={`${path}Z`} />
       <path className="env-graph__line" d={path} />
       {[x1, x2, x3].map((x, i) => <line key={i} className="env-graph__mark" x1={x} x2={x} y1={4} y2={h - 4} />)}

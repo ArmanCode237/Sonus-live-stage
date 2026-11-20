@@ -17,17 +17,18 @@ export interface ParamSpec {
 }
 
 const UNIT_RULES: [RegExp, Unit][] = [
+  [/_eq(Hp|Lp)Slope$/, 'int'],                       // v32.4 synth layer EQ slopes (12 / 24 / 48)
   [/(Enabled|On|^en$|_en$|_on$|Mono|Legato|Invert|Sync$|_sync$|PingPong|TempoSync|softRelease|Fast$|VoiceMaster|_seqOn$)/, 'bool'],
   [/(Bpm|bpm)$/, 'bpm'],
   [/(Pan|pan|_pan|lfoPan)$/, 'pan'],
   [/(Tune|tune|Cents|_det|osc2Det|Detune|uniDet|wheelVibrato$|WheelVibratoDepth)$/, 'ct'],
   [/(semi|Semi|Trans|transpose|ShiftSt|slide|Slide|keyTrans)$/, 'st'],
   [/(oct|octave|WheelCutoff|wheelCutoff|synthWheelGlobalCutoff)$/, 'oct'],
-  [/(Db|dB|Gain\d?$|EqG\d|WheelAmp$|wheelAmp$|GlobalAmpDb|Gain$)/, 'dB'],
+  [/(Db|dB|Gain\d?$|EqG\d|WheelAmp$|wheelAmp$|GlobalAmpDb|Gain$|^L\d_gain$|_eqG\d$)/, 'dB'],
   [/(Hz|Freq\d?$|cutoff|Cut$|_cut$|lowCut|highCut|hpf|EqHP|EqLP|EqF\d|Eq1$|Eq2$|Tone$|Rate\d?$|rate$|_rate|RateHz|VibRate|pwmRate|lfoRate|chorusTone|VibratoRate)/i, 'Hz'],
   [/(Ms|_time$|Time$|DelayTime|delayTimeMs|PreDelay|_predelay)$/, 'ms'],
   [/(Sec$|attack|decay|release|Atk$|Dec$|Rel$|trDecay|lfoDelay|lfoFade|_atk$|_dec$|_rel$|fAtk|fDec|fRel|PortTime|portamento$|Portamento$)/, 's'],
-  [/(Res$|_res$|resonance|EqQ\d|^eqQ\d|fmRatio|fmIndex|op\dRatio|Q$)/, 'x'],
+  [/(Res$|_res$|resonance|EqQ\d|^eqQ\d|_eqQ\d$|fmRatio|fmIndex|op\dRatio|Q$)/, 'x'],
   [/(Type|Mode|Wave|wave|Model|Algo|Harmonic|Division|division|Voices|voices|unison|wtIdx|Steps|maxVoices|touch|Low$|High$|keyLow|keyHigh|seqStep\d+|lfoPitch|lfoCutoff|synthLfoPitch|synthLfoCutoff|synthPresetId)$/, 'int'],
 ];
 const LINEAR_HZ = /(lfoRate|Rate|rate|VibRate|pwmRate|VibratoRate)/;
