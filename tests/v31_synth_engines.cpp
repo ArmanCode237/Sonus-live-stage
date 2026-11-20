@@ -3,20 +3,20 @@
 // v31 synth module regression: contour timing, independent filter envelope,
 // 24 dB filters, band-limited sync, FM4, LA hybrid, attack transients,
 // LFO S&H / delay / key sync, 48-table bank and JSON round trip of the new fields.
-#include "../src/modules/NordSynthModule.h"
+#include "../src/modules/StageSynthModule.h"
 #include "../src/core/SynthLayerExtras.h"
 #include <cassert>
 #include <cmath>
 #include <complex>
 #include <cstdio>
 #include <vector>
-using namespace NordDSP;
+using namespace SonusDSP;
 
 namespace {
 constexpr float SR = 48000.f;
 constexpr double PI = 3.14159265358979323846;
 
-void solo(NordSynthModule& s, SynthLayerConfig c) {
+void solo(StageSynthModule& s, SynthLayerConfig c) {
     for (auto& l : s.layers) { l.cfg = SynthLayerConfig{}; l.cfg.enabled = false; l.reset(); }
     for (auto& f : c.insertFx) f.enabled = false;
     c.enabled = true;
@@ -31,7 +31,7 @@ SynthLayerConfig neutral(int wave) {
     c.wheelMode = 3; c.noiseLevel = 0; c.unisonVoices = 1;
     return c;
 }
-std::vector<float> render(NordSynthModule& s, int frames) {
+std::vector<float> render(StageSynthModule& s, int frames) {
     std::vector<float> st(size_t(frames) * 2, 0.f);
     std::vector<float> mono(static_cast<size_t>(frames));
     for (int off = 0; off < frames; off += 256) s.render(st.data() + size_t(off) * 2, unsigned(std::min(256, frames - off)));
@@ -56,7 +56,7 @@ bool finite(const std::vector<float>& x) { for (float v : x) if (!std::isfinite(
 }
 
 int main() {
-    NordSynthModule s; s.init(SR); s.synthEnabled = true; s.synthMasterVol = 1.f; s.voiceLimitPerLayer = 32;
+    StageSynthModule s; s.init(SR); s.synthEnabled = true; s.synthMasterVol = 1.f; s.voiceLimitPerLayer = 32;
 
     // Amp attack reaches full level at the set time (±15 %).
     {

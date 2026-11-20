@@ -26,7 +26,8 @@ json serializeParams(const SynthPresetParams& p) {
             {"keyLow",c.keyLow},{"keyHigh",c.keyHigh},{"keyTranspose",c.keyTranspose},
             {"seqEnabled",c.seqEnabled},{"seqBpm",c.seqBpm},{"seqSteps",c.seqSteps},
             {"seqGate",c.seqGate},{"seqNotes",c.seqNotes},{"seqAccent",c.seqAccent},{"seqSlide",c.seqSlide},
-            {"seqDivision",c.seqDivision},{"seqSync",c.seqSync},
+            {"seqDivision",c.seqDivision},{"seqSync",c.seqSync},{"outGainDb",c.outGainDb},
+            {"eqEnabled",c.eqEnabled},{"eqHighPass",c.eqHighPass},{"eqLowPass",c.eqLowPass},{"eqHighPassSlope",c.eqHighPassSlope},{"eqLowPassSlope",c.eqLowPassSlope},{"eqFreq",c.eqFreq},{"eqQ",c.eqQ},{"eqGain",c.eqGain},
             {"insertFx",insertFxToJson(c.insertFx)},
             {"volume", c.volume},
             {"pan", c.pan},
@@ -47,7 +48,7 @@ json serializeParams(const SynthPresetParams& p) {
             {"velToCutoff", c.velToCutoff},
             {"velToAmp", c.velToAmp},
             {"wavetableIdx", c.wavetableIdx},
-            {"samplePath", c.samplePath},
+            {"samplePath", c.samplePath.str()},
             {"filterType", c.filterType},
             {"filterEnvAmt", c.filterEnvAmt},
             {"filterKeyTrack", c.filterKeyTrack},
@@ -85,7 +86,7 @@ json serializeParams(const SynthPresetParams& p) {
         drawbarsArr.push_back(p.drawbars[d]);
     }
 
-    const auto zoneJson=[](const KeyZone& z){return json{{"low",z.low},{"high",z.high},{"transpose",z.transpose}};};
+    const auto zoneJson=[](const KeyZone& z){return json{{"low",z.low},{"high",z.high},{"transpose",z.transpose},{"octave",z.octave}};};
     const auto fxJson=[](const ModuleFxConfig& c){return json{
         {"chorusEnabled",c.chorusEnabled},{"chorusRate",c.chorusRate},{"chorusDepth",c.chorusDepth},{"chorusMix",c.chorusMix},
         {"delayEnabled",c.delayEnabled},{"delayMs",c.delayMs},{"delayFeedback",c.delayFeedback},{"delayMix",c.delayMix},
@@ -227,7 +228,7 @@ json serializeParams(const SynthPresetParams& p) {
         {"synthEnabled", p.synthEnabled},
         {"synthPresetId", p.synthPresetId},
         {"synthMasterVol", p.synthMasterVol},{"synthPan",p.synthPan},{"synthTune",p.synthTune},
-        {"synthMacroCutoff", p.synthMacroCutoff},{"synthWheelGlobalCutoff",p.synthWheelGlobalCutoff},{"synthWheelGlobalAmpDb",p.synthWheelGlobalAmpDb},
+        {"synthMacroCutoff", p.synthMacroCutoff},{"synthWheelGlobalCutoff",p.synthWheelGlobalCutoff},{"synthWheelGlobalAmpDb",p.synthWheelGlobalAmpDb},{"synthOutGainDb",p.synthOutGainDb},
         {"synthVoiceMaster",p.synthVoiceMaster},{"synthVoiceMode",p.synthVoiceMode},
         {"synthSeqGlobalClock",p.synthSeqGlobalClock},{"synthSeqSharePattern",p.synthSeqSharePattern},
         {"synthMacros",p.synthMacros},{"modMatrix",[&]{json a=json::array();for(const auto& c:p.modMatrix)a.push_back({{"source",c.source},{"target",c.target},{"amount",c.amount},{"bipolar",c.bipolar},{"curve",c.curve}});return a;}()},{"synthPortamento",p.synthPortamento},
@@ -296,8 +297,8 @@ SynthPresetParams deserializeParams(const json& j, const SynthPresetParams& fall
                     if(obj["eqQ"][i].is_number())c.eqQ[i]=std::clamp(obj["eqQ"][i].get<float>(),.3f,12.f);
             c.eqHighPass=std::clamp(obj.value("eqHighPass",c.eqHighPass),20.f,1000.f);
             c.eqLowPass=std::clamp(obj.value("eqLowPass",c.eqLowPass),1000.f,20000.f);
-            c.eqHighPassSlope=NordDSP::normalizeEqSlope(obj.value("eqHighPassSlope",12));
-            c.eqLowPassSlope=NordDSP::normalizeEqSlope(obj.value("eqLowPassSlope",12));
+            c.eqHighPassSlope=SonusDSP::normalizeEqSlope(obj.value("eqHighPassSlope",12));
+            c.eqLowPassSlope=SonusDSP::normalizeEqSlope(obj.value("eqLowPassSlope",12));
             c.eqInputDb=std::clamp(obj.value("eqInputDb",c.eqInputDb),-24.f,24.f);
             c.eqOutputDb=std::clamp(obj.value("eqOutputDb",c.eqOutputDb),-24.f,24.f);
             c.eqPosition=std::clamp(obj.value("eqPosition",c.eqPosition),0,5);
@@ -324,7 +325,8 @@ SynthPresetParams deserializeParams(const json& j, const SynthPresetParams& fall
     // Persistent keyzones and independent effect racks; old programs use defaults.
     const auto loadZone=[](const json& jz,KeyZone& z){if(!jz.is_object())return;
         z.low=std::clamp(jz.value("low",z.low),0,127);z.high=std::clamp(jz.value("high",z.high),0,127);
-        z.transpose=std::clamp(jz.value("transpose",z.transpose),-24,24);};
+        z.transpose=std::clamp(jz.value("transpose",z.transpose),-24,24);
+        z.octave=std::clamp(jz.value("octave",z.octave),-2,2);};
     if(j.contains("pianoZone"))loadZone(j["pianoZone"],p.pianoZone);
     if(j.contains("synthZone"))loadZone(j["synthZone"],p.synthZone);
     if(j.contains("organZone"))loadZone(j["organZone"],p.organZone);
@@ -444,8 +446,8 @@ SynthPresetParams deserializeParams(const json& j, const SynthPresetParams& fall
             dst.soundEqEnabled=c.value("soundEqEnabled",false);
             dst.soundEqHighPass=std::clamp(c.value("soundEqHighPass",20.f),20.f,1000.f);
             dst.soundEqLowPass=std::clamp(c.value("soundEqLowPass",20000.f),1000.f,20000.f);
-            dst.soundEqHighPassSlope=NordDSP::normalizeEqSlope(c.value("soundEqHighPassSlope",12));
-            dst.soundEqLowPassSlope=NordDSP::normalizeEqSlope(c.value("soundEqLowPassSlope",12));
+            dst.soundEqHighPassSlope=SonusDSP::normalizeEqSlope(c.value("soundEqHighPassSlope",12));
+            dst.soundEqLowPassSlope=SonusDSP::normalizeEqSlope(c.value("soundEqLowPassSlope",12));
             const auto decode3=[&](const char* key,std::array<float,3>& dstv,float lo,float hi){
                 if(c.contains(key)&&c[key].is_array())for(size_t b=0;b<std::min<size_t>(3,c[key].size());++b)
                     if(c[key][b].is_number())dstv[b]=std::clamp(c[key][b].get<float>(),lo,hi);
@@ -532,6 +534,7 @@ SynthPresetParams deserializeParams(const json& j, const SynthPresetParams& fall
     p.synthMacroCutoff  = j.value("synthMacroCutoff", p.synthMacroCutoff);
     p.synthWheelGlobalCutoff=std::clamp(j.value("synthWheelGlobalCutoff",p.synthWheelGlobalCutoff),-6.f,6.f);
     p.synthWheelGlobalAmpDb=std::clamp(j.value("synthWheelGlobalAmpDb",p.synthWheelGlobalAmpDb),-24.f,12.f);
+    p.synthOutGainDb=std::clamp(j.value("synthOutGainDb",p.synthOutGainDb),-24.f,24.f);
     p.synthVoiceMaster=j.value("synthVoiceMaster",p.synthVoiceMaster);
     p.synthVoiceMode = j.value("synthVoiceMode", p.synthVoiceMode);
     p.synthSeqGlobalClock = j.value("synthSeqGlobalClock", p.synthSeqGlobalClock);
@@ -585,6 +588,17 @@ SynthPresetParams deserializeParams(const json& j, const SynthPresetParams& fall
             c.seqGate=std::clamp(lp.value("seqGate",c.seqGate),.05f,1.f);
             c.seqDivision=std::clamp(lp.value("seqDivision",c.seqDivision),0,5);
             c.seqSync=lp.value("seqSync",c.seqSync);
+            c.outGainDb=std::clamp(lp.value("outGainDb",c.outGainDb),-24.f,24.f);
+            c.eqEnabled=lp.value("eqEnabled",c.eqEnabled);
+            c.eqHighPass=std::clamp(lp.value("eqHighPass",c.eqHighPass),20.f,1000.f);
+            c.eqLowPass=std::clamp(lp.value("eqLowPass",c.eqLowPass),1000.f,20000.f);
+            c.eqHighPassSlope=SonusDSP::normalizeEqSlope(lp.value("eqHighPassSlope",c.eqHighPassSlope));
+            c.eqLowPassSlope=SonusDSP::normalizeEqSlope(lp.value("eqLowPassSlope",c.eqLowPassSlope));
+            for(int b=0;b<3;++b){
+                if(lp.contains("eqFreq")&&lp["eqFreq"].is_array()&&b<int(lp["eqFreq"].size()))c.eqFreq[size_t(b)]=std::clamp(lp["eqFreq"][size_t(b)].get<float>(),30.f,16000.f);
+                if(lp.contains("eqQ")&&lp["eqQ"].is_array()&&b<int(lp["eqQ"].size()))c.eqQ[size_t(b)]=std::clamp(lp["eqQ"][size_t(b)].get<float>(),.3f,12.f);
+                if(lp.contains("eqGain")&&lp["eqGain"].is_array()&&b<int(lp["eqGain"].size()))c.eqGain[size_t(b)]=std::clamp(lp["eqGain"][size_t(b)].get<float>(),-15.f,15.f);
+            }
             for(const char* key:{"seqAccent","seqSlide"})
                 if(lp.contains(key)&&lp[key].is_array())
                     for(size_t k=0;k<std::min<size_t>(16,lp[key].size());++k)
@@ -615,7 +629,7 @@ SynthPresetParams deserializeParams(const json& j, const SynthPresetParams& fall
             c.velToCutoff    = lp.value("velToCutoff", c.velToCutoff);
             c.velToAmp       = lp.value("velToAmp", c.velToAmp);
             c.wavetableIdx   = lp.value("wavetableIdx", c.wavetableIdx);
-            c.samplePath     = lp.value("samplePath", c.samplePath);
+            c.samplePath     = lp.value("samplePath", c.samplePath.str());
             c.filterType     = lp.value("filterType", c.filterType);
             c.filterEnvAmt   = lp.value("filterEnvAmt", c.filterEnvAmt);
             c.filterKeyTrack = lp.value("filterKeyTrack", c.filterKeyTrack);

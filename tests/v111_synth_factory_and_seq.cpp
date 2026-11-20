@@ -1,14 +1,14 @@
-// Regression: g++ -std=c++17 -O2 -pthread -Isrc -Isrc/core -Isrc/modules -Ithird_party tests/v111_synth_factory_and_seq.cpp src/modules/NordSynthModule.cpp -o /tmp/v111_synth_factory_and_seq && /tmp/v111_synth_factory_and_seq
-#include "../src/modules/NordSynthModule.h"
+// Regression: g++ -std=c++17 -O2 -pthread -Isrc -Isrc/core -Isrc/modules -Ithird_party tests/v111_synth_factory_and_seq.cpp src/modules/StageSynthModule.cpp -o /tmp/v111_synth_factory_and_seq && /tmp/v111_synth_factory_and_seq
+#include "../src/modules/StageSynthModule.h"
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <iostream>
 #include <vector>
-using namespace NordDSP;
+using namespace SonusDSP;
 int main(){
  for(int sampleRate:{44100,48000,96000}){
-  NordSynthModule synth;synth.init(sampleRate);synth.synthEnabled=true;
+  StageSynthModule synth;synth.init(sampleRate);synth.synthEnabled=true;
   std::vector<float> out(512);
   for(int id=1;id<=256;++id){
    synth.loadBuiltInSynthPreset(id);
@@ -29,7 +29,7 @@ int main(){
   }
   std::cout<<"PASS "<<sampleRate<<"Hz: 256 playable voices, no stale voices\n";
  }
- NordSynthModule synth;synth.init(48000);synth.synthEnabled=true;
+ StageSynthModule synth;synth.init(48000);synth.synthEnabled=true;
  synth.loadBuiltInSynthPreset(97);
  if(!synth.layers[0].cfg.enabled||!synth.layers[1].cfg.enabled||!synth.layers[2].cfg.enabled||synth.layers[0].cfg.synthesisType!=1||synth.layers[1].cfg.attackSec<.20f){std::cerr<<"97 layered D50 regression\n";return 6;}
  for(int id:{201,207,211,214,219,233,249}){

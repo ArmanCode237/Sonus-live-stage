@@ -1,4 +1,6 @@
 #pragma once
+#include <filesystem>
+#include <chrono>
 // Standalone Live Stage application: engine, persistent user data and the
 // HTTP control surface. Formerly the body of main(); every former local of
 // main() is a member with the same name so route handlers stay unchanged.
@@ -11,6 +13,7 @@
 #include "app/ParamSerialization.h"
 #include "app/SampleSources.h"
 #include "app/StateHub.h"
+#include "app/NativeWindow.h"
 #include "control/ParamValueReader.h"
 #include "app/UserDataPaths.h"
 #include "control/MidiOscMapper.h"
@@ -21,23 +24,55 @@
 #include <memory>
 #include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
 
-class HardwareManager;
+#include "app/AudioBackend.h"
+
+/** v33 (V0): how the core is hosted. The standalone app passes RtAudio / RtMidi devices;
+ *  the plug-in passes the DAW (no devices, no window, no fixed ports). */
+struct StageAppOptions {
+    bool plugin = false;
+    AudioBackendFactory makeBackend;     // empty -> hosted (no devices)
+};
 
 // Prints a boot step and appends it to startup_trace.log (survives native crashes).
 void bootStep(const char* msg);
 
 class StageApp {
 public:
-    StageApp(int argc, char* argv[]);
+    StageApp(int argc, char* argv[], StageAppOptions options = {});
     ~StageApp();
     StageApp(const StageApp&) = delete;
     StageApp& operator=(const StageApp&) = delete;
 
     // Opens the UI, runs the HTTP server (blocking) and the MIDI program worker.
-    // Returns the process exit code.
+    // Returns the process exit code. (Standalone app.)
     int run();
+
+    // ---- v33 (V0) services without a window (the plug-in uses these directly) --------
+    /** Starts the program / maintenance workers, the /ws hub and the HTTP server on
+     *  `bindAddress`:`port` (port 0 = any free port). Non-blocking. False if it cannot listen. */
+    bool startServices(const std::string& bindAddress, int port);
+    /** Stops the server, the hub and the workers (idempotent). */
+    void stopServices();
+    /** The port the server listens on (after startServices). */
+    int servicePort() const { return servicePort_; }
+    /** URL that opens the console with this session's token (the window / plug-in editor). */
+    std::string consoleUrl() const;
+    SonusDSP::WorkstationHost& getEngine() { return engine; }
+    /** Changes whenever any parameter may have changed (UI, MIDI, program / preset loads). */
+    uint64_t stateRevision() { return paramRevCounter.load() + engine.getRegistry().valueRevision(); }
+    bool isPlugin() const { return options_.plugin; }
+    /** Plug-in state: the current setup (a program entry) and its restore. */
+    json captureState();
+    void restoreState(const json& state);
+    /** The 8 global programs (the DAW's program list). */
+    static constexpr int programCount() { return kProgramSlots; }
+    std::string programSlotName(int slot);
+    int activeProgram() const { return activeProgramSlot; }
+    /** Recalls a program off the caller's thread (the program worker loads it). */
+    void requestProgram(int slot) { if(slot>=0 && slot<kProgramSlots) requestedMidiProgram.store(slot); }
 
 private:
     // ---- Route registration (src/app/routes/*Routes.cpp) -----------------
@@ -52,6 +87,13 @@ private:
     void registerEngineRoutes();
     void registerOrganRoutes();
     void registerRealtimeRoutes();
+    void registerBrowserRoutes();     // v32.4 sound browser metadata
+    void registerMidiRoutingRoutes(); // v33 (M2) MIDI routing per keyboard / channel
+    void registerAboutRoutes();       // ACERCA DE: app info and configurable links
+    static json defaultMidiRouting();
+    /** Rules -> the engine's (source, channel) table. Off the audio thread; cheap (272 stores). */
+    void compileMidiRoutes();
+    json midiRoutingJson();
     std::string handleRealtimeCommand(const std::string& text, const std::shared_ptr<StateHub::Client>& client);
     /** Live engine state (without params) for /api/state and /ws. Caller holds dataMutex. */
     json liveStateJson();
@@ -75,6 +117,18 @@ private:
     void syncMappingValues();
     /** A user edit (UI, MIDI, OSC) marks the parameter's module as modified (unsaved). */
     void markParamEdited(const std::string& id);
+    // ---- v32.4 live / studio safety -------------------------------------------------
+    /** The current setup as a program entry (the STORE format). Caller holds dataMutex. */
+    json captureProgramJson(int slot, const std::string& name);
+    /** Applies a program entry (the RECALL path). Caller holds dataMutex. */
+    void applyProgramJson(const json& prog);
+    /** Every 500 ms off the audio/MIDI threads: MIDI hot-plug, audio watchdog, autosave, RAM. */
+    void maintenanceTick();
+    void autosaveSessionIfNeeded(bool force);
+    /** Samples referenced by the 8 programs that no longer exist (checked at startup). */
+    void validateSetlist();
+    void loadSystemSettings();
+    void saveSystemSettings();
     /** What a global program stores: its own mappings plus the three modules' mappings. */
     json programMappingsJson();
     void restoreProgramMappings(const json& program);
@@ -138,20 +192,43 @@ private:
     const std::string programsFilePath = stageUserFile("programs.json");
     json userPrograms = json::array();
 
-    std::unique_ptr<HardwareManager> hw;
+    StageAppOptions options_;
+    std::unique_ptr<AudioBackend> hw;
 
     const std::string tagsFilePath = stageUserFile("sample_tags.json");
     json sampleTags = json::object();
 
     // HTTP exposure: loopback only unless started with --lan.
-    bool httpLanAccess = false;
+    bool httpLanAccess = false;                    // --lan (this session)
     std::string httpBindAddress = "127.0.0.1";
+    // ---- v32.4 native window and HTTP access control -------------------------------
+    // Window (default): the console runs in a WebView2 window; other clients (browsers,
+    // other programs) are refused unless "web access" is on. The window proves itself with
+    // a random per-session token (cookie ls_session), so it never depends on that setting.
+    enum class UiMode { Window, Browser, Headless };
+    UiMode uiMode = UiMode::Window;
+    std::string sessionToken;                      // random, new every start
+    std::atomic<bool> webAccess{false};            // setting: browsers on this PC may connect
+    std::atomic<bool> webAccessForced{false};      // --web / --browser / --headless / no WebView2
+    bool lanSetting = false;                       // setting: listen on the network (next start)
+    bool lanActive = false;                        // what this session actually binds
+    NativeWindowState windowState;
+    bool webAllowed() const { return webAccess.load() || webAccessForced.load(); }
 
     // Global program bank size (2 rows × 4 pads).
     static constexpr int kProgramSlots = 8;
 
     // Performance actions are queued on the MIDI callback, not on the audio thread.
     std::atomic<int> requestedMidiProgram{-1};
+    // v32.4 session autosave (studio): the edit buffer is written every 30 s while it
+    // changes; a lock file tells a crash from a clean exit, so the next start can offer it.
+    std::atomic<uint64_t> editEpoch{0};
+    uint64_t autosaveRev = 0, autosaveEpoch = 0;
+    std::chrono::steady_clock::time_point lastAutosave{};
+    std::filesystem::path sessionDir;
+    json sessionRecovery = nullptr;            // {savedAt, programName} when restorable
+    json missingSamples = json::array();       // [{slot, name, file}]
+    std::atomic<uint64_t> sampleMemoryBudgetMB{4096};   // A5: unused instruments above this are released
     const std::string mappingsFilePath = stageUserFile("control_mappings.json");
     std::string uiRootDir;
     std::atomic<uint64_t> lastSavedMappingRevision{0};
@@ -169,7 +246,7 @@ private:
     const std::string pianoPerformancesPath = (stageUserDataDir()/"piano_performances.json").string();
     const std::string factoryOverridesPath = (stageUserDataDir()/"presets/synth/user/factory_overrides.json").string();
     // Factory patches: explicit runtime/version diagnostics for the browser.
-    static constexpr int kFactoryPresetCount = NordDSP::SYNTH_FACTORY_PRESET_COUNT;
+    static constexpr int kFactoryPresetCount = SonusDSP::SYNTH_FACTORY_PRESET_COUNT;
     const std::string factoryBuild = "SONUS 32.3 / Factory API 10 (184 JSON factory files: 96 designs + 48 vintage + 24 DX7 + 16 LA32; mod matrix, 303 sequencer)";
     // Dedicated synth / organ presets (unified, no duplicates).
     const std::string synthPresetsPath = stageUserPresetFile("synth");
@@ -177,6 +254,16 @@ private:
 
     // Real-time publisher for /ws (started in run(), stopped before teardown).
     std::unique_ptr<StateHub> hub;
+
+    // v33 (M2) MIDI routing rules (system setting), guarded by routingMutex_.
+    std::mutex routingMutex_;
+    json midiRouting_ = defaultMidiRouting();   // {enabled, pedalFollows, rules}
+
+    // v33 services (startServices / stopServices).
+    std::atomic<bool> servicesRunning_{false};
+    std::atomic<bool> listenOk_{true};
+    int servicePort_ = 8080;
+    std::thread programWorker_, maintenanceWorker_, serverThread_;
 
     httplib::Server svr;
 };

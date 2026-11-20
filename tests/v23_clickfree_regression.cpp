@@ -1,6 +1,6 @@
 // Repeated sustained notes, voice stealing, streaming prefix and organ phase.
 // Standalone: does not require RtAudio, RtMidi or an audio interface.
-#include "../src/modules/NordPianoEngine.h"
+#include "../src/modules/StagePianoEngine.h"
 #include <algorithm>
 #include <cassert>
 #include <cmath>
@@ -8,7 +8,7 @@
 #include <iostream>
 #include <memory>
 #include <vector>
-using namespace NordDSP;
+using namespace SonusDSP;
 
 static std::shared_ptr<PianoInstrument> makeBank(){
     auto b=std::make_shared<PianoInstrument>();
@@ -30,7 +30,7 @@ static std::shared_ptr<PianoInstrument> makeBank(){
 
 int main(int argc,char** argv){
     const double sr=argc>1?std::atof(argv[1]):48000.;
-    NordPianoEngine e;e.setSampleRate(sr);
+    StagePianoEngine e;e.setSampleRate(sr);
     e.multiSynth_.synthEnabled=false;e.organModule_.organEnabled=false;
     for(int i=1;i<PIANO_LAYER_COUNT;++i)e.setPianoLayerEnabled(i,false);
     e.setPianoEnabled(true);e.setMaxVoices(16);
@@ -82,7 +82,7 @@ int main(int argc,char** argv){
     streaming->strokes[0].readyFrames->store(streaming->strokes[0].frames,std::memory_order_release);
     for(int i=0;i<12;++i)renderBlock();
 
-    NordOrganModule organ;
+    StageOrganModule organ;
     organ.init(float(sr));organ.organEnabled=true;
     organ.noteOn(60,60,100);
     organ.render(out.data(),256);

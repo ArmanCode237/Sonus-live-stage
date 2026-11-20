@@ -10,8 +10,8 @@ from html.parser import HTMLParser
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 read=lambda rel:(root/rel).read_text(encoding='utf-8')
-engine=read('src/modules/NordPianoEngine.cpp')
-types=read('src/core/NordTypes.h')
+engine=read('src/modules/StagePianoEngine.cpp')
+types=read('src/core/StageTypes.h')
 main=_stage_app_source()
 registry=read('src/core/WorkstationHost.cpp')
 ui=read('ui/partials/modal-piano-sample.html')

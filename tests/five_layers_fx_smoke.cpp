@@ -1,10 +1,10 @@
-#include "../src/modules/NordPianoEngine.h"
+#include "../src/modules/StagePianoEngine.h"
 #include <cassert>
 #include <cmath>
 #include <iostream>
 #include <memory>
 #include <vector>
-using namespace NordDSP;
+using namespace SonusDSP;
 std::shared_ptr<PianoInstrument> testBank(int id) {
     auto b = std::make_shared<PianoInstrument>();
     b->id = id; b->name = "piano-" + std::to_string(id);
@@ -16,7 +16,7 @@ std::shared_ptr<PianoInstrument> testBank(int id) {
     s.sampleScale=1.f/32768.f;s.readyFrames->store(s.frames);b->strokes.push_back(std::move(s)); return b;
 }
 int main() {
-  NordPianoEngine piano;
+  StagePianoEngine piano;
   piano.setSampleRate(48000);
   piano.setEqEnabled(false); piano.setReverbEnabled(false);
   piano.setChorusEnabled(false); piano.setPhaserEnabled(false); piano.setDelayEnabled(false);

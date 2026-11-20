@@ -36,7 +36,32 @@ try {
   await p.locator('.synth-deck__tabs .tabs__tab', { hasText: 'SEQ' }).click(); await p.waitForTimeout(400);
   check(await p.locator('.seq__global .btn, .seq__global button').count() >= 2, 'SEQ shows SYNC CLOCK and SHARE PATTERN');
   if (SHOTS) await p.screenshot({ path: SHOTS + 'seq.png' });
-  // zones: LEARN LOW on synth layer B with a played key
+  // v32.4 per-layer output GAIN: knob in MIXER · OUT, stored in the layer, badge on the layer tab
+  check(await p.locator('.synth-editor .knob[data-param="L1_gain"]').count() === 1, 'layer A has its GAIN knob');
+  await post('/api/param', { id: 'L1_gain', value: 6 }); await p.waitForTimeout(500);
+  check(Math.round((await get('/api/state')).params.synthLayers[0].outGainDb) === 6, 'L1_gain writes the layer output gain');
+  check((await p.locator('.layer-tab').first().locator('.layer-tab__gain').textContent()) === '+6 dB', 'the layer tab shows +6 dB');
+  await post('/api/param', { id: 'L1_gain', value: 0 });
+  // v32.4 layer EQ in INSERTS: parameters reach the layer and the unit is shown
+  for (const [id, v] of [['L1_eqOn', 1], ['L1_eqHp', 180], ['L1_eqHpSlope', 48], ['L1_eqLpSlope', 24], ['L1_eqG1', 6], ['L1_eqF1', 900], ['L1_eqQ1', 2]]) await post('/api/param', { id, value: v });
+  await p.waitForTimeout(300);
+  const eqL = (await get('/api/state')).params.synthLayers[0];
+  check(eqL.eqEnabled === true && Math.round(eqL.eqHighPass) === 180 && eqL.eqHighPassSlope === 48 && eqL.eqLowPassSlope === 24
+    && Math.round(eqL.eqGain[1]) === 6 && Math.round(eqL.eqFreq[1]) === 900 && Math.abs(eqL.eqQ[1] - 2) < .01, 'layer EQ parameters reach layer A');
+  await post('/api/param', { id: 'L1_eqHpSlope', value: 36 }); await p.waitForTimeout(200);
+  check((await get('/api/state')).params.synthLayers[0].eqHighPassSlope === 12, 'EQ slopes are 12 / 24 / 48 only');
+  await p.locator('.synth-deck__tabs .tabs__tab', { hasText: 'INSERTS' }).click(); await p.waitForTimeout(300);
+  check(await p.locator('.synth-eq .knob[data-param="L1_eqG2"]').count() === 1 && await p.locator('.synth-eq .segmented__item').count() === 6, 'INSERTS shows the EQ (3 bands, HP / LP slopes 12-24-48)');
+  for (const [id, v] of [['L1_eqOn', 0], ['L1_eqHp', 20], ['L1_eqHpSlope', 12], ['L1_eqLpSlope', 12], ['L1_eqG1', 0], ['L1_eqF1', 1100], ['L1_eqQ1', 1]]) await post('/api/param', { id, value: v });
+  // v32.4 synth module GAIN (patch bar) and the visual meters
+  check(await p.locator('.patch-bar .knob[data-param="synthOutGainDb"]').count() === 1, 'patch bar has the synth GAIN knob');
+  await post('/api/param', { id: 'synthOutGainDb', value: 3 }); await p.waitForTimeout(300);
+  check(Math.round((await get('/api/state')).params.synthOutGainDb) === 3, 'synthOutGainDb writes the module output gain');
+  await post('/api/param', { id: 'synthOutGainDb', value: 0 });
+  const live = await get('/api/state');
+  check(live.modulePeaks?.length === 3 && live.sourcePeaks?.length === 10, 'live state carries 3 module meters and 10 source meters');
+  check(await p.locator('.module-tabs .level-meter').count() === 1 && await p.locator('.layer-tab .level-meter').count() === 4, 'module OUT meter and one meter per layer tab');
+    // zones: LEARN LOW on synth layer B with a played key
   await p.goto(BASE + '/synth?tab=zones', { waitUntil: 'domcontentloaded' }); await p.waitForTimeout(900);
   const rowB = p.locator('.zone-row', { hasText: 'LAYER B' });
   await rowB.locator('.zone-learn').first().click(); await p.waitForTimeout(300);

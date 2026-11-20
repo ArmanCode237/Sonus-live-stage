@@ -6,6 +6,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { ModuleFx, RackView } from '../fx/FxView';
 import { ModuleZones } from '../zones/ZonesView';
 import { Segmented } from '../../ui/controls';
+import { ModuleMeter } from '../../ui/LevelMeter';
 
 const TABS = ['editor', 'zones', 'fx'] as const;
 const LABELS = ['EDITOR', 'KEYZONES', 'FX RACK'];
@@ -33,6 +34,7 @@ export function ModuleTabs({ module, children }: { module: 0 | 1 | 2; children: 
           <button key={label} type="button" className={`subnav__item${tab === i ? ' is-active' : ''}`} aria-current={tab === i} onClick={() => select(i)}>{label}</button>
         ))}
         <span className="subnav__title">{NAMES[module]} · MÓDULO INDEPENDIENTE</span>
+        <ModuleMeter module={module} />
         {tab === 1 && <Link className="btn btn--sm" to="/zones">TODAS LAS ZONES ↗</Link>}
         {tab === 2 && <Link className="btn btn--sm" to={`/fx?rack=${module}`}>FX / MIX ↗</Link>}
       </nav>

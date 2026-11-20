@@ -11,7 +11,7 @@ export interface FactoryMeta {
   hidden: number[];
 }
 
-export interface Zone { low: number; high: number; transpose: number }
+export interface Zone { low: number; high: number; transpose: number; octave?: number }
 export interface FxSends { modulation: number; delay: number; reverb: number }
 export interface EqBand { freqHz: number; gainDb: number; q: number }
 
@@ -72,6 +72,8 @@ export interface EngineParams extends Json {
   softRelease: boolean; maxVoices: number;
 }
 
+export interface PresetRef { name: string; kind: string }
+
 export interface PianoLayerSource {
   layer: number; name: string; sourcePath: string; fileName: string; instrumentId: number; sf2Preset: number;
 }
@@ -82,6 +84,15 @@ export interface EngineState {
   instrumentName: string; statusMessage: string; libraryRoot: string;
   activeVoices: number; maxVoices: number; audioUnderflows: number; audioOverBudgetCallbacks: number;
   peakL: number; peakR: number; clipping: boolean; pedalDown: boolean;
+  /** v32.4 meters (linear peak): modules piano/synth/organ, sources piano 0-4 · synth 5-8 · organ 9. */
+  modulePeaks?: number[]; sourcePeaks?: number[];
+  /** v32.4 live safety: DSP load (render time / buffer, avg and decaying peak), MIDI clock,
+   *  audio watchdog, session recovery and samples missing from the 8 programs. */
+  dspLoad?: number; dspPeak?: number; maxRenderMicros?: number; midiDropped?: number;
+  midiClockSync?: boolean; midiClockActive?: boolean; midiClockBpm?: number;
+  audioRecovering?: boolean; audioRecoveries?: number;
+  sessionRecovery?: { savedAt: string; programName: string } | null;
+  missingSamples?: { slot: number; program: string; file: string }[];
   lastMidiNote: number; lastMidiVel: number; midiSeq: number; modWheel: number; pitchBend: number;
   activeKeys: { k: number; s: number }[];
   connectedMidiCount: number; disconnectedMidiCount: number; savedAudioMissing: boolean;
@@ -90,6 +101,8 @@ export interface EngineState {
   mappingRev?: number;
   /** Unsaved edits per module: piano, synth, organ (v31). */
   moduleDirty?: boolean[];
+  /** v32.5: synth / organ preset playing now (null = factory synth patch / unnamed organ). */
+  presetRefs?: { synth: PresetRef | null; organ: PresetRef | null };
   /** Unsaved edits per piano layer Sound (v31). */
   soundDirty?: boolean[];
   params: EngineParams;
@@ -120,7 +133,8 @@ export interface ControlState {
 export type MapScope = 'system' | 'sound' | 'module' | 'program';
 export type Takeover = 'pickup' | 'jump' | 'relative';
 export type ButtonMode = 'continuous' | 'toggle' | 'momentary';
-export interface MidiSource { type: 'cc' | 'note'; channel: number; number: number }
+/** port (v33): MIDI input port name; absent = any keyboard. */
+export interface MidiSource { type: 'cc' | 'note'; channel: number; number: number; port?: string }
 export interface Assignment {
   paramId: string; scope: MapScope; module?: number; layer?: number;
   midi: MidiSource | null; osc: string | null;
@@ -130,7 +144,7 @@ export interface Assignment {
 }
 export interface MappingRef { paramId: string; scope: MapScope; module?: number; layer?: number }
 export interface MappingConflict { type: 'midi' | 'osc'; source: string; system: MappingRef[]; others: MappingRef[] }
-export interface LearnCapture { type: 'midi' | 'osc'; kind?: 'cc' | 'note'; channel?: number; number?: number; address?: string; label: string }
+export interface LearnCapture { type: 'midi' | 'osc'; kind?: 'cc' | 'note'; channel?: number; number?: number; port?: string; address?: string; label: string }
 export interface LearnState { active: boolean; captured: LearnCapture | null; revision: number }
 export interface MappingState {
   assignments: Assignment[]; conflicts: MappingConflict[]; revision: number;
@@ -148,6 +162,8 @@ export interface HardwareStatus extends Json {
   sampleRate: number; bufferSize: number; latencyMs: number; lastAudioError: string;
   audioUnderflows: number; maxAudioRenderMicros: number;
   midiPorts: MidiPort[];
+  /** v33: 'plugin' when the DAW owns audio and MIDI (VST3 / AU). */
+  host?: 'app' | 'plugin';
 }
 
 export interface SampleLibraryStatus extends Json {

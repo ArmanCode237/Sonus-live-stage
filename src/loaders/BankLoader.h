@@ -1,11 +1,11 @@
 #pragma once
-#include "NordTypes.h"
+#include "StageTypes.h"
 #include <string>
 #include <filesystem>
 #include <vector>
 
 
-namespace NordDSP {
+namespace SonusDSP {
 
 class BankLoader {
 public:
@@ -34,4 +34,4 @@ private:
     static void loadWavesInParallel(std::vector<StrokeSample>& strokes, const std::vector<std::string>& wavPaths);
 };
 
-} // namespace NordDSP
+} // namespace SonusDSP

@@ -5,7 +5,7 @@
 #include <chrono>
 #include <iostream>
 #include <thread>
-using namespace NordDSP;
+using namespace SonusDSP;
 namespace fs=std::filesystem;
 int main(int argc,char** argv){
  if(argc<3){std::cerr<<"Uso: v28_npno_cache_location archivo.npno /ruta/cache\n";return 2;}

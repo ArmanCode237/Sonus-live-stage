@@ -9,7 +9,7 @@
 #include <cmath>
 #include <cstdio>
 #include <map>
-using namespace NordDSP;
+using namespace SonusDSP;
 using json = nlohmann::json;
 
 namespace {

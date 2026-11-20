@@ -8,8 +8,9 @@ import './styles/components.css';
 import './styles/views.css';
 import './styles/pro-console.css';
 import './styles/perform-polish.css';
-import './styles/nord-buttons.css';
+import './styles/stage-buttons.css';
 import './styles/synth-workspace.css';
+import './browser/browser.css';
 
 applyTheme(); // before the first paint: no flash of the wrong theme
 engine.start();

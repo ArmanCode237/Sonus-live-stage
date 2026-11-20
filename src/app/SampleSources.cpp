@@ -42,7 +42,7 @@ fs::path resolveSavedSamplePath(const fs::path& requested){
 
 // The piano-layer source paths are stored separately from the realtime DSP parameters.
 // This keeps legacy "sourcePath" (layer 1) compatible with older programs.json files.
-json serializePianoLayerSources(const NordPianoEngine& engine) {
+json serializePianoLayerSources(const StagePianoEngine& engine) {
     json layers = json::array();
     const auto banks = engine.getPianoInstruments();
     for (int i = 0; i < PIANO_LAYER_COUNT; ++i) {
@@ -57,7 +57,7 @@ json serializePianoLayerSources(const NordPianoEngine& engine) {
     return layers;
 }
 
-bool restorePianoLayerSources(const json& program, NordPianoEngine& engine,
+bool restorePianoLayerSources(const json& program, StagePianoEngine& engine,
                               const std::string& libraryRoot, std::string& statusMsg) {
     bool loadedFirst = false;
     const json layers = (program.contains("pianoLayers") && program["pianoLayers"].is_array())

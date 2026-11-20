@@ -1,11 +1,11 @@
-#include "../src/modules/NordSynthModule.h"
+#include "../src/modules/StageSynthModule.h"
 #include <iostream>
 #include <cmath>
 #include <vector>
 #include <algorithm>
-using namespace NordDSP;
+using namespace SonusDSP;
 int main() {
-  NordSynthModule synth;synth.init(48000);synth.synthEnabled=true;
+  StageSynthModule synth;synth.init(48000);synth.synthEnabled=true;
   std::vector<float> out(256*2);
   for(int id=1;id<=200;id++) {
     synth.allNotesOff();synth.loadBuiltInSynthPreset(id);

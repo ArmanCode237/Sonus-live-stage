@@ -31,7 +31,7 @@
 #include <unordered_map>
 #include <vector>
 
-namespace NordDSP {
+namespace SonusDSP {
 
 enum class MapScope : int { System = 0, Module = 1, Program = 2, Sound = 3 };
 enum class MidiKind : int { CC = 0, Note = 1 };
@@ -42,10 +42,12 @@ struct MidiSource {
     MidiKind kind = MidiKind::CC;
     int channel = 0;   // 0 = omni, 1-16
     int number = -1;   // -1 = none
+    std::string port;  // v33 (M4): MIDI input port name; empty = any device
     bool valid() const { return number >= 0 && number < 128 && channel >= 0 && channel <= 16; }
     bool overlaps(const MidiSource& o) const {
         return valid() && o.valid() && kind == o.kind && number == o.number &&
-               (channel == 0 || o.channel == 0 || channel == o.channel);
+               (channel == 0 || o.channel == 0 || channel == o.channel) &&
+               (port.empty() || o.port.empty() || port == o.port);
     }
     std::string label() const;
 };
@@ -99,9 +101,15 @@ public:
 
     // ---- runtime (MIDI / OSC threads) --------------------------------------------
     /** channel 1-16, value 0-127 (note off = 0). Returns true when a mapping consumed it. */
-    bool handleMidi(MidiKind kind, int channel, int number, int value);
+    bool handleMidi(MidiKind kind, int channel, int number, int value, int source = 0);
+    /** v33 (M4): names of the MIDI sources (index = source id) for device-specific mappings. */
+    void setSourceNames(const std::array<std::string, 16>& names);
     /** value normalised 0..1. Returns true when a mapping consumed it. */
     bool handleOsc(const std::string& address, float value);
+    /** v32.4 OSC feedback: every OSC-mapped parameter with a known value, as 0..1 in its
+     *  mapped range (inverted if the mapping is). Lock-free read of the current snapshot. */
+    struct OscFeedback { std::string address; float value01; };
+    std::vector<OscFeedback> oscFeedback() const;
     /** Registry hook: any write (UI, OSC, MIDI). Keeps pickup in step with the UI. */
     void noteWritten(const std::string& paramId, float value);
     /** Called after a mapping wrote a parameter (dirty tracking). */
@@ -151,14 +159,22 @@ private:
     std::array<ScopeMap, 5> sound_;
     std::unordered_map<std::string, float> values_;
     std::shared_ptr<const Snapshot> snapshot_;
+    std::shared_ptr<const std::array<std::string, 16>> sourceNames_ = std::make_shared<const std::array<std::string, 16>>();
     std::atomic<uint64_t> revision_{0};
     std::function<void(const std::string&)> writeListener_;
 
     mutable std::mutex learnMutex_;
-    bool learnActive_ = false, learnAllowReserved_ = false;
+    std::atomic<bool> learnActive_{false};
+    bool learnAllowReserved_ = false;
     nlohmann::json learnCaptured_;
     uint64_t learnRevision_ = 0;
-    nlohmann::json lastInput_;
+    // v32.4: the MIDI thread records the last input lock-free (no JSON, no mutex per
+    // note): seq << 32 | kind << 24 | channel << 16 | number << 8 | value. OSC keeps a
+    // JSON under the mutex; lastInput() returns whichever came last.
+    std::atomic<uint64_t> lastMidi_{0};
+    std::atomic<uint32_t> inputSeq_{0};
+    uint32_t lastOscSeq_ = 0;
+    nlohmann::json lastOsc_;
 };
 
-} // namespace NordDSP
+} // namespace SonusDSP

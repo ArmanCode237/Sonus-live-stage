@@ -2,11 +2,11 @@
 #undef NDEBUG
 // v28.2.9: Shimmer Atmosphere v4.2 regression (adds stereo coherence + early reflections vs Hall) (wet level, BLOOM, FREEZE, pitch return, stability, CPU).
 // g++ -std=c++17 -O2 -Isrc -Isrc/core -Isrc/dsp tests/v28_2_9_shimmer_fix.cpp -o /tmp/shfix && /tmp/shfix
-#include "../src/dsp/NordSlotFxRack.h"
+#include "../src/dsp/StageSlotFxRack.h"
 #include <cassert>
 #include <chrono>
 #include <iostream>
-using namespace NordDSP;
+using namespace SonusDSP;
 static StudioSlotConfig base(int model=3,int ver=4){
  StudioSlotConfig c;c.type=6;c.enabled=true;c.version=ver;
  c.p={{1.f,.55f,.72f,0.f,.80f,(model+.01f)/4.f,.75f,.84f,.25f,.48f,.30f,.15f,.30f,1.f,1.f,.8f,

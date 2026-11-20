@@ -10,7 +10,7 @@ from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 source=lambda name:(root/name).read_text(encoding='utf-8')
 main=_stage_app_source(); host=source('src/core/WorkstationHost.cpp')
-engine=source('src/modules/NordPianoEngine.cpp')
+engine=source('src/modules/StagePianoEngine.cpp')
 ui=source('ui/index.html'); organ=source('ui/js/organ.js')
 piano=source('ui/js/piano.js'); lib=source('ui/js/library.js')
 assert 'pianoVolume' in host and 'pianoVolume' in main and 'pianoVolume' in ui

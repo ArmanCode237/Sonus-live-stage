@@ -1,11 +1,11 @@
 #include "../src/dsp/StageTempo.h"
-#include "../src/dsp/NordSlotFxRack.h"
-#include "../src/modules/NordSynthModule.h"
+#include "../src/dsp/StageSlotFxRack.h"
+#include "../src/modules/StageSynthModule.h"
 #include <cmath>
 #include <iostream>
 #include <vector>
 #include <algorithm>
-using namespace NordDSP;
+using namespace SonusDSP;
 static bool finite(float x){return std::isfinite(x)&&std::fabs(x)<20.f;}
 static double slotEnergy(int model, float bpm, bool sync, int note){
  StudioSlotDSP fx;fx.init(48000,model);
@@ -23,7 +23,7 @@ static double slotEnergy(int model, float bpm, bool sync, int note){
  return energy;
 }
 static std::vector<float> synthStem(float lfoDepth, bool layer1Affected){
- NordSynthModule m;m.init(48000);m.synthEnabled=true;m.synthMasterVol=1;
+ StageSynthModule m;m.init(48000);m.synthEnabled=true;m.synthMasterVol=1;
  for(int i=0;i<4;i++){
   auto& c=m.layers[i].cfg;c.enabled=(i==0||i==3);c.synthesisType=0;c.waveType=3;c.volume=.65f;c.attackSec=.001f;c.decaySec=.4f;c.sustainLevel=.83f;c.releaseSec=.4f;c.pan=0;
   for(auto& fx:c.insertFx)fx.enabled=false;

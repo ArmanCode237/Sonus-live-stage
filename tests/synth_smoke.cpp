@@ -1,4 +1,4 @@
-#include "../src/modules/NordSynthModule.h"
+#include "../src/modules/StageSynthModule.h"
 #include <cassert>
 #include <cmath>
 #include <iostream>
@@ -9,7 +9,7 @@ int main() {
     constexpr int frames = 256;
     constexpr float rates[] = {44100.0f, 48000.0f, 96000.0f};
     for (float sr : rates) {
-        NordDSP::NordSynthModule synth;
+        SonusDSP::StageSynthModule synth;
         synth.init(sr);
         synth.synthEnabled = true;
         for (int preset=1; preset<=8; ++preset) {
@@ -40,7 +40,7 @@ int main() {
         }
     }
     // Verify filter modes and PWM can be used across all three independent layers.
-    NordDSP::NordSynthModule extra;
+    SonusDSP::StageSynthModule extra;
     extra.init(48000.0f);
     extra.synthEnabled=true;
     for(int i=0;i<3;++i) {

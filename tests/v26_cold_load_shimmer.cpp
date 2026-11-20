@@ -1,13 +1,13 @@
 // v26: Non-destructive offline regression of all Shimmer knobs and tails.
 // Run without an audio device: g++ -std=c++17 -O2 -Isrc/core ...
-#include "../src/dsp/NordSlotFxRack.h"
+#include "../src/dsp/StageSlotFxRack.h"
 #include <algorithm>
 #include <array>
 #include <cmath>
 #include <iostream>
 #include <stdexcept>
 #include <vector>
-using namespace NordDSP;
+using namespace SonusDSP;
 
 static StudioSlotConfig setup(){
     StudioSlotConfig c;

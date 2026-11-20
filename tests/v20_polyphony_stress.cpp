@@ -1,11 +1,11 @@
 /* Regression: 3 running modules and four-layer unison cannot exceed configured max voices. */
-#include "../src/modules/NordPianoEngine.h"
+#include "../src/modules/StagePianoEngine.h"
 #include <cmath>
 #include <iostream>
 #include <vector>
-using namespace NordDSP;
+using namespace SonusDSP;
 int main(){
- NordPianoEngine e;e.setSampleRate(48000);e.setMaxVoices(32);
+ StagePianoEngine e;e.setSampleRate(48000);e.setMaxVoices(32);
  e.setPianoEnabled(false);
  e.multiSynth_.synthEnabled=true;e.multiSynth_.synthMasterVol=0.65f;
  e.organModule_.organEnabled=true;e.organModule_.organVolume=.50f;

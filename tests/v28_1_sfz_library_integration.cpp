@@ -10,7 +10,7 @@
 #include <fstream>
 #include <iostream>
 #include <thread>
-using namespace NordDSP;
+using namespace SonusDSP;
 namespace fs=std::filesystem;
 static void wav(const fs::path& p){
     std::ofstream f(p,std::ios::binary);assert(f);

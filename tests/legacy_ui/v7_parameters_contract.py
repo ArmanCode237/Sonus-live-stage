@@ -10,8 +10,8 @@ from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 read=lambda n:(root/n).read_text(encoding='utf8')
 registry=read('src/core/WorkstationHost.cpp');src=_stage_app_source()
-params=read('src/core/NordTypes.h');piano=read('src/modules/NordPianoEngine.cpp')
-organ=read('src/modules/NordOrganModule.cpp')
+params=read('src/core/StageTypes.h');piano=read('src/modules/StagePianoEngine.cpp')
+organ=read('src/modules/StageOrganModule.cpp')
 ui=read('ui/partials/modal-fxrack.html')+read('ui/partials/modal-organ-effects.html')
 sync=read('ui/js/sync.js')
 common=['chorusVoices','chorusWidth','chorusFeedback','chorusTone','chorusDelay']

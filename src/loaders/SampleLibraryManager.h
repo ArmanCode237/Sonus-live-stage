@@ -4,7 +4,7 @@
 #include <string>
 #include <thread>
 #include <vector>
-namespace NordDSP {
+namespace SonusDSP {
 // One bounded background worker prepares disk caches without retaining decoded
 // instruments in RAM. Control-thread only; never called by the audio callback.
 class SampleLibraryManager {

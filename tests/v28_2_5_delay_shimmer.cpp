@@ -3,12 +3,12 @@
 // v28.2.5 regression: independent TAP/BPM per Delay, NOTE even with SYNC off,
 // and Shimmer v3 pitch layers / spectral-tone influence. No hardware required.
 // g++ -std=c++17 -O2 -Isrc -Isrc/core -Isrc/dsp tests/v28_2_5_delay_shimmer.cpp -o /tmp/fxcheck && /tmp/fxcheck
-#include "../src/dsp/NordSlotFxRack.h"
+#include "../src/dsp/StageSlotFxRack.h"
 #include <cassert>
 #include <cmath>
 #include <vector>
 #include <iostream>
-using namespace NordDSP;
+using namespace SonusDSP;
 static int echoAt(int sr,StudioSlotConfig cfg,float globalBpm){
  StudioSlotDSP dsp;dsp.init(float(sr),5);
  const int len=sr*3;

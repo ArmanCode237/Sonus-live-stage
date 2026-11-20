@@ -67,7 +67,7 @@ function NoteStepper({ id, label, learn }: { id: string; label: string; learn: R
   const { value, set } = useParam(id);
   const v = Math.round(value ?? 0);
   return (
-    <div className="note-stepper" role="group" aria-label={label}>
+    <div className={`note-stepper note-stepper--${label.toLowerCase()}`} role="group" aria-label={label}>
       <span className="note-stepper__label">{label}</span>
       <button type="button" className="icon-btn" aria-label={`${label} −12`} onClick={() => set(Math.max(0, v - 12))}>«</button>
       <button type="button" className="icon-btn" aria-label={`${label} −1`} onClick={() => set(Math.max(0, v - 1))}>−</button>
@@ -79,7 +79,34 @@ function NoteStepper({ id, label, learn }: { id: string; label: string; learn: R
   );
 }
 
-function ZoneRow({ name, lowId, highId, tone, bounds }: { name: string; lowId: string; highId: string; tone: string; bounds?: [number, number] }) {
+const signed = (v: number) => (v > 0 ? `+${v}` : String(v));
+
+/** v32.5: a layer's own OCTAVE and SEMI (added to the global TRANSPOSE / OCTAVE SHIFT). */
+function PitchStepper({ name, octId, semiId }: { name: string; octId: string; semiId: string }) {
+  const oct = useParam(octId);
+  const semi = useParam(semiId);
+  const o = Math.round(oct.value ?? 0);
+  const s = Math.round(semi.value ?? 0);
+  const shifted = o !== 0 || s !== 0;
+  return (
+    <div className={`note-stepper pitch-stepper${shifted ? ' is-shifted' : ''}`} role="group" aria-label={`Afinación de ${name}`}
+      title="Octava y semitonos de esta capa (se suman al TRANSPOSE / OCTAVE SHIFT global)">
+      <span className="note-stepper__label">OCT</span>
+      <button type="button" className="icon-btn" aria-label={`${name} octava −1`} disabled={o <= -2} onClick={() => oct.set(o - 1)}>−</button>
+      <output className="note-stepper__value pitch-stepper__value">{signed(o)}</output>
+      <button type="button" className="icon-btn" aria-label={`${name} octava +1`} disabled={o >= 2} onClick={() => oct.set(o + 1)}>+</button>
+      <span className="note-stepper__label pitch-stepper__sep">SEMI</span>
+      <button type="button" className="icon-btn" aria-label={`${name} semitono −1`} disabled={s <= -12} onClick={() => semi.set(s - 1)}>−</button>
+      <output className="note-stepper__value pitch-stepper__value">{signed(s)}</output>
+      <button type="button" className="icon-btn" aria-label={`${name} semitono +1`} disabled={s >= 12} onClick={() => semi.set(s + 1)}>+</button>
+      <button type="button" className="zone-learn" disabled={!shifted} onClick={() => { oct.set(0); semi.set(0); }} title="Volver a 0">0</button>
+    </div>
+  );
+}
+
+function ZoneRow({ name, lowId, highId, tone, bounds, pitch }: {
+  name: string; lowId: string; highId: string; tone: string; bounds?: [number, number]; pitch?: { octId: string; semiId: string };
+}) {
   const low = Math.round(useParam(lowId).value ?? 0);
   const high = Math.round(useParam(highId).value ?? 127);
   // Effective range = overlap with the module's zone (the stored range is kept as set).
@@ -96,6 +123,7 @@ function ZoneRow({ name, lowId, highId, tone, bounds }: { name: string; lowId: s
       </div>
       <NoteStepper id={lowId} label="LOW" learn={<LearnButton id={lowId} otherId={highId} edge="low" name={name} bounds={bounds} />} />
       <NoteStepper id={highId} label="HIGH" learn={<LearnButton id={highId} otherId={lowId} edge="high" name={name} bounds={bounds} />} />
+      {pitch ? <PitchStepper name={name} {...pitch} /> : <span className="zone-row__nopitch" />}
       {silent && <span className="zone-row__note">Fuera de la zona del módulo: esta capa no suena</span>}
       {!silent && clipped && <span className="zone-row__note">Suena {noteName(effLow)}–{noteName(effHigh)} (limitada por el módulo)</span>}
     </div>
@@ -108,7 +136,7 @@ function Ruler() {
     <div className="zone-row zone-row--ruler" aria-hidden="true">
       <span />
       <div className="zone-row__map">{cs.map(n => <span key={n} className="zone-ruler__mark" style={{ left: `${pct(n)}%` }}>{noteName(n)}</span>)}</div>
-      <span /><span />
+      <span /><span /><span />
     </div>
   );
 }
@@ -128,14 +156,18 @@ export function ModuleZones({ module, link, listener = true }: { module: 0 | 1 |
   return (
     <Panel title={`${m.name} · KEYZONES`} actions={link ? <Link className="btn btn--sm" to={`${m.route}?tab=zones`}>ABRIR EN {m.name} ↗</Link> : undefined}>
       {listener && <LearnListener />}
+      <div className="zone-grid">
       <Ruler />
       <ZoneRow name={m.name} lowId={`${m.key}ZoneLow`} highId={`${m.key}ZoneHigh`} tone={m.key} />
       {module === 0 && Array.from({ length: PIANO_LAYER_COUNT }, (_, l) => (
-        <ZoneRow key={l} name={`L${l + 1}`} lowId={`pianoZone${l}Low`} highId={`pianoZone${l}High`} tone="piano" bounds={bounds} />
+        <ZoneRow key={l} name={`L${l + 1}`} lowId={`pianoZone${l}Low`} highId={`pianoZone${l}High`} tone="piano" bounds={bounds}
+          pitch={{ octId: `pianoZone${l}Oct`, semiId: `pianoZone${l}Semi` }} />
       ))}
       {module === 1 && Array.from({ length: SYNTH_LAYER_COUNT }, (_, l) => (
-        <ZoneRow key={l} name={`LAYER ${SYNTH_LAYER_NAMES[l]}`} lowId={`L${l + 1}_keyLow`} highId={`L${l + 1}_keyHigh`} tone="synth" bounds={bounds} />
+        <ZoneRow key={l} name={`LAYER ${SYNTH_LAYER_NAMES[l]}`} lowId={`L${l + 1}_keyLow`} highId={`L${l + 1}_keyHigh`} tone="synth" bounds={bounds}
+          pitch={{ octId: `L${l + 1}_oct`, semiId: `L${l + 1}_semi` }} />
       ))}
+      </div>
     </Panel>
   );
 }

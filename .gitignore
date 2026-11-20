@@ -6,6 +6,8 @@ history
 *.log
 improveRef
 
+tests
+
 
 # MT-32 ROM dumps are Roland firmware: never commit them
 roms
@@ -13,3 +15,7 @@ roms/*
 !roms/mt32/
 roms/mt32/*
 !roms/mt32/LEEME.txt
+dist/
+
+# v33: WebView2 static loader for the VST3 (downloaded by build-vst3.ps1, 11 MB)
+third_party/webview2/build/native/*/WebView2LoaderStatic.lib

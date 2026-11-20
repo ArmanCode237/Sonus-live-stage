@@ -12,7 +12,7 @@
 
 namespace fs = std::filesystem;
 
-namespace NordDSP {
+namespace SonusDSP {
 
 namespace {
 
@@ -338,7 +338,7 @@ bool NsmpLoader::loadNsmpNative(const std::string& filePath, PianoInstrument& ou
     const bool wordInterleaved = (!legacy && codec == 4);
     outInstrument.id = g_nsmpInstId.fetch_add(1);
     outInstrument.name = instName;
-    outInstrument.formatType = "NORD SAMPLE (" + ext + ")";
+    outInstrument.formatType = "NSMP SAMPLE (" + ext + ")";
     outInstrument.sourcePath = filePath;
     outInstrument.sampleUnison={};outInstrument.sampleVibrato={};
     outInstrument.repeatAlternateCounts.fill(0);
@@ -488,7 +488,7 @@ bool NsmpLoader::loadNsmpNative(const std::string& filePath, PianoInstrument& ou
     outInstrument.memoryMB = static_cast<double>(totalFloats * sizeof(int16_t)) / (1024.0 * 1024.0);
 
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - t0).count();
-    outStatusMsg = "Nord Sample decodificado: " + outInstrument.name +
+    outStatusMsg = "Sample NSMP decodificado: " + outInstrument.name +
                    " (" + std::to_string(outInstrument.strokes.size()) + " zonas @ 35kHz en " + std::to_string(ms) + " ms)";
     std::cout << "[NW1 Native] " << outStatusMsg << "\n";
     return true;
@@ -499,7 +499,7 @@ bool NsmpLoader::loadNsmpFallback(const std::string& filePath, PianoInstrument& 
     outInstrument.id = g_nsmpInstId.fetch_add(1);
     outInstrument.headerInfo = hdr;
     outInstrument.name = hdr.displayName.empty() ? fs::path(filePath).stem().string() : hdr.displayName;
-    outInstrument.formatType = hdr.formatCategory.empty() ? "NORD SAMPLE (.nsmp)" : hdr.formatCategory;
+    outInstrument.formatType = hdr.formatCategory.empty() ? "NSMP SAMPLE (.nsmp)" : hdr.formatCategory;
     outInstrument.sourcePath = filePath;
     outInstrument.channels = 2;
     outInstrument.zoneCount = 29;
@@ -546,4 +546,4 @@ bool NsmpLoader::loadNsmpFallback(const std::string& filePath, PianoInstrument& 
     return true;
 }
 
-} // namespace NordDSP
+} // namespace SonusDSP

@@ -48,11 +48,54 @@ const post = <T = Json>(url: string, body: unknown = {}, timeoutMs?: number) => 
 const q = (value: string) => encodeURIComponent(value);
 
 type WithParams = { params?: EngineParams; pianoLayers?: PianoLayerSource[] };
+/** v32.4 system / network settings. */
+export interface SystemSettings {
+  ok: boolean; midiClockSync: boolean; sampleMemoryBudgetMB: number; sampleResidentMB: number;
+  webAccess: boolean; webAccessForced: boolean; lanAccess: boolean; lanActive: boolean;
+  restartRequired: boolean; nativeWindow: boolean; lanUrls: string[];
+  /** v33: Program Change channel (-1 off, 0 omni, 1-16), MIDI CC 120/123, who hosts the engine. */
+  midiProgramChannel?: number; midiAllNotesOff?: boolean; host?: 'app' | 'plugin';
+}
+/** v33 MIDI routing: source "*" | "internal" | port name; channel 0 = omni; dest bits L1-L5, A-D, organ. */
+export interface MidiRouteRule { source: string; channel: number; dest: number }
+export interface MidiRouting {
+  enabled: boolean; rules: MidiRouteRule[]; host?: 'app' | 'plugin';
+  /** Each keyboard's sustain pedal holds only the layers it plays (default true). */
+  pedalFollows?: boolean;
+  sources: { id: number; name: string; label: string; connected: boolean; enabled: boolean }[];
+  destinations: string[];
+}
+/** ACERCA DE (config/links.json): empty links are not configured yet. */
+export interface AboutInfo {
+  name: string; version: string; host: 'app' | 'plugin'; dataDir: string; license: string;
+  links: { support: string; website: string; source: string };
+}
+export interface OscStatus {
+  running: boolean; port: number; localAddresses: string[]; deviceIp: string; devicePort: number;
+  feedback: boolean; onlyFromDevice: boolean; lastAddress: string; lastSender: string;
+  received: number; rejected: number; sent: number;
+}
 
 export const api = {
   // ---- live state & parameters -------------------------------------------
   state: () => get<EngineState>('/api/state', 4000),
   setParam: (id: string, value: number) => post<{ ok: boolean; params?: EngineParams }>('/api/param', { id, value }),
+  // v32.4 live safety
+  panic: () => post<{ ok: boolean }>('/api/panic', {}),
+  resetAudioCounters: () => post<{ ok: boolean }>('/api/audio/counters/reset', {}),
+  sessionRestore: () => post<WithParams>('/api/session/restore', {}),
+  sessionDiscard: () => post<{ ok: boolean }>('/api/session/discard', {}),
+  system: () => get<SystemSettings>('/api/system'),
+  midiRouting: () => get<MidiRouting>('/api/midi/routing'),
+  about: () => get<AboutInfo>('/api/about'),
+  /** The engine opens a CONFIGURED link in the system's default browser. */
+  openAboutLink: (link: 'support' | 'website' | 'source') => post<{ ok: boolean }>('/api/about/open', { link }),
+  setMidiRouting: (body: { enabled?: boolean; rules?: MidiRouteRule[]; pedalFollows?: boolean }) => post<MidiRouting>('/api/midi/routing', body),
+  setSystem: (patch: { webAccess?: boolean; lanAccess?: boolean; midiProgramChannel?: number; midiAllNotesOff?: boolean }) => post<SystemSettings>('/api/system', patch),
+  oscStatus: () => get<OscStatus>('/api/osc'),
+  setOsc: (patch: Partial<{ deviceIp: string; devicePort: number; feedback: boolean; onlyFromDevice: boolean }>) => post<OscStatus>('/api/osc', patch),
+  oscTest: () => post<{ ok: boolean }>('/api/osc/test', {}),
+  setSampleMemoryBudget: (mb: number) => post<SystemSettings>('/api/system', { sampleMemoryBudgetMB: mb }),
   note: (key: number, on: boolean, vel = 100) => post('/api/note', { key, on, vel }),
   testTone: () => post('/api/testtone'),
 
@@ -116,7 +159,9 @@ export const api = {
   /** Discards the saved edit of factory slot `id` (the bundled preset is used again). */
   synthFactoryReset: (id: number) => post<{ ok: boolean; metadata: FactoryMeta }>('/api/synth/factory/meta', { op: 'reset', id }),
   synthPresets: () => get<NamedPreset[]>('/api/synth/presets'),
-  saveSynthPreset: (name: string) => post<{ presets: NamedPreset[] }>('/api/synth/presets/save', { name, mode: 'new' }),
+  /** New user preset; `overwrite` replaces the user preset with that same name. */
+  saveSynthPreset: (name: string, overwrite = false) =>
+    post<{ presets: NamedPreset[] }>('/api/synth/presets/save', overwrite ? { name, originalName: name } : { name, mode: 'new' }),
   loadSynthPreset: (name: string) => post<WithParams>('/api/synth/presets/load', { name }),
   deleteSynthPreset: (name: string) => post<{ presets: NamedPreset[] }>('/api/synth/presets/delete', { name }),
 
@@ -127,6 +172,14 @@ export const api = {
   saveOrganPreset: (name: string) => post<{ presets: NamedPreset[] }>('/api/organ/presets/save', { name }),
   loadOrganPreset: (name: string) => post<WithParams>('/api/organ/presets/load', { name }),
   deleteOrganPreset: (name: string) => post<{ presets: NamedPreset[] }>('/api/organ/presets/delete', { name }),
+  // ---- v32.4 sound browser (metadata; rename / duplicate user presets) ------
+  browserMeta: () => get<{ items?: Record<string, { tags?: string[]; category?: string; favorite?: boolean }>; usage?: Record<string, { count: number; last: number }> }>('/api/browser/meta'),
+  setBrowserMeta: (body: Record<string, unknown>) =>
+    post<{ ok: boolean; meta?: { items?: Record<string, { tags?: string[]; category?: string; favorite?: boolean }>; usage?: Record<string, { count: number; last: number }> } }>('/api/browser/meta', body),
+  renameSynthPreset: (name: string, to: string) => post<{ ok: boolean }>('/api/synth/presets/rename', { name, to }),
+  duplicateSynthPreset: (name: string, to: string) => post<{ ok: boolean }>('/api/synth/presets/duplicate', { name, to }),
+  renameOrganPreset: (name: string, to: string) => post<{ ok: boolean }>('/api/organ/presets/rename', { name, to }),
+  duplicateOrganPreset: (name: string, to: string) => post<{ ok: boolean }>('/api/organ/presets/duplicate', { name, to }),
 
   // ---- studio racks --------------------------------------------------------
   studioRacks: () => get<{ racks: StudioRack[]; mode: boolean }>('/api/studio-racks'),

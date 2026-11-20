@@ -17,11 +17,11 @@ v=read('ui/js/v701.js')
 ui=read('ui/synth.html')
 main=_stage_app_source()
 work=read('src/core/WorkstationHost.cpp')
-piano=read('src/modules/NordPianoEngine.cpp')
-dsp=read('src/dsp/NordDspEffects.h')
+piano=read('src/modules/StagePianoEngine.cpp')
+dsp=read('src/dsp/StageDspEffects.h')
 assert 'const SYNTH_PRESET_COUNT = 200' in synth
 assert 'maxFactoryPresets!==200' in synth
-assert 'std::clamp(presetId, 1, 200)' in read('src/modules/NordSynthModule.cpp')
+assert 'std::clamp(presetId, 1, 200)' in read('src/modules/StageSynthModule.cpp')
 assert 'std::lround(v)), 0, 20)' in work
 assert 'apiVersion", 4' in main
 assert 'V701_FAMILIES' in js and 'SYNTH_PRESET_NAMES.push' in js
@@ -31,7 +31,7 @@ for n in range(1,4):
   assert f'"{f}"' in main or f"'{f}'" in v or f in work
 for name in ('synthVoiceMaster','pianoLayerZones','synthFxSends','synthFx','organFx','synthZone','organZone','masterDriveEnabled','masterAutoPanEnabled'):
  assert main.count(name)>1, name
-assert 'NordModuleFxRack' in dsp and 'synthModuleFx_.process' in piano and 'organModuleFx_.process' in piano
+assert 'StageModuleFxRack' in dsp and 'synthModuleFx_.process' in piano and 'organModuleFx_.process' in piano
 assert '<div id="v701SynthPerformance"' in ui and '<div id="v701SynthFx"' in ui
 assert "key.endsWith('On')" in v and "key==='DelayTime'?'delayMs'" in v
 # Guard and restore zones in the correct functions, never within JSON initializer.

@@ -1,4 +1,4 @@
-// End-to-end smoke test against a running NordVirtualStage (http://localhost:8080).
+// End-to-end smoke test against a running SonusLiveStage (http://localhost:8080).
 // Uses the locally installed Chrome/Edge through playwright-core (no download).
 //   node scripts/smoke.mjs [baseUrl] [width] [height]
 // Every engine value the test changes is restored at the end.
@@ -56,7 +56,14 @@ try {
   await open('/');
   await setParam('pianoLayerVol0', 0.5); await sleep(300);
   const knob = page.locator('.layer-row').first().locator('.knob__svg');
-  const box = await knob.boundingBox();
+  // v32.4: the layer row grows when its range / meter arrive: measure once the layout is stable.
+  let box = await knob.boundingBox();
+  for (let i = 0; i < 10; i++) {
+    await sleep(150);
+    const next = await knob.boundingBox();
+    if (next && box && Math.abs(next.y - box.y) < .5 && Math.abs(next.x - box.x) < .5) break;
+    box = next;
+  }
   await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
   await page.mouse.down(); await page.mouse.move(box.x + box.width / 2, box.y - 40, { steps: 8 }); await page.mouse.up();
   await sleep(500);
@@ -83,8 +90,10 @@ try {
   await cut.focus(); for (let i = 0; i < 5; i++) await page.keyboard.press('ArrowUp');
   await sleep(500);
   check((await state()).params.synthLayers[0].cutoffHz > 1000, 'Synth: arrow keys on CUTOFF write L1_cut');
-  await page.locator('.patch-bar .btn', { hasText: 'BROWSER' }).click(); await sleep(300);   // v32.4: library overlay
-  check(await page.locator('.library .browser__item').count() === 184, 'Synth: factory browser lists 184 patches (96 + 48 vintage + 24 DX7 + 16 LA32)');
+  await page.locator('.patch-bar .btn', { hasText: 'BROWSER' }).click();   // v32.4: sound browser
+  await page.waitForSelector('.sb .sb__row');
+  await page.locator('.sb__facet--factory').click(); await sleep(200);
+  check(await page.locator('.sb__row').count() === 184, 'Synth: factory browser lists 184 patches (96 + 48 vintage + 24 DX7 + 16 LA32)');
   await page.keyboard.press('Escape'); await sleep(200);
 
   // Organ: click inside the 6th drawbar (2') near its bottom → pulled out.
@@ -105,8 +114,8 @@ try {
   await page.locator('.layer-row__name').nth(2).click();
   await page.waitForSelector('.modal');
   // The first open scans the library on the engine side; allow it some time.
-  await page.waitForSelector('.browser__item', { timeout: 60000 }).catch(() => {});
-  check(await page.locator('.browser__item').count() > 0, 'Piano: sample browser lists library items');
+  await page.waitForSelector('.sb__row', { timeout: 60000 }).catch(() => {});
+  check(await page.locator('.sb__row').count() > 0, 'Piano: sound browser lists library items');
   await page.keyboard.press('Escape');
   check(await page.locator('.modal').count() === 0, 'Piano: Escape closes the browser');
 

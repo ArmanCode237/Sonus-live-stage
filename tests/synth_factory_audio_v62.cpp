@@ -1,11 +1,11 @@
 // Tests 48 patch IDs with the ACTUAL C++ oscillator engine; no RtAudio/MIDI needed.
-#include "../src/modules/NordSynthModule.h"
+#include "../src/modules/StageSynthModule.h"
 #include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <vector>
 int main() {
-    NordDSP::NordSynthModule synth;
+    SonusDSP::StageSynthModule synth;
     synth.init(48000.f); synth.synthEnabled = true;
     std::vector<float> audio(512*2);
     int audible=0;

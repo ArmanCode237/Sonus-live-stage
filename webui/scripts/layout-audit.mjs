@@ -1,4 +1,4 @@
-// Layout audit against a running NordVirtualStage (http://localhost:8080).
+// Layout audit against a running SonusLiveStage (http://localhost:8080).
 // For every route × viewport × theme it reports:
 //   - page overflow (the document itself must never scroll);
 //   - clipped controls: buttons/inputs/sliders cut off by an ancestor that cannot scroll to them;

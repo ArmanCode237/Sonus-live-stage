@@ -9,7 +9,7 @@
 #include <fstream>
 #include <iostream>
 namespace fs=std::filesystem;
-using namespace NordDSP;
+using namespace SonusDSP;
 int main(){
     const auto root=fs::temp_directory_path()/("nvs_v282_"+
         std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));

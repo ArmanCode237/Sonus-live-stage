@@ -10,7 +10,7 @@
 #include <vector>
 #include <nlohmann/json.hpp>
 
-namespace NordDSP {
+namespace SonusDSP {
 
 class ParameterRegistry {
 public:
@@ -86,4 +86,4 @@ private:
     std::atomic<uint64_t> valueRevision_{0};
 };
 
-} // namespace NordDSP
+} // namespace SonusDSP

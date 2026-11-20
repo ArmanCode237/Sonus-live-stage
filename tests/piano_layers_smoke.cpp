@@ -1,11 +1,11 @@
-#include "../src/modules/NordPianoEngine.h"
+#include "../src/modules/StagePianoEngine.h"
 #include <cassert>
 #include <cmath>
 #include <iostream>
 #include <memory>
 #include <vector>
 
-using namespace NordDSP;
+using namespace SonusDSP;
 static std::shared_ptr<PianoInstrument> makeBank(int id) {
     auto bank = std::make_shared<PianoInstrument>();
     bank->id = id;
@@ -30,7 +30,7 @@ static std::shared_ptr<PianoInstrument> makeBank(int id) {
 }
 
 int main() {
-    NordPianoEngine engine;
+    StagePianoEngine engine;
     engine.setSampleRate(48000);
     engine.setReverbEnabled(false);
     engine.setEqEnabled(false);

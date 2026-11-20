@@ -14,7 +14,7 @@ main=_stage_app_source()
 js=(ROOT/'ui/js/piano-performances-v2824.js').read_text()
 prog=(ROOT/'ui/js/programs.js').read_text()
 fx=(ROOT/'ui/js/studio-rack.js').read_text()
-model=(ROOT/'src/core/NordTypes.h').read_text()
+model=(ROOT/'src/core/StageTypes.h').read_text()
 class Ids(HTMLParser):
  def __init__(self):super().__init__();self.ids=[]
  def handle_starttag(self,tag,attrs):self.ids += [x for k,x in attrs if k=='id']

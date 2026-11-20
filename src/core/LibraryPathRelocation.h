@@ -2,7 +2,7 @@
 #include <filesystem>
 #include <string>
 
-namespace NordDSP {
+namespace SonusDSP {
 // Control-thread helpers only. Prefixes are path-component aware: renaming
 // '/Samples/Piano' never matches '/Samples/Pianos-BACKUP'.
 inline bool relocateSourcePath(const std::string& input,

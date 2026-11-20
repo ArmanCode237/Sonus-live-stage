@@ -1,9 +1,9 @@
 #pragma once
-#include "../core/NordTypes.h"
+#include "../core/StageTypes.h"
 #include <filesystem>
 #include <string>
 
-namespace NordDSP {
+namespace SonusDSP {
 // Versioned, non-destructive PCM16 cache for NW1, SFZ/WAV and SF2 programs.
 // NPNo retains its verified NPCACHE5 reader/writer. All methods are control-thread only.
 class DecodedSampleCache {

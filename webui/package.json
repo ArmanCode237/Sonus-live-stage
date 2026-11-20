@@ -19,7 +19,11 @@
     "smoke:piano-sounds": "node scripts/piano-sound-smoke.mjs",
     "audit:layout": "node scripts/layout-audit.mjs",
     "build:offline": "node scripts/offline-build.cjs",
-    "smoke:v323": "node scripts/v323-smoke.mjs"
+    "smoke:v323": "node scripts/v323-smoke.mjs",
+    "smoke:browser": "node scripts/browser-smoke.mjs",
+    "smoke:v325": "node scripts/v325-smoke.mjs",
+    "smoke:routing": "node scripts/routing-smoke.mjs",
+    "soak": "node scripts/soak.mjs"
   },
   "dependencies": {
     "react": "18.3.1",

@@ -48,6 +48,6 @@ assert '* MODIFICADO' in programs and '* MODIFICADO' in presets
 for i in range(5):
  assert f'id="pianoLayerName{i}"' in (root/'ui/index.html').read_text()
  assert f'layer={i}' in (root/'ui/index.html').read_text()
-for file in ('NordPianoEngine.cpp','BankLoader.cpp','NsmpLoader.cpp'):
- assert (root/'src/modules'/file if file=='NordPianoEngine.cpp' else root/'src/loaders'/file).is_file()
+for file in ('StagePianoEngine.cpp','BankLoader.cpp','NsmpLoader.cpp'):
+ assert (root/'src/modules'/file if file=='StagePianoEngine.cpp' else root/'src/loaders'/file).is_file()
 print('PASS: v28.2.1 per-layer Sound snapshots, DSP isolation, no modal, UI navigation, program refs')

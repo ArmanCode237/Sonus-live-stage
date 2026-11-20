@@ -8,7 +8,7 @@
 #include <iterator>
 #include <chrono>
 namespace fs=std::filesystem;
-using namespace NordDSP;
+using namespace SonusDSP;
 int main(){
     auto tmp=fs::temp_directory_path()/ ("nvs_v281_test_"+std::to_string(std::chrono::steady_clock::now().time_since_epoch().count()));
     fs::create_directories(tmp/"source");fs::create_directories(tmp/"pcm");

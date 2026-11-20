@@ -1,9 +1,9 @@
 // g++ -std=c++17 -O2 -Isrc -Isrc/core -Isrc/modules tests/v730_fx_quality_smoke.cpp -o /tmp/v730_fx && /tmp/v730_fx
-#include "../src/dsp/NordSlotFxRack.h"
+#include "../src/dsp/StageSlotFxRack.h"
 #include <iostream>
 #include <cmath>
 #include <algorithm>
-using namespace NordDSP;
+using namespace SonusDSP;
 int main(){
  for(int rate: {44100,48000,96000}) {
    for(int type=1;type<=11;++type){

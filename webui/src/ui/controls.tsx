@@ -5,7 +5,7 @@ import { useParam } from '../store/hooks';
 import { useMapAttrs, type MapAttrs } from '../store/mappings';
 
 // ---------------------------------------------------------------- buttons
-// Hardware button (Nord style): a square cap with a central oval and an LED, the text
+// Hardware button (hardware style): a square cap with a central oval and an LED, the text
 // as a label underneath. Variants: panel (dark), primary (orange: GUARDAR / STORE),
 // browse (grey: BROWSER), danger (red). Glyph-only buttons (◀ ▶ ★ ×) keep the compact
 // classic look; `plain` forces it.
@@ -147,7 +147,7 @@ export interface FaderViewProps {
   label: string; value: number | undefined; spec: ParamSpec | undefined; onChange: (v: number) => void;
   /** Drawbar style: value grows downwards, like a pulled organ drawbar. */
   drawbar?: boolean; format?: (v: number) => string; color?: 'brown' | 'white' | 'black';
-  /** Kept for callers: every level fader now shows its LED strip (Nord style). */
+  /** Kept for callers: every level fader now shows its LED strip (hardware style). */
   ladder?: boolean;
   mapAttrs?: MapAttrs;
 }

@@ -12,7 +12,7 @@
 #include <map>
 #include <vector>
 
-namespace NordDSP {
+namespace SonusDSP {
 namespace {
 using Bytes=std::vector<uint8_t>;
 uint16_t u16(const uint8_t* p){return uint16_t(p[0]|(uint16_t(p[1])<<8));}
@@ -220,7 +220,7 @@ bool Sf2Loader::load(const std::string& file,PianoInstrument& out,std::string& e
     }
    }
    // Each SF2 zone is a distinct key/velocity region, not a velocity layer
-   // of a single Nord zone. Do not let selectStrokeFor() collapse them.
+   // of a single hardware zone. Do not let selectStrokeFor() collapse them.
    s.zone=s.index; s.layerIndex=0;
    s.loopDecayDbPerS=0.f;s.decayCoef=1.f;
    s.readyFrames->store(s.frames,std::memory_order_release);
@@ -237,4 +237,4 @@ bool Sf2Loader::load(const std::string& file,PianoInstrument& out,std::string& e
  error="SoundFont cargado: "+out.name+" ("+std::to_string(out.zoneCount)+" regiones)";
  return true;
 }
-} // namespace NordDSP
+} // namespace SonusDSP

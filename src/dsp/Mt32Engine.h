@@ -12,7 +12,7 @@
 #include <string>
 #include <vector>
 
-namespace NordDSP {
+namespace SonusDSP {
 
 struct Mt32RomStatus {
     bool loaded = false;
@@ -56,4 +56,4 @@ private:
     std::unique_ptr<Impl> impl_;
 };
 
-} // namespace NordDSP
+} // namespace SonusDSP

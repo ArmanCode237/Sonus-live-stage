@@ -4,7 +4,7 @@
 #include <cmath>
 #include <set>
 
-namespace NordDSP {
+namespace SonusDSP {
 using json = nlohmann::json;
 
 namespace {
@@ -20,7 +20,7 @@ std::string MidiSource::label() const {
     std::string text = kind == MidiKind::Note
         ? std::string("NOTE ") + names[number % 12] + std::to_string(number / 12 - 1)
         : "CC " + std::to_string(number);
-    return text + (channel == 0 ? " · omni" : " · canal " + std::to_string(channel));
+    return text + (channel == 0 ? " · omni" : " · canal " + std::to_string(channel)) + (port.empty() ? "" : " · " + port);
 }
 
 std::string scopeName(MapScope scope) {
@@ -48,6 +48,7 @@ json ControlAssignment::toJson() const {
     if (scope == MapScope::Module) j["module"] = module;
     if (scope == MapScope::Sound) j["layer"] = layer;
     j["midi"] = midi.valid() ? json{{"type", kindName(midi.kind)}, {"channel", midi.channel}, {"number", midi.number}} : json(nullptr);
+    if (midi.valid() && !midi.port.empty()) j["midi"]["port"] = midi.port;
     j["osc"] = osc.empty() ? json(nullptr) : json(osc);
     return j;
 }
@@ -78,6 +79,8 @@ std::optional<ControlAssignment> ControlAssignment::fromJson(const json& j, cons
         a.midi.kind = m.value("type", std::string("cc")) == "note" ? MidiKind::Note : MidiKind::CC;
         a.midi.channel = m.value("channel", 0);
         a.midi.number = m.value("number", -1);
+        a.midi.port = m.value("port", std::string());
+        if (a.midi.port.size() > 128) a.midi.port.resize(128);
         if (!a.midi.valid()) return fail("Mensaje MIDI inválido");
     }
     if (j.contains("osc") && j["osc"].is_string()) {
@@ -361,34 +364,68 @@ void ControlMappings::apply(const Entry& e, int value) const {
     }
 }
 
-bool ControlMappings::handleMidi(MidiKind kind, int channel, int number, int value) {
+void ControlMappings::setSourceNames(const std::array<std::string, 16>& names) {
+    const auto current = std::atomic_load(&sourceNames_);
+    if (current && *current == names) return;                   // unchanged: no allocation
+    std::atomic_store(&sourceNames_, std::make_shared<const std::array<std::string, 16>>(names));
+}
+
+bool ControlMappings::handleMidi(MidiKind kind, int channel, int number, int value, int source) {
     if (number < 0 || number > 127 || channel < 1 || channel > 16) return false;
     {
+        const uint64_t seq = inputSeq_.fetch_add(1, std::memory_order_relaxed) + 1;
+        lastMidi_.store((seq << 32) | (uint64_t(int(kind) & 0xFF) << 24) | (uint64_t(channel & 0xFF) << 16)
+                        | (uint64_t(number & 0xFF) << 8) | uint64_t(value & 0xFF), std::memory_order_release);
+    }
+    if (learnActive_.load(std::memory_order_acquire)) {
         std::lock_guard<std::mutex> lock(learnMutex_);
-        lastInput_ = {{"type", "midi"}, {"kind", kindName(kind)}, {"channel", channel}, {"number", number}, {"value", value}};
         const bool isRelease = kind == MidiKind::Note && value == 0;
         if (learnActive_ && !isRelease && (learnAllowReserved_ || !reservedForLearn(kind, number))) {
             learnActive_ = false;
+            const auto names = std::atomic_load(&sourceNames_);
+            const std::string port = (names && source > 0 && source < 16) ? (*names)[size_t(source)] : std::string();
             learnCaptured_ = {{"type", "midi"}, {"kind", kindName(kind)}, {"channel", channel}, {"number", number},
-                              {"label", MidiSource{kind, channel, number}.label()}};
+                              {"port", port}, {"label", MidiSource{kind, channel, number}.label()}};
             ++learnRevision_;
         }
     }
     const auto snap = std::atomic_load(&snapshot_);
+    const auto names = std::atomic_load(&sourceNames_);
+    const std::string* portName = (names && source > 0 && source < 16) ? &(*names)[size_t(source)] : nullptr;
     bool consumed = false;
     for (const int ch : {channel, 0}) {
         const auto it = snap->midi.find(midiKey(kind, ch, number));
         if (it == snap->midi.end()) continue;
-        for (const Entry* e : it->second) apply(*e, value);
-        consumed = true;
+        for (const Entry* e : it->second) {
+            // v33 (M4): a device-specific mapping answers only to that keyboard.
+            const auto& port = e->a.midi.port;
+            if (!port.empty() && (!portName || *portName != port)) continue;
+            apply(*e, value);
+            consumed = true;
+        }
     }
     return consumed;
+}
+
+std::vector<ControlMappings::OscFeedback> ControlMappings::oscFeedback() const {
+    std::vector<OscFeedback> out;
+    const auto snap = std::atomic_load(&snapshot_);
+    for (const auto& [address, entries] : snap->osc) {
+        if (entries.empty()) continue;
+        const Entry& e = *entries.front();
+        if (!e.known.load()) continue;
+        const float lo = e.a.invert ? e.a.max : e.a.min, hi = e.a.invert ? e.a.min : e.a.max;
+        if (std::abs(hi - lo) < 1e-9f) continue;
+        out.push_back({address, std::clamp((e.current.load() - lo) / (hi - lo), 0.f, 1.f)});
+    }
+    return out;
 }
 
 bool ControlMappings::handleOsc(const std::string& address, float value) {
     {
         std::lock_guard<std::mutex> lock(learnMutex_);
-        lastInput_ = {{"type", "osc"}, {"address", address}, {"value", value}};
+        lastOscSeq_ = inputSeq_.fetch_add(1, std::memory_order_relaxed) + 1;
+        lastOsc_ = {{"type", "osc"}, {"address", address}, {"value", value}};
         if (learnActive_ && validOscAddress(address)) {
             learnActive_ = false;
             learnCaptured_ = {{"type", "osc"}, {"address", address}, {"label", "OSC " + address}};
@@ -423,11 +460,17 @@ void ControlMappings::cancelLearn() {
 }
 json ControlMappings::learnState() const {
     std::lock_guard<std::mutex> lock(learnMutex_);
-    return {{"active", learnActive_}, {"captured", learnCaptured_}, {"revision", learnRevision_}};
+    return {{"active", learnActive_.load()}, {"captured", learnCaptured_}, {"revision", learnRevision_}};
 }
 json ControlMappings::lastInput() const {
+    const uint64_t m = lastMidi_.load(std::memory_order_acquire);
     std::lock_guard<std::mutex> lock(learnMutex_);
-    return lastInput_;
+    const uint32_t midiSeq = uint32_t(m >> 32);
+    if (midiSeq == 0 && lastOscSeq_ == 0) return json();
+    if (lastOscSeq_ > midiSeq) return lastOsc_;
+    const auto kind = MidiKind(int((m >> 24) & 0xFF));
+    return {{"type", "midi"}, {"kind", kindName(kind)}, {"channel", int((m >> 16) & 0xFF)},
+            {"number", int((m >> 8) & 0xFF)}, {"value", int(m & 0xFF)}};
 }
 
 json ControlMappings::migrateLegacyMidi(const json& bindings, const ParameterRegistry& registry, MapScope scope, int module) {
@@ -457,4 +500,4 @@ json ControlMappings::migrateLegacyOsc(const json& routes, const ParameterRegist
     return out;
 }
 
-} // namespace NordDSP
+} // namespace SonusDSP

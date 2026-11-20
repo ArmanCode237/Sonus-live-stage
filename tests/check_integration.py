@@ -48,7 +48,7 @@ assert 'useParam' in read('webui/src/store/hooks.ts')
 assert 'pro-console.css' in read('webui/src/main.tsx')
 
 # Existing synth and racks are not replaced by frontend simulations.
-synth = read('src/modules/NordSynthModule.cpp')
+synth = read('src/modules/StageSynthModule.cpp')
 registry = read('src/core/WorkstationHost.cpp')
 for name in ['sawLevel','pulseLevel','highpassHz','drive']:
     assert name in synth and name in registry, name

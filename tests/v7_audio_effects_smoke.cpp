@@ -1,17 +1,17 @@
 // Standalone audio effects regression: no RtAudio/RtMidi required.
-#include "../src/dsp/NordDspEffects.h"
-#include "../src/modules/NordOrganModule.h"
+#include "../src/dsp/StageDspEffects.h"
+#include "../src/modules/StageOrganModule.h"
 #include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <iostream>
 #include <vector>
 
-using namespace NordDSP;
+using namespace SonusDSP;
 int main(){
  for(float sr: {44100.0f,48000.0f,96000.0f}){
   for(int type=0;type<=2;++type){
-   NordReverbEffect rev;rev.init(sr);
+   StageReverbEffect rev;rev.init(sr);
    float maxPeak=0,energy=0,late=0;
    const int total=static_cast<int>(sr*2.0);
    for(int i=0;i<total;i++){
@@ -35,7 +35,7 @@ int main(){
    power+=L*L+R*R;
   }
   assert(power>5.0f);
-  NordOrganModule organ;organ.init(sr);organ.organEnabled=true;
+  StageOrganModule organ;organ.init(sr);organ.organEnabled=true;
   organ.chorusEnabled=true;organ.chorusMix=0.4f;organ.chorusWidth=1.0f;
   organ.noteOn(60,60,100);
   std::vector<float> out(512*2);

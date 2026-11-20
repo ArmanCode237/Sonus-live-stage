@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 
 // The C++ host serves the built app from ui/app under /app/ and maps the page
 // routes (/, /synth, /organ, /fx, /zones, /library, /settings) to index.html.
-// In development, /api is proxied to the running NordVirtualStage executable.
+// In development, /api is proxied to the running SonusLiveStage executable.
 // The host rejects cross-origin POSTs, so the proxy presents itself as the host.
 const BACKEND = 'http://127.0.0.1:8080';
 

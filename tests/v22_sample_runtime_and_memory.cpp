@@ -1,13 +1,13 @@
 // Regression: sample-loop seam, finite audio under retriggering, short polyphony
 // transitions, and reclamation of decoded instruments off the audio callback.
-#include "../src/modules/NordPianoEngine.h"
+#include "../src/modules/StagePianoEngine.h"
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
 #include <memory>
 #include <vector>
-using namespace NordDSP;
+using namespace SonusDSP;
 static std::shared_ptr<PianoInstrument> makeBank(bool looping){
  auto b=std::make_shared<PianoInstrument>();b->name="Synthetic sample";b->formatType="SF2";
  StrokeSample s;
@@ -27,7 +27,7 @@ static std::shared_ptr<PianoInstrument> makeBank(bool looping){
 int main(int argc,char** argv){
  const double outputRate=argc>1?std::atof(argv[1]):48000.0;
  if(outputRate<22050 || outputRate>192000)return 20;
- NordPianoEngine e;e.setSampleRate(outputRate);
+ StagePianoEngine e;e.setSampleRate(outputRate);
  e.setPianoEnabled(true);e.multiSynth_.synthEnabled=false;e.organModule_.organEnabled=false;
  for(int i=1;i<5;i++)e.setPianoLayerEnabled(i,false);
  e.setPianoLayerSampleParam(0,0,.005f);e.setPianoLayerSampleParam(0,2,1.f);

@@ -1,15 +1,15 @@
-#include "../src/modules/NordSynthModule.h"
+#include "../src/modules/StageSynthModule.h"
 #include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <vector>
-using namespace NordDSP;
+using namespace SonusDSP;
 static bool usable(const std::vector<float>& samples,double& energy){
   energy=0;for(float s:samples){if(!std::isfinite(s)||std::abs(s)>20.f)return false;energy+=double(s)*s;}return true;
 }
 int main(){
  for(int sr:{44100,48000,96000}){
-  NordSynthModule module;module.init(float(sr));module.synthEnabled=true;
+  StageSynthModule module;module.init(float(sr));module.synthEnabled=true;
   if(module.getWavetableBank().size()!=24){std::cerr<<"bank size";return 1;}
   std::vector<float> out(256*2);
   int counts[5]{};int wavetableCount=0,seqCount=0,chorusCount=0,phaserCount=0,delayCount=0;
@@ -43,7 +43,7 @@ int main(){
   std::cout<<"PASS "<<sr<<" Hz: 256 audible factory programs; layers "<<counts[1]<<"/"<<counts[2]<<"/"<<counts[3]<<"/"<<counts[4]<<"; WT "<<wavetableCount<<" sequenced "<<seqCount<<" chorus "<<chorusCount<<" phaser "<<phaserCount<<" delay "<<delayCount<<"\n";
  }
  // No patch mutations when silencing voices; independent per-layer insert stems.
- NordSynthModule module;module.init(48000);module.synthEnabled=true;module.loadBuiltInSynthPreset(16);
+ StageSynthModule module;module.init(48000);module.synthEnabled=true;module.loadBuiltInSynthPreset(16);
  auto before=module.layers[0].cfg;
  module.allNotesOff();
  if(module.layers[0].cfg.waveType!=before.waveType||module.layers[0].cfg.insertFx[0].enabled!=before.insertFx[0].enabled)return 7;

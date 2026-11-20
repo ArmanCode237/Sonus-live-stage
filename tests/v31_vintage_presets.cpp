@@ -13,7 +13,7 @@
 #include <map>
 #include <string>
 #include <vector>
-using namespace NordDSP;
+using namespace SonusDSP;
 namespace fs = std::filesystem;
 
 namespace {

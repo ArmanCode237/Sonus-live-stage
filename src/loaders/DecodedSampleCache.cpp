@@ -18,7 +18,7 @@
 #include <windows.h>
 #endif
 namespace fs=std::filesystem;
-namespace NordDSP {
+namespace SonusDSP {
 namespace {
 std::mutex directoryMutex;
 fs::path chosenDirectory=".cache";
@@ -178,6 +178,17 @@ void writeInstrument(std::ostream& f,const PianoInstrument& p){
     write(f,p.headerInfo.versionRaw);write(f,p.headerInfo.pianoTypeByte);
     writeString(f,p.headerInfo.displayName);writeString(f,p.headerInfo.variant);
 }
+// v33 compatibility: PCM caches written before Sonus Live Stage store the sample-format
+// names under the hardware maker's brand. Translate them to the neutral names used now, so
+// the engine's format checks keep working without re-decoding the user's samples.
+static void normalizeLegacyFormatName(std::string& s){
+    static const std::pair<const char*,const char*> legacy[]={
+        {"NORD SAMPLE (","NSMP SAMPLE ("},{"Nord Sample (","Sample NSMP ("},
+        {"NORD PIANO (","PIANO NPNO ("},{"Nord Piano v","Piano NPNO v"},{"Nord (","Sample ("}};
+    for(const auto& [from,to]:legacy)
+        if(s.rfind(from,0)==0){ s=std::string(to)+s.substr(std::char_traits<char>::length(from)); return; }
+}
+
 bool readInstrument(std::istream& f,PianoInstrument& p){
     if(!readString(f,p.name)||!readString(f,p.variant)||!readString(f,p.version)||!readString(f,p.formatType)||
        !read(f,p.sf2PresetIndex)||!read(f,p.isV6)||!read(f,p.channels)||!read(f,p.zoneCount)||
@@ -196,6 +207,8 @@ bool readInstrument(std::istream& f,PianoInstrument& p){
        !readString(f,p.headerInfo.formatCategory)||!readString(f,p.headerInfo.versionStr)||
        !read(f,p.headerInfo.versionRaw)||!read(f,p.headerInfo.pianoTypeByte)||
        !readString(f,p.headerInfo.displayName)||!readString(f,p.headerInfo.variant))return false;
+    normalizeLegacyFormatName(p.formatType);
+    normalizeLegacyFormatName(p.headerInfo.formatCategory);
     return p.zoneCount>=0&&p.zoneCount<=int(maxRecords)&&std::isfinite(p.memoryMB);
 }
 fs::path uniqueTemp(const fs::path& dest){
@@ -270,7 +283,7 @@ bool DecodedSampleCache::store(const std::string& source,int sf2Preset,const Pia
 }
 }
 
-namespace NordDSP {
+namespace SonusDSP {
 // Move an already decoded cache when a user explicitly relinks a moved folder.
 // The original source must be missing. This is deliberately disabled for SFZ,
 // whose nested sample paths are also part of the fingerprint.

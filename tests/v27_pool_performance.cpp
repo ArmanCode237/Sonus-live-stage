@@ -7,7 +7,7 @@
 #include <iostream>
 #include <string>
 #include <cstdint>
-using namespace NordDSP;
+using namespace SonusDSP;
 using Clock=std::chrono::steady_clock;
 static long ms(Clock::time_point t){return std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now()-t).count();}
 static uint64_t checksum(const PianoInstrument& bank){

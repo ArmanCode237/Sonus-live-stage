@@ -93,6 +93,11 @@ function MappingMenu({ target, onClose }: { target: Target; onClose: () => void 
   const current = all.find(a => a.scope === scope);
   const [learning, setLearning] = useState(false);
   const [allowReserved, setAllowReserved] = useState(false);
+  // v33 (M4): MIDI keyboards (ports) a mapping can be restricted to.
+  const [ports, setPorts] = useState<string[]>([]);
+  useEffect(() => {
+    api.midiRouting().then(r => setPorts(r.sources.filter(s => s.id > 0).map(s => s.name))).catch(() => setPorts([]));
+  }, []);
   const [pending, setPending] = useState<Pending | null>(null);
   const [osc, setOsc] = useState(current?.osc ?? '');
   const ref = useRef<HTMLDivElement>(null);
@@ -237,6 +242,14 @@ function MappingMenu({ target, onClose }: { target: Target; onClose: () => void 
               <select className="select mapping-menu__channel" aria-label="Canal MIDI" value={current.midi.channel}
                 onChange={e => void assign({ midi: { ...current.midi, channel: Number(e.target.value) } })}>
                 {Array.from({ length: 17 }, (_, i) => <option key={i} value={i}>{i === 0 ? 'OMNI' : `CH ${i}`}</option>)}
+              </select>
+            )}
+            {current?.midi && ports.length > 0 && (
+              <select className="select mapping-menu__channel" aria-label="Teclado MIDI" value={current.midi.port ?? ''}
+                title="Solo este teclado (útil con varios teclados conectados)"
+                onChange={e => { const { port: _old, ...rest } = current.midi!; void assign({ midi: e.target.value ? { ...rest, port: e.target.value } : rest }); }}>
+                <option value="">CUALQUIER TECLADO</option>
+                {[...new Set([...ports, ...(current.midi.port ? [current.midi.port] : [])])].map(p => <option key={p} value={p}>{p}</option>)}
               </select>
             )}
             <button type="button" className="btn btn--sm btn--primary" onClick={() => void startLearn()}>APRENDER</button>

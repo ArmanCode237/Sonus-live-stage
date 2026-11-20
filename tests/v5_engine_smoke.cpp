@@ -1,11 +1,11 @@
-#include "../src/modules/NordPianoEngine.h"
+#include "../src/modules/StagePianoEngine.h"
 #include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <iostream>
 #include <memory>
 #include <vector>
-using namespace NordDSP;
+using namespace SonusDSP;
 static std::shared_ptr<PianoInstrument> makeSample() {
     auto bank=std::make_shared<PianoInstrument>();
     StrokeSample s; s.frames=48000;s.sampleRate=48000;s.actualRootMidi=60;s.lokey=0;s.hikey=127;
@@ -19,7 +19,7 @@ static int crosses(const std::vector<float>& buffer) {
     return z;
 }
 int main() {
-    NordPianoEngine engine;engine.setSampleRate(48000);
+    StagePianoEngine engine;engine.setSampleRate(48000);
     engine.setEqEnabled(false);engine.setReverbEnabled(false);engine.setDelayEnabled(false);
     engine.setPianoEnabled(true);auto bank=makeSample();
     for(int i=0;i<5;++i){engine.setLayerInstrument(i,bank);engine.setPianoLayerEnabled(i,i==0);}
@@ -43,7 +43,7 @@ int main() {
     engine.setModWheel(0.f);engine.setPitchBend(0.f);
     engine.noteOn(60,110);std::vector<float> flat(8192*2);engine.render(flat.data(),8192);
     engine.allNotesOff();engine.render(flat.data(),8192);
-    NordPianoEngine sharp;sharp.setSampleRate(48000);
+    StagePianoEngine sharp;sharp.setSampleRate(48000);
     sharp.setEqEnabled(false);sharp.setReverbEnabled(false);sharp.setDelayEnabled(false);
     sharp.setLayerInstrument(0,bank);sharp.setPitchBend(1.f);
     sharp.noteOn(60,110);std::vector<float> bent(8192*2);sharp.render(bent.data(),8192);

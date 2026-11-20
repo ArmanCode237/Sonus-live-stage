@@ -10,7 +10,7 @@
 #include <chrono>
 #include <iostream>
 #include <vector>
-using namespace NordDSP;
+using namespace SonusDSP;
 namespace fs=std::filesystem;
 static void be16(std::vector<uint8_t>& b,size_t i,uint16_t n){b[i]=uint8_t(n>>8);b[i+1]=uint8_t(n);}
 static void be32(std::vector<uint8_t>& b,size_t i,uint32_t n){be16(b,i,uint16_t(n>>16));be16(b,i+2,uint16_t(n));}

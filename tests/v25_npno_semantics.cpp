@@ -1,15 +1,15 @@
 // NPno semantic regression: attack vs pedal-resonance, velocity bank layer,
 // and repeated notes must not alternate to resonance without the sustain pedal.
-#include "../src/modules/NordPianoEngine.h"
+#include "../src/modules/StagePianoEngine.h"
 #include "../src/loaders/BankLoader.h"
 #include <memory>
 #include <vector>
 #include <iostream>
 #include <cmath>
-using namespace NordDSP;
+using namespace SonusDSP;
 int main(int argc,char**argv){
  auto bank=std::make_shared<PianoInstrument>();
- bank->isNpno=true; bank->formatType="Nord Piano v5.30";
+ bank->isNpno=true; bank->formatType="Piano NPNO v5.30";
  for(int b=0;b<2;++b)for(int k=0;k<2;++k){
    StrokeSample s;s.index=int(bank->strokes.size());s.flags=uint8_t(b);s.zone=0;
    s.npnoLayer=uint8_t(k?15:0);s.velocityFrom=int(s.npnoLayer)*5;
@@ -21,7 +21,7 @@ int main(int argc,char**argv){
    s.readyFrames->store(s.frames);
    bank->strokes.push_back(std::move(s));
  }
- NordPianoEngine host;
+ StagePianoEngine host;
  host.setLayerInstrument(0,bank);
  std::vector<float> out(256*2);
  auto render=[&](){host.render(out.data(),256);};

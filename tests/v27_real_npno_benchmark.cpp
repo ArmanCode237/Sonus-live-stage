@@ -3,7 +3,7 @@
 #include <iostream>
 #include <filesystem>
 #include <string>
-using namespace NordDSP;
+using namespace SonusDSP;
 int main(int argc,char**argv){
  if(argc<2){std::cerr<<"usage: bench file.npno\n";return 2;}
  for(int i=0;i<2;++i){

@@ -1,14 +1,14 @@
 // Assertions carry the checks (some with side effects): keep them in Release builds.
 #undef NDEBUG
-// Deterministic Nord-format region/loop tests, no sound card or copyrighted samples.
+// Deterministic Hardware-format region/loop tests, no sound card or copyrighted samples.
 #include "../src/loaders/NsmpRegionDecoder.h"
-#include "../src/modules/NordPianoEngine.h"
+#include "../src/modules/StagePianoEngine.h"
 #include <cassert>
 #include <algorithm>
 #include <cmath>
 #include <iostream>
 #include <vector>
-using namespace NordDSP;
+using namespace SonusDSP;
 static void be32(uint8_t* p,uint32_t v){p[0]=uint8_t(v>>24);p[1]=uint8_t(v>>16);p[2]=uint8_t(v>>8);p[3]=uint8_t(v);}
 static void regionUnit(){
     uint8_t hdr[0x40]{};
@@ -32,7 +32,7 @@ static void regionUnit(){
     assert(bad.hasLoop); // supported unshifted fallback
 }
 static std::shared_ptr<PianoInstrument> makeFactory(){
-    auto bank=std::make_shared<PianoInstrument>();bank->formatType="NORD SAMPLE (.nsmp4)";
+    auto bank=std::make_shared<PianoInstrument>();bank->formatType="NSMP SAMPLE (.nsmp4)";
     StrokeSample s;s.frames=7000;s.sampleRate=48000;s.index=0;s.lokey=0;s.hikey=127;
     s.actualRootMidi=69;s.sampleScale=1.f/32768.f;
     s.loop={true,false,1200,2400,3600};s.decayCoef=1.f;s.loopDecayDbPerS=0.f;
@@ -47,7 +47,7 @@ static std::shared_ptr<PianoInstrument> makeFactory(){
     bank->strokes.push_back(std::move(s));return bank;
 }
 static void audible(double sr){
-    NordPianoEngine e;e.setSampleRate(sr);
+    StagePianoEngine e;e.setSampleRate(sr);
     e.multiSynth_.synthEnabled=false;e.organModule_.organEnabled=false;
     for(int k=1;k<PIANO_LAYER_COUNT;++k)e.setPianoLayerEnabled(k,false);
     e.setPianoEnabled(true);e.setPianoLayerSampleParam(0,0,.005f);
@@ -73,14 +73,14 @@ static void audible(double sr){
     std::cout<<"PASS factory loop "<<sr<<" Hz, max adjacent delta="<<maxDelta<<"\n";
 }
 static void fourFrameLoop(){
-    auto bank=std::make_shared<PianoInstrument>();bank->formatType="NORD PIANO (.npno)";
+    auto bank=std::make_shared<PianoInstrument>();bank->formatType="PIANO NPNO (.npno)";
     StrokeSample s;s.index=0;s.frames=4;s.sampleRate=48000;s.actualRootMidi=69;
     s.lokey=0;s.hikey=127;s.sampleScale=1.f/32768.f;
     s.loop={true,false,0,4,4};s.decayCoef=1.f;
     s.pcmL={0,14000,0,-14000};s.pcmR=s.pcmL;
     s.readyFrames->store(4,std::memory_order_release);
     bank->strokes.push_back(std::move(s));
-    NordPianoEngine e;e.setSampleRate(48000);e.multiSynth_.synthEnabled=false;
+    StagePianoEngine e;e.setSampleRate(48000);e.multiSynth_.synthEnabled=false;
     e.organModule_.organEnabled=false;e.setPianoEnabled(true);
     for(int k=1;k<PIANO_LAYER_COUNT;++k)e.setPianoLayerEnabled(k,false);
     e.setLayerInstrument(0,bank);
@@ -95,14 +95,14 @@ static void fourFrameLoop(){
     std::cout<<"PASS four-frame factory loop at sample end\n";
 }
 static void extras(){
-    auto b=makeFactory();b->formatType="Nord Piano v6";b->sourcePath="fixture.npno";
+    auto b=makeFactory();b->formatType="Piano NPNO v6";b->sourcePath="fixture.npno";
     StrokeSample alt=b->strokes.front();alt.index=1;alt.flags=1;alt.zone=0;
     b->strokes.front().zone=0;
     b->strokes.push_back(std::move(alt));
     StrokeSample release=b->strokes.front();release.index=2;release.flags=2;
     release.isReleaseStroke=true;release.explicitOneShot=true;release.loop.hasLoop=false;
     b->strokes.push_back(std::move(release));
-    NordPianoEngine engine;engine.setSampleRate(48000);
+    StagePianoEngine engine;engine.setSampleRate(48000);
     engine.multiSynth_.synthEnabled=false;engine.organModule_.organEnabled=false;
     for(int i=1;i<PIANO_LAYER_COUNT;++i)engine.setPianoLayerEnabled(i,false);
     engine.setLayerInstrument(0,b);engine.setPianoEnabled(true);

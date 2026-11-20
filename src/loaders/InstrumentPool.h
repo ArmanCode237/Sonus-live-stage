@@ -1,17 +1,18 @@
 #pragma once
-#include "../core/NordTypes.h"
+#include "../core/StageTypes.h"
 #include <condition_variable>
 #include <deque>
 #include <filesystem>
 #include <memory>
 #include <mutex>
+#include <chrono>
 #include <string>
 #include <thread>
 #include <utility>
 #include <unordered_map>
 #include <vector>
 
-namespace NordDSP {
+namespace SonusDSP {
 
 // Thread-safe control-thread cache. Call getOrLoad only from HTTP/control workers;
 // the real-time render() uses immutable shared_ptr snapshots, never this mutex.
@@ -28,6 +29,12 @@ public:
     void preloadSetlistAsync(const std::vector<std::string>& paths);
     // Preserves SF2 preset bank/program selection in setlist warmup.
     void preloadSetlistAsync(const std::vector<std::pair<std::string,int>>& sources);
+    /** v32.4 sample-RAM budget: when the instruments in RAM exceed `budgetMB`, release the
+     *  least recently used ones that nothing else holds (no layer, voice or cache writer)
+     *  and that are not part of the setlist. Returns the MB released. Control thread only. */
+    double trimUnused(uint64_t budgetMB);
+    /** MB of decoded samples currently held by the pool. */
+    double residentMB();
 
 private:
     struct Entry {
@@ -35,6 +42,8 @@ private:
         std::filesystem::file_time_type mtime{};
         uintmax_t size = 0;
         bool loading = false;
+        bool pinned = false;                                   // setlist: never released
+        std::chrono::steady_clock::time_point lastUse{};
         std::condition_variable cv;
     };
     std::unordered_map<std::string,std::shared_ptr<Entry>> entries_;
@@ -58,4 +67,4 @@ private:
     void cacheWriterLoop();
 };
 
-} // namespace NordDSP
+} // namespace SonusDSP

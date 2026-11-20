@@ -1,7 +1,7 @@
 // Generated from the former monolithic main.cpp: route bodies are unchanged.
 #include "app/routes/RouteCommon.h"
 
-using namespace NordDSP;
+using namespace SonusDSP;
 
 json StageApp::readOverrideFile(){
     json metadata={{"overrides",json::object()},{"favorites",json::array()},{"hidden",json::array()}};
@@ -53,6 +53,7 @@ void StageApp::registerSynthRoutes() {
         auto meta=readOverrideFile();
         meta["overrides"][std::to_string(id)]={{"name",name},{"params",modulePatch(1)}};
         if(!saveJsonAtomic(factoryOverridesPath,meta)){res.status=500;res.set_content(R"({"ok":false,"error":"No se pudo guardar el preset"})","application/json");return;}
+        selectedSoundRefs["synthPreset"]=nullptr;
         res.set_content(json{{"ok",true},{"metadata",meta}}.dump(),"application/json");
     });
 
@@ -134,6 +135,7 @@ void StageApp::registerSynthRoutes() {
         }
         // A newly selected factory patch replaces any unsaved synth Sound edits.
         selectedSoundRefs["synth"]=nullptr;
+        selectedSoundRefs["synthPreset"]=nullptr;   // the displays show the factory name
         paramRevCounter.fetch_add(1);
         const auto params = engine.getCurrentParams();
         const bool active = (params.synthPresetId == id && params.synthEnabled);
@@ -174,6 +176,7 @@ void StageApp::registerSynthRoutes() {
         }
         if(!replaced)presets.push_back({{"name",name},{"favorite",false},{"params",modulePatch(1)}});
         const bool ok=saveJsonAtomic(synthPresetsPath,presets);if(!ok)res.status=500;
+        else selectedSoundRefs["synthPreset"]=json{{"name",name},{"kind","USER"}};   // the sound playing now is this preset
         res.set_content(json{{"ok",ok},{"presets",presets}}.dump(),"application/json");
     });
 
@@ -187,6 +190,7 @@ void StageApp::registerSynthRoutes() {
                 const json& pData = p.contains("params") ? p["params"] : p;
                 restoreModulePatch(1,pData);
                 selectedSoundRefs["synth"]=nullptr;
+                selectedSoundRefs["synthPreset"]=json{{"name",name},{"kind","USER"}};
                 paramRevCounter.fetch_add(1);
                 res.set_content(json({
                     {"ok", true},
@@ -207,6 +211,7 @@ void StageApp::registerSynthRoutes() {
         presets.erase(std::remove_if(presets.begin(), presets.end(),
             [&](const json& p) { return p.value("name", "") == name; }), presets.end());
         savePresetsFile(synthPresetsPath, presets);
+        if(presetRefName(selectedSoundRefs,"synthPreset")==name)selectedSoundRefs["synthPreset"]=nullptr;
         res.set_content(json({{"ok", true}, {"presets", presets}}).dump(), "application/json");
     });
 

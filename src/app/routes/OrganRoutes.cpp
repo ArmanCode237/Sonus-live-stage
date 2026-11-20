@@ -1,7 +1,7 @@
 // Generated from the former monolithic main.cpp: route bodies are unchanged.
 #include "app/routes/RouteCommon.h"
 
-using namespace NordDSP;
+using namespace SonusDSP;
 
 void StageApp::registerOrganRoutes() {
     // Factory catalogue is readable on disk and never overwritten by STORE.
@@ -22,10 +22,13 @@ void StageApp::registerOrganRoutes() {
         std::ostringstream label;label<<std::setw(3)<<std::setfill('0')<<id+1<<".json";
         std::ifstream f(fs::path(findUiDir()).parent_path()/"presets/organ/factory"/label.str());
         if(!f){res.status=404;res.set_content(R"({"ok":false})","application/json");return;}
+        std::lock_guard<std::mutex> lock(dataMutex);
         try{const auto patch=json::parse(f);
             // Factory organ presets go through the same module path (mappings, dirty flag).
             json params=patch.at("params");
             restoreModulePatch(2,params);
+            selectedSoundRefs["organ"]=nullptr;
+            selectedSoundRefs["organPreset"]=json{{"name",patch.value("name",std::string("Organ ")+std::to_string(id+1))},{"kind","FACTORY"}};
             paramRevCounter.fetch_add(1);res.set_content(json{{"ok",true},{"params",serializeParams(engine.getCurrentParams())}}.dump(),"application/json");}
         catch(...){res.status=422;res.set_content(R"({"ok":false})","application/json");}
     });
@@ -51,6 +54,7 @@ void StageApp::registerOrganRoutes() {
         }
         if (!replaced) presets.push_back(newPreset);
         savePresetsFile(organPresetsPath, presets);
+        selectedSoundRefs["organPreset"]=json{{"name",name},{"kind","USER"}};
         res.set_content(json({{"ok", true}, {"presets", presets}}).dump(), "application/json");
     });
 
@@ -64,6 +68,7 @@ void StageApp::registerOrganRoutes() {
                 const json& pData = p.contains("params") ? p["params"] : p;
                 restoreModulePatch(2,pData);
                 selectedSoundRefs["organ"]=nullptr;
+                selectedSoundRefs["organPreset"]=json{{"name",name},{"kind","USER"}};
                 paramRevCounter.fetch_add(1);
                 res.set_content(json({
                     {"ok", true},
@@ -84,6 +89,7 @@ void StageApp::registerOrganRoutes() {
         presets.erase(std::remove_if(presets.begin(), presets.end(),
             [&](const json& p) { return p.value("name", "") == name; }), presets.end());
         savePresetsFile(organPresetsPath, presets);
+        if(presetRefName(selectedSoundRefs,"organPreset")==name)selectedSoundRefs["organPreset"]=nullptr;
         res.set_content(json({{"ok", true}, {"presets", presets}}).dump(), "application/json");
     });
 

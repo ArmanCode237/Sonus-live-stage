@@ -1,15 +1,15 @@
 // Assertions carry the checks (some with side effects): keep them in Release builds.
 #undef NDEBUG
 // v28.2.8 standalone DSP acceptance tests. No RtAudio, Qt or HTTP needed.
-// g++ -std=c++17 -O2 -Isrc -Isrc/core -Isrc/dsp tests/v28_2_8_atmosphere_synth.cpp src/modules/NordSynthModule.cpp -o /tmp/stage_v288test && /tmp/stage_v288test
-#include "../src/dsp/NordSlotFxRack.h"
-#include "../src/modules/NordSynthModule.h"
+// g++ -std=c++17 -O2 -Isrc -Isrc/core -Isrc/dsp tests/v28_2_8_atmosphere_synth.cpp src/modules/StageSynthModule.cpp -o /tmp/stage_v288test && /tmp/stage_v288test
+#include "../src/dsp/StageSlotFxRack.h"
+#include "../src/modules/StageSynthModule.h"
 #include <cassert>
 #include <cmath>
 #include <algorithm>
 #include <iostream>
 #include <vector>
-using namespace NordDSP;
+using namespace SonusDSP;
 struct M { double early=0,late=0,veryLate=0,peak=0; };
 static M testFx(int sampleRate,int version,float feedback,float tone,float pitchA,float pitchB,float returnAmt,bool hall=false){
  StudioSlotDSP fx;fx.init(float(sampleRate),6);
@@ -36,7 +36,7 @@ static M testFx(int sampleRate,int version,float feedback,float tone,float pitch
  m.early=std::sqrt(accE/std::max(1,nE));m.late=std::sqrt(accL/std::max(1,nL));m.veryLate=std::sqrt(accV/std::max(1,nV));return m;
 }
 static void testSynth(int rate){
- NordSynthModule s;s.init(float(rate));s.synthEnabled=true;s.synthMasterVol=.8f;
+ StageSynthModule s;s.init(float(rate));s.synthEnabled=true;s.synthMasterVol=.8f;
  auto bank=s.getWavetableSnapshot();assert(bank&&bank->size()==48); // v31: 36 + 12 LA/vintage tables
  std::vector<float> out(512*2);
  for(int type=21;type<=28;type++){

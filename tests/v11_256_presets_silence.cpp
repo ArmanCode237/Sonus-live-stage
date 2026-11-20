@@ -1,12 +1,12 @@
-#include "../src/modules/NordSynthModule.h"
+#include "../src/modules/StageSynthModule.h"
 #include <iostream>
 #include <cmath>
 #include <vector>
 #include <algorithm>
-using namespace NordDSP;
+using namespace SonusDSP;
 int main(){
  for(int sr:{44100,48000,96000}){
-  NordSynthModule synth;synth.init(sr);synth.synthEnabled=true;
+  StageSynthModule synth;synth.init(sr);synth.synthEnabled=true;
   std::vector<float> out(256*2);
   for(int id=1;id<=256;++id){
    synth.loadBuiltInSynthPreset(id);
@@ -30,12 +30,12 @@ int main(){
   std::cout<<"PASS "<<sr<<"Hz: 256 playable programs, silence after preset switch\n";
  }
  // The redesigned 097 has independent attack/pad/air layers.
- NordSynthModule synth;synth.init(48000);synth.loadBuiltInSynthPreset(97);
+ StageSynthModule synth;synth.init(48000);synth.loadBuiltInSynthPreset(97);
  if(!synth.layers[0].cfg.enabled || !synth.layers[1].cfg.enabled || !synth.layers[2].cfg.enabled ||
      synth.layers[0].cfg.synthesisType!=1 || synth.layers[1].cfg.attackSec<.20f){
    std::cerr<<"D50-style patch 97 structure missing\n";return 6;}
  // Independently reset only synth rack's tail without allocation or init.
- NordModuleFxRack rack;rack.init(48000);
+ StageModuleFxRack rack;rack.init(48000);
  ModuleFxConfig fx{};fx.delayEnabled=true;fx.delayMix=.8f;fx.delayFeedback=.5f;fx.delayMs=45.f;
  float impulse[3][2]={{0,0},{1,1},{0,0}};float zeros[3][2]={{0,0},{0,0},{0,0}};
  float l=0,r=0;rack.process(l,r,impulse,fx);

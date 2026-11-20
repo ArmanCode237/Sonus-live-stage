@@ -5,7 +5,7 @@
 #include <cmath>
 #include <iostream>
 #include <vector>
-using namespace NordDSP;
+using namespace SonusDSP;
 
 static std::vector<float> impulse(int rate, int unit, float depth=.8f, float lfo=.85f) {
     SynthLayerInsertDSP dsp;

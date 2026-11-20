@@ -2,12 +2,12 @@
 #undef NDEBUG
 // v28.2.4 - deterministic no-hardware DSP smoke/regression tests.
 // Compile: g++ -std=c++17 -O2 -Isrc -Isrc/core -Isrc/dsp tests/v28_2_4_fx_rack.cpp -o fxcheck
-#include "../src/dsp/NordSlotFxRack.h"
+#include "../src/dsp/StageSlotFxRack.h"
 #include <array>
 #include <cassert>
 #include <cmath>
 #include <iostream>
-using namespace NordDSP;
+using namespace SonusDSP;
 static double render(int type,int version,std::array<float,16> params,int sampleRate,int seconds=2){
     StudioSlotDSP fx;fx.init(float(sampleRate),type);
     StudioSlotConfig c{};c.type=type;c.version=version;c.enabled=true;std::copy(params.begin(),params.end(),c.p.begin());

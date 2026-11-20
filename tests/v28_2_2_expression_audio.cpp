@@ -1,15 +1,15 @@
 // Assertions carry the checks (some with side effects): keep them in Release builds.
 #undef NDEBUG
 // Regression: expression routes must be opt-in; mono and glide are independent.
-// Build with NordPianoEngine.cpp, NordSynthModule.cpp and NordOrganModule.cpp.
-#include "../src/modules/NordPianoEngine.h"
+// Build with StagePianoEngine.cpp, StageSynthModule.cpp and StageOrganModule.cpp.
+#include "../src/modules/StagePianoEngine.h"
 #include <algorithm>
 #include <cassert>
 #include <cmath>
 #include <iostream>
 #include <memory>
 #include <vector>
-using namespace NordDSP;
+using namespace SonusDSP;
 static auto bank(){
  auto b=std::make_shared<PianoInstrument>();b->formatType="SF2 (PCM16)";
  StrokeSample s;s.frames=48000*2;s.sampleRate=48000;s.lokey=0;s.hikey=127;
@@ -23,13 +23,13 @@ static auto bank(){
  s.readyFrames->store(s.frames,std::memory_order_release);
  b->strokes.push_back(std::move(s));return b;
 }
-static void setup(NordPianoEngine& e){
+static void setup(StagePianoEngine& e){
  e.setSampleRate(48000);e.multiSynth_.synthEnabled=false;e.organModule_.organEnabled=false;
  e.setInstrument(bank());e.setPianoEnabled(true);
  for(int i=1;i<PIANO_LAYER_COUNT;++i)e.setPianoLayerEnabled(i,false);
 }
 static std::vector<float> play(float wheel,bool vibrato,bool invertedCutoff=false){
- NordPianoEngine e;setup(e);
+ StagePianoEngine e;setup(e);
  e.setPianoWheelRoute(0,5,vibrato?1.f:0.f);
  e.setPianoWheelRoute(0,6,100.f);
  e.setPianoWheelRoute(0,7,6.f);
@@ -63,7 +63,7 @@ int main(){
  assert(difference(vibrato0,vibrato1)>.001 && "Vibrato enabled should change pitch with CC1");
  auto inverse0=play(0,false,true),inverse1=play(1,false,true);
  assert(rms(inverse1)>rms(inverse0)*2.0 && "Inverted cutoff CC1=0 must be darker");
- NordPianoEngine e;setup(e);e.setPianoVoiceMode(0,0,1.f);
+ StagePianoEngine e;setup(e);e.setPianoVoiceMode(0,0,1.f);
  std::vector<float> out(256*2);
  e.noteOn(60,105);for(int i=0;i<2;++i)e.render(out.data(),256);
  e.noteOn(64,105);for(int i=0;i<10;++i)e.render(out.data(),256);
@@ -75,8 +75,8 @@ int main(){
  assert(e.getActiveVoiceCount()>=2 && "Poly must allow independent voices");
  // Same sample zone, MONO+LEGATO retunes the existing playback head rather
  // than retriggering the attack; this must work independently of glide.
- auto nsmp=bank();nsmp->formatType="NORD SAMPLE (.nsmp4)";
- NordPianoEngine lead;setup(lead);lead.setLayerInstrument(0,nsmp);
+ auto nsmp=bank();nsmp->formatType="NSMP SAMPLE (.nsmp4)";
+ StagePianoEngine lead;setup(lead);lead.setLayerInstrument(0,nsmp);
  lead.setPianoVoiceMode(0,0,1.f);lead.setPianoVoiceMode(0,1,1.f);
  lead.setSamplePortamento(0,0,0.f);
  lead.noteOn(60,100);for(int n=0;n<4;++n)lead.render(out.data(),256);

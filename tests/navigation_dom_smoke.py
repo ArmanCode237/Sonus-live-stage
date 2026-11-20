@@ -17,7 +17,7 @@ def assembled(name):
     html=re.sub(r'<link rel="stylesheet" href="/([^"]+)">',link,html)
     def js(m):
         code=(root/m.group(1)).read_text()
-        code=code.replace("localStorage.getItem('nord_kb_vis')", "'1'")
+        code=code.replace("localStorage.getItem('stage_kb_vis')", "'1'")
         return '<script>'+code+'</script>'
     html=re.sub(r'<script src="/([^"]+)"></script>',js,html)
     return html

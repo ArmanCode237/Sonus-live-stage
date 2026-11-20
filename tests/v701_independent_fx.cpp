@@ -1,10 +1,10 @@
-#include "../src/dsp/NordDspEffects.h"
+#include "../src/dsp/StageDspEffects.h"
 #include <iostream>
 #include <cmath>
-using namespace NordDSP;
+using namespace SonusDSP;
 int main(){
  for(float sr:{44100.f,48000.f,96000.f}){
-  NordModuleFxRack synth, organ;synth.init(sr);organ.init(sr);
+  StageModuleFxRack synth, organ;synth.init(sr);organ.init(sr);
   ModuleFxConfig c;c.chorusEnabled=true;c.delayEnabled=true;c.reverbEnabled=true;
   c.driveEnabled=true;c.autoPanEnabled=true;c.reverbType=2;
   double energy=0,tail=0;float peak=0;

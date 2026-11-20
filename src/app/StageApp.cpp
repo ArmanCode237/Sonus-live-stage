@@ -1,7 +1,7 @@
 #include "app/UserDataPaths.h"
 #include "dsp/Mt32Engine.h"
 #include "app/StageApp.h"
-#include "app/HardwareManager.h"
+#include <random>
 #include "loaders/DecodedSampleCache.h"
 #include <chrono>
 #include <cstdlib>
@@ -16,7 +16,7 @@ void bootStep(const char* msg) {
     if(trace) trace << msg << std::endl;
 }
 
-StageApp::StageApp(int argc, char* argv[]) {
+StageApp::StageApp(int argc, char* argv[], StageAppOptions options) : options_(std::move(options)) {
     bootStep("Motor DSP creado y buffers inicializados");
     {
         // MT-32 ROMs (the user's own dumps) must be loaded before the audio device
@@ -24,10 +24,11 @@ StageApp::StageApp(int argc, char* argv[]) {
         const auto projectRoms = (fs::path(findUiDir()).parent_path() / "roms/mt32").generic_string();
         const auto userRoms = (stageUserDataDir() / "roms/mt32").generic_string();
         std::error_code ec; fs::create_directories(userRoms, ec);
-        NordDSP::Mt32Roms::load({projectRoms, userRoms});
-        bootStep(NordDSP::Mt32Roms::status().message.c_str());
+        SonusDSP::Mt32Roms::load({projectRoms, userRoms});
+        bootStep(SonusDSP::Mt32Roms::status().message.c_str());
     }
-    oscMapper.startOscServer(9000);
+    // OSC listens on a fixed port: the app only (several plug-in instances would collide).
+    if(!options_.plugin) oscMapper.startOscServer(9000);
 
     // Flags ("--lan") are not positional; the first other argument is the library.
     libraryRootDir = "./samples";
@@ -36,7 +37,18 @@ StageApp::StageApp(int argc, char* argv[]) {
         if(arg=="--lan")httpLanAccess=true;
         else if(arg.rfind("--",0)!=0){libraryRootDir=arg;break;}
     }
-    for(int i=1;i<argc;++i)if(std::string(argv[i])=="--lan")httpLanAccess=true; // after the library arg too
+    for(int i=1;i<argc;++i){
+        const std::string arg=argv[i];
+        if(arg=="--lan")httpLanAccess=true;                       // after the library arg too
+        else if(arg=="--headless")uiMode=UiMode::Headless;        // server only (tests, remote)
+        else if(arg=="--browser")uiMode=UiMode::Browser;          // the console in the browser
+        else if(arg=="--web")webAccessForced=true;                // browsers allowed this session
+    }
+    if(uiMode!=UiMode::Window)webAccessForced=true;               // they reach the API over HTTP
+    {   // v32.4 per-session token of the native window (128 random bits, hex)
+        std::random_device rd; static const char* hex="0123456789abcdef";
+        for(int i=0;i<32;++i)sessionToken.push_back(hex[rd()%16]);
+    }
     httpBindAddress=httpLanAccess?"0.0.0.0":"127.0.0.1";
     if (!fs::exists(libraryRootDir)) libraryRootDir = ".";
 
@@ -155,6 +167,7 @@ StageApp::StageApp(int argc, char* argv[]) {
     }
 
     currentProgramName = userPrograms[0].value("name", std::string("Program 1"));
+    validateSetlist();   // v32.4: warn now, not when the pad is pressed on stage
 
     // Warm all piano layers referenced by setlist slots 2..8. This worker only
     // calls the control-thread InstrumentPool; it never runs in RtAudio.
@@ -180,7 +193,7 @@ StageApp::StageApp(int argc, char* argv[]) {
     instPool.preloadSetlistAsync(setlistPaths);
 
     bootStep("Inicializando hardware de audio y MIDI");
-    hw = std::make_unique<HardwareManager>(engine);
+    hw = options_.makeBackend ? options_.makeBackend(engine) : makeHostedAudioBackend(engine);
     bootStep("Hardware inicializado");
 
     if (fs::exists(tagsFilePath)) {
@@ -198,6 +211,31 @@ StageApp::StageApp(int argc, char* argv[]) {
         engine.getRegistry().registerParam(id,0.f,1.f,[this,i](float v){
             if(v>=0.5f)requestedMidiProgram.store(i,std::memory_order_release);
         });
+    }
+    // v32.4 PANIC (mappable to a pad / footswitch) and MIDI CLOCK follow (persisted).
+    engine.getRegistry().registerParam("panic",0.f,1.f,[this](float v){
+        if(v>=0.5f){ engine.setSustainPedal(false); engine.setPitchBend(0.f); engine.allNotesOff(); }
+    });
+    engine.getRegistry().registerParam("midiClockSync",0.f,1.f,[this](float v){
+        engine.setMidiClockSync(v>=0.5f); saveSystemSettings();
+    });
+    loadSystemSettings();
+    // v32.4 session recovery: the lock file survives only an unexpected exit.
+    sessionDir = stageUserDataDir()/"session";
+    if(!options_.plugin){   // the DAW project is the plug-in's session (no lock / autosave)
+        std::error_code ec; fs::create_directories(sessionDir,ec);
+        if(fs::exists(sessionDir/"running.lock") && fs::exists(sessionDir/"autosave.json")){
+            // Set the crashed session aside: the new session's autosave must not overwrite it.
+            fs::rename(sessionDir/"autosave.json",sessionDir/"recovery.json",ec);
+            std::ifstream in(sessionDir/"recovery.json");
+            const json saved=json::parse(in,nullptr,false);
+            if(saved.is_object() && saved.contains("program")){
+                sessionRecovery={{"savedAt",saved.value("savedAt",std::string())},{"programName",saved.value("programName",std::string())}};
+                std::cout<<"[SESSION] La sesion anterior termino de forma inesperada: autoguardado disponible ("
+                         <<saved.value("savedAt",std::string("?"))<<")\n";
+            }
+        }
+        std::ofstream(sessionDir/"running.lock")<<"running\n";
     }
     // Studio inserts are configurable slots. Only parameter values and bypass can
     // be mapped in real time; FX type changes require building a DSP off-thread.
@@ -239,59 +277,154 @@ StageApp::StageApp(int argc, char* argv[]) {
         [this] { std::lock_guard<std::mutex> lock(dataMutex); return liveStateJson(); },
         [this] { std::lock_guard<std::mutex> lock(dataMutex); return serializeParams(engine.getCurrentParams()); });
     registerRealtimeRoutes();
+    registerBrowserRoutes();
     registerMappingRoutes();
+    registerMidiRoutingRoutes();
+    registerAboutRoutes();
+    compileMidiRoutes();
 }
 
-StageApp::~StageApp() = default;
+StageApp::~StageApp() { stopServices(); }   // threads must stop before the members go
 
-int StageApp::run() {
-    std::cout << "\n[GUI] Nord Virtual Stage: http://localhost:8080\n";
-#if defined(_WIN32)
-    std::system("start http://localhost:8080");
-#elif defined(__APPLE__)
-    std::system("open http://localhost:8080");
-#endif
-
+bool StageApp::startServices(const std::string& bindAddress, int port) {
+    if(servicesRunning_.exchange(true)) return true;
     // MIDI program changes are deferred to a worker so decoding SF2/SFZ cannot
     // block MIDI input or the audio callback. Latest selection wins.
-    std::atomic<bool> midiProgramWorkerRunning{true};
-    std::thread midiProgramWorker([&]{
-        while(midiProgramWorkerRunning.load(std::memory_order_acquire)){
-            const int requested=requestedMidiProgram.exchange(-1,std::memory_order_acq_rel);
+    programWorker_=std::thread([this]{
+        while(servicesRunning_.load(std::memory_order_acquire)){
+            int requested=requestedMidiProgram.exchange(-1,std::memory_order_acq_rel);
+            // v32.4 MIDI Program Change: program n -> slot n mod 8 (channel filter: MidiInput.cpp).
+            const int pc=engine.takeProgramChange();
+            if(pc>=0)requested=pc%kProgramSlots;
             if(requested>=0 && requested<kProgramSlots){
                 std::lock_guard<std::mutex> lock(dataMutex);
                 activeProgramSlot=requested;
                 const auto& prog=userPrograms[requested];
                 currentProgramName=prog.value("name",std::string("Program"));
                 initializedEditBuffer=false;
-                restorePianoLayerSources(prog,engine,libraryRootDir,statusMsg);
-                if(prog.contains("params"))engine.applyPreset(deserializeParams(prog["params"],engine.getCurrentParams()));
-                restoreProgramMappings(prog);
-                for(auto& dirty:moduleDirty)dirty.store(false);
-                clearAllSoundDirty();
-                syncMappingValues();
-                paramRevCounter.fetch_add(1);
+                applyProgramJson(prog);
+                std::cout<<"[PROGRAM] "<<(pc>=0?"Program Change ":"Pad ")<<(requested+1)<<": "<<currentProgramName<<"\n";
             }
             // Reclaim banks from finished/retired voices away from ASIO callback.
             engine.collectRetiredInstruments();
             std::this_thread::sleep_for(std::chrono::milliseconds(12));
         }
     });
-    bootStep("Iniciando servidor HTTP 8080");
-    std::cout << "[GUI] HTTP escuchando en " << httpBindAddress << ":8080"
-              << (httpLanAccess ? " (acceso LAN activado con --lan)\n" : " (solo este equipo; usa --lan para la red local)\n");
+    // v32.4 maintenance worker: MIDI hot-plug (also with no browser open), audio watchdog,
+    // session autosave and the sample-RAM budget. Never on the audio or MIDI threads.
+    maintenanceWorker_=std::thread([this]{
+        while(servicesRunning_.load(std::memory_order_acquire)){
+            maintenanceTick();
+            for(int i=0;i<10 && servicesRunning_.load(std::memory_order_acquire);++i)
+                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        }
+    });
     hub->start();
-    const bool listenOk = svr.listen(httpBindAddress, 8080);
+    listenOk_=true;
+    if(port<=0){
+        // Plug-in: any free loopback port (several instances may run at once).
+        servicePort_=svr.bind_to_any_port(bindAddress);
+        if(servicePort_<=0){ listenOk_=false; return false; }
+        serverThread_=std::thread([this]{ listenOk_=svr.listen_after_bind(); });
+    }else{
+        servicePort_=port;
+        serverThread_=std::thread([this,bindAddress,port]{ listenOk_=svr.listen(bindAddress,port); });
+    }
+    for(int i=0;i<200 && !svr.is_running() && listenOk_.load();++i)std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    return svr.is_running();
+}
+
+void StageApp::stopServices() {
+    if(!servicesRunning_.load()) return;
+    svr.stop();
+    if(serverThread_.joinable())serverThread_.join();
     hub->stop();
-    midiProgramWorkerRunning.store(false);
-    if(midiProgramWorker.joinable())midiProgramWorker.join();
+    servicesRunning_.store(false);
+    if(programWorker_.joinable())programWorker_.join();
+    if(maintenanceWorker_.joinable())maintenanceWorker_.join();
+    if(!options_.plugin) autosaveSessionIfNeeded(true);
     engine.collectRetiredInstruments();
-    if(!listenOk) {
+}
+
+std::string StageApp::consoleUrl() const {
+    return "http://127.0.0.1:"+std::to_string(servicePort_)+"/?k="+sessionToken;
+}
+
+int StageApp::run() {
+    bootStep("Iniciando servidor HTTP 8080");
+    lanActive=httpLanAccess||lanSetting;
+    httpBindAddress=lanActive?"0.0.0.0":"127.0.0.1";
+    if(uiMode==UiMode::Window && !nativeWindowAvailable()){uiMode=UiMode::Browser;webAccessForced=true;}
+    std::cout << "[GUI] HTTP en " << httpBindAddress << ":8080 · "
+              << (lanActive ? "red local activada" : "solo este equipo")
+              << " · acceso desde navegador " << (webAllowed() ? "permitido" : "desactivado (solo la ventana de la app)") << "\n";
+    // The server runs on its own thread; this (main) thread owns the window and its message loop.
+    const bool listening=startServices(httpBindAddress,8080);
+    if(!listening){
+        listenOk_=false;
+#if defined(_WIN32)
+        if(uiMode==UiMode::Window)
+            MessageBoxW(nullptr,L"No se pudo abrir el puerto 8080.\n\nProbablemente Sonus Live Stage ya está abierto en este equipo.",
+                        L"Sonus Live Stage",MB_OK|MB_ICONWARNING);
+#endif
+    }else if(uiMode==UiMode::Window){
+        std::string error;
+        bootStep("Abriendo la ventana de Sonus Live Stage");
+        if(runNativeWindow(consoleUrl(),windowState,error)){
+            std::cout<<"[GUI] Ventana cerrada: deteniendo el servidor\n";
+            saveSystemSettings();                       // window size / position / full screen
+            svr.stop();
+        }else{
+            // No WebView2 runtime: fall back to the browser (it needs web access this session).
+            std::cerr<<"[GUI] Ventana nativa no disponible ("<<error<<"): abriendo el navegador\n";
+            webAccessForced=true;
+#if defined(_WIN32)
+            std::system("start http://localhost:8080");
+#elif defined(__APPLE__)
+            std::system("open http://localhost:8080");
+#endif
+        }
+        if(serverThread_.joinable())serverThread_.join();
+    }else{
+        std::cout<<"[GUI] Sonus Live Stage: http://localhost:8080\n";
+#if defined(_WIN32)
+        if(uiMode==UiMode::Browser)std::system("start http://localhost:8080");
+#elif defined(__APPLE__)
+        if(uiMode==UiMode::Browser)std::system("open http://localhost:8080");
+#endif
+        if(serverThread_.joinable())serverThread_.join();
+    }
+    const bool ok=listenOk_.load();
+    stopServices();
+    { std::error_code ec; fs::remove(sessionDir/"running.lock",ec); }   // clean exit
+    if(!ok) {
         bootStep("ERROR: no se pudo escuchar el puerto HTTP 8080 (¿ya ocupado?)");
         return 5;
     }
     bootStep("Servidor detenido");
     return 0;
+}
+
+json StageApp::captureState() {
+    std::lock_guard<std::mutex> lock(dataMutex);
+    return {{"version", 1}, {"activeSlot", activeProgramSlot}, {"programName", currentProgramName},
+            {"program", captureProgramJson(activeProgramSlot, currentProgramName)}};
+}
+
+std::string StageApp::programSlotName(int slot) {
+    std::lock_guard<std::mutex> lock(dataMutex);
+    if(slot<0 || slot>=kProgramSlots || !userPrograms.is_array() || slot>=int(userPrograms.size())) return "Program "+std::to_string(slot+1);
+    return userPrograms[slot].value("name",std::string("Program ")+std::to_string(slot+1));
+}
+
+void StageApp::restoreState(const json& state) {
+    if(!state.is_object() || !state.contains("program") || !state["program"].is_object()) return;
+    std::lock_guard<std::mutex> lock(dataMutex);
+    activeProgramSlot=std::clamp(state.value("activeSlot",0),0,kProgramSlots-1);
+    currentProgramName=state.value("programName",std::string("Program"));
+    initializedEditBuffer=false;
+    applyProgramJson(state["program"]);
+    paramRevCounter.fetch_add(1);
 }
 
 // ---------------------------------------------------------------- library
@@ -427,6 +560,7 @@ void StageApp::syncMappingValues(){
 
 void StageApp::markParamEdited(const std::string& id){
     if(id=="synthPresetId")return;   // selecting a preset is a load, not an edit
+    editEpoch.fetch_add(1,std::memory_order_relaxed);
     const int module=parameterModule(id);
     if(module>=0)moduleDirty[size_t(module)].store(true);
     const int layer=soundLayerOfParam(id);
@@ -488,4 +622,98 @@ void StageApp::serveHtmlPage(const std::string& file, httplib::Response& res) {
     }
     std::string content((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
     res.set_content(content, "text/html; charset=utf-8");
+}
+
+// ---------------------------------------------------------------- v32.4 live / studio safety
+
+void StageApp::maintenanceTick(){
+    if(hw) hw->poll();
+    compileMidiRoutes();                              // v33: ports that appeared since the last tick
+    if(!options_.plugin) autosaveSessionIfNeeded(false);
+    // A5: release instruments no layer / program / setlist uses once the sample RAM
+    // budget is exceeded (least recently used first). Live sets stay in RAM.
+    instPool.trimUnused(sampleMemoryBudgetMB);
+}
+
+void StageApp::autosaveSessionIfNeeded(bool force){
+    const uint64_t rev=paramRevCounter.load(), epoch=editEpoch.load();
+    if(rev==autosaveRev && epoch==autosaveEpoch) return;
+    const auto now=std::chrono::steady_clock::now();
+    if(!force && now-lastAutosave<std::chrono::seconds(30)) return;
+    std::unique_lock<std::mutex> lock(dataMutex,std::try_to_lock);
+    if(!lock.owns_lock()) return;                  // busy (loading): next tick
+    const std::time_t t=std::time(nullptr);
+    std::tm tm{};
+#if defined(_WIN32)
+    localtime_s(&tm,&t);
+#else
+    localtime_r(&t,&tm);
+#endif
+    char stamp[32]; std::strftime(stamp,sizeof stamp,"%Y-%m-%d %H:%M:%S",&tm);
+    const json saved={{"savedAt",stamp},{"programName",currentProgramName},{"activeSlot",activeProgramSlot},
+                      {"program",captureProgramJson(activeProgramSlot,currentProgramName)}};
+    lock.unlock();
+    if(saveJsonAtomic((sessionDir/"autosave.json").string(),saved)){
+        autosaveRev=rev; autosaveEpoch=epoch; lastAutosave=now;
+    }
+}
+
+void StageApp::validateSetlist(){
+    missingSamples=json::array();
+    for(size_t slot=0;slot<std::min<size_t>(kProgramSlots,userPrograms.size());++slot){
+        const auto& program=userPrograms[slot];
+        if(!program.is_object() || !program.contains("pianoLayers") || !program["pianoLayers"].is_array()) continue;
+        for(const auto& layer:program["pianoLayers"]){
+            if(!layer.is_object()) continue;
+            const std::string saved=layer.value("sourcePath",std::string{}), file=layer.value("fileName",std::string{});
+            if(saved.empty() && file.empty()) continue;
+            const bool found=(!saved.empty() && fs::is_regular_file(fs::path(saved))) ||
+                             (!file.empty() && fs::is_regular_file(fs::path(libraryRootDir)/file));
+            if(!found){
+                missingSamples.push_back({{"slot",int(slot)+1},{"program",program.value("name",std::string())},
+                                          {"file",file.empty()?fs::path(saved).filename().string():file}});
+            }
+        }
+    }
+    for(const auto& m:missingSamples)
+        std::cerr<<"[SETLIST] Program "<<m.value("slot",0)<<" ("<<m.value("program",std::string())<<"): falta "<<m.value("file",std::string())<<"\n";
+}
+
+void StageApp::loadSystemSettings(){
+    std::ifstream in(stageUserFile("system_settings.json"));
+    const json s=json::parse(in,nullptr,false);
+    if(!s.is_object()) return;
+    engine.setMidiClockSync(s.value("midiClockSync",false));
+    engine.setMidiProgramChannel(s.value("midiProgramChannel",0));          // v33 (M1): omni by default
+    engine.setMidiAllNotesOffEnabled(s.value("midiAllNotesOff",true));
+    if(s.contains("midiRouting")&&s["midiRouting"].is_object()&&s["midiRouting"].value("rules",json()).is_array()){
+        std::lock_guard<std::mutex> lock(routingMutex_);
+        midiRouting_=s["midiRouting"];                  // sanitised on the next POST; compiled below
+    }
+    sampleMemoryBudgetMB=std::clamp<uint64_t>(s.value("sampleMemoryBudgetMB",uint64_t(4096)),512,65536);
+    webAccess=s.value("webAccess",false);
+    lanSetting=s.value("lanAccess",false);
+    if(s.contains("window")&&s["window"].is_object()){
+        const auto& w=s["window"];
+        windowState.x=w.value("x",-1);windowState.y=w.value("y",-1);
+        windowState.width=w.value("width",1440);windowState.height=w.value("height",900);
+        windowState.maximized=w.value("maximized",true);windowState.fullscreen=w.value("fullscreen",false);
+    }
+    if(s.contains("osc")&&s["osc"].is_object()){
+        const auto& o=s["osc"];
+        oscMapper.setDevice(o.value("deviceIp",std::string()),o.value("devicePort",9000),
+                            o.value("feedback",false),o.value("onlyFromDevice",false));
+    }
+}
+
+void StageApp::saveSystemSettings(){
+    const auto osc=oscMapper.deviceConfig();
+    saveJsonAtomic(stageUserFile("system_settings.json"),
+        json{{"midiClockSync",engine.midiClockSync()},{"sampleMemoryBudgetMB",sampleMemoryBudgetMB.load()},
+             {"midiProgramChannel",engine.midiProgramChannel()},{"midiAllNotesOff",engine.midiAllNotesOffEnabled()},
+             {"midiRouting",[this]{ std::lock_guard<std::mutex> lock(routingMutex_); return midiRouting_; }()},
+             {"webAccess",webAccess.load()},{"lanAccess",lanSetting},
+             {"window",{{"x",windowState.x},{"y",windowState.y},{"width",windowState.width},{"height",windowState.height},
+                        {"maximized",windowState.maximized},{"fullscreen",windowState.fullscreen}}},
+             {"osc",{{"deviceIp",osc.deviceIp},{"devicePort",osc.devicePort},{"feedback",osc.feedback},{"onlyFromDevice",osc.onlyFromDevice}}}});
 }

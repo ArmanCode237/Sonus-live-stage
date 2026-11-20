@@ -121,3 +121,89 @@
   .view--main .pad,.view--main .hwbtn__cap{transition:none}
   .view--main .pads.is-storing .pad__led{animation:none}
 }
+
+/* v32.4 piano layers: range + live meter per layer, 88-key zone map, voice toggles. */
+.layer-row{position:relative}
+.layer-row__name{display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0}
+.layer-row__title{display:block;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.layer-row__range{font:600 9px/1 var(--mono);letter-spacing:.04em;color:var(--muted)}
+.layer-row__range.is-limited{color:var(--amber)}
+.layer-row__shift{font-weight:700;color:var(--amber)}
+.layer-row__meter{position:absolute;left:1px;right:1px;bottom:1px;height:3px;border-radius:0 0 6px 6px;overflow:hidden;display:flex;opacity:.9;pointer-events:none}
+.layer-row__meter .level-meter__track{background:transparent;box-shadow:none;border-radius:0}
+
+.zone-map{display:flex;flex-direction:column;gap:4px;flex:1 1 auto;min-height:74px;max-height:150px;padding:7px 8px 5px;text-decoration:none;color:inherit;
+  border:1px solid var(--surface-1-edge);border-radius:7px;background:var(--surface-1)}
+.zone-map:hover{border-color:var(--line-hi)}
+.zone-map__title{font:800 9px/1 var(--font);letter-spacing:.16em;color:var(--label)}
+.zone-map__lanes{position:relative;flex:1 1 auto;display:flex;flex-direction:column;gap:2px;min-height:40px;padding:2px 0;
+  /* one tick per octave (C) on the 88-key scale */
+  background:repeating-linear-gradient(90deg,transparent 0,transparent calc(100%/88*12 - 1px),#ffffff14 calc(100%/88*12 - 1px),#ffffff14 calc(100%/88*12)) calc(100%/88*3) 0 / 100% 100% no-repeat}
+.zone-map__lane{position:relative;flex:1 1 0;min-height:6px}
+.zone-map__bar{position:absolute;top:0;bottom:0;display:flex;align-items:center;padding-left:4px;border-radius:3px;overflow:hidden;
+  font:800 8px/1 var(--font);letter-spacing:.06em;color:#fff;background:linear-gradient(180deg,#e2414b,#a51f29);box-shadow:inset 0 1px 0 #ffffff30}
+.zone-map__bar.is-off{background:#5a5f66;color:#ffffff99}
+.zone-map__module{position:absolute;top:-1px;bottom:-1px;border:1px dashed #ffffff40;border-radius:4px;pointer-events:none}
+.zone-map__keys{position:relative;height:14px;border-radius:2px;
+  background:repeating-linear-gradient(90deg,#e8e8e8 0,#e8e8e8 calc(100%/52 - 1px),#9a9a9a calc(100%/52 - 1px),#9a9a9a calc(100%/52))}
+.zone-map__keys span{position:absolute;bottom:1px;transform:translateX(-50%);font:700 7px/1 var(--mono);color:#333}
+.layer-quick__voice{display:flex;flex-direction:column;justify-content:center;gap:4px}
+.perform-col--piano .layer-quick{align-items:flex-end}
+@media (min-height:900px){
+  .perform-col--piano .layers>.layer-row{max-height:60px}
+  .zone-map{max-height:240px}
+}
+/* the map absorbs whatever height the column leaves; lanes keep a readable size */
+.zone-map,.zone-map:is(*){max-height:none}
+.zone-map__lanes{justify-content:center}
+.zone-map__lane{flex:0 1 18px;max-height:18px}
+/* the five layers always show in full; only the zone map stretches or shrinks */
+.perform-col--piano .layers{flex:0 0 auto;overflow:visible}
+.perform-col--piano .layers>.layer-row{flex:0 0 auto;min-height:36px;max-height:none}
+.perform-col--piano .zone-map{flex:1 1 0;min-height:64px}
+@media (min-height:900px){ .perform-col--piano .layers>.layer-row{min-height:50px} }
+.zone-map__lanes{justify-content:flex-start;gap:3px}
+.zone-map__lane{flex:1 1 0;min-height:7px;max-height:40px}
+.zone-map__bar{font-size:9px}
+
+/* PERFORM | responsive MASTER/PAN/TUNE placement for EXE WebView and VST3 WebView2.
+   The three existing ParamKnob components and their parameter bindings are unchanged.
+   The fourth channel of the mixer can become narrower with window/DPI/browser zoom;
+   stacking its main encoder above the two trim encoders prevents flex overflow. */
+.view--main .perform-col--center .mix__strip--master {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  justify-items: center;
+  align-content: center;
+  gap: 5px;
+  min-width: 0;
+  padding-inline: 5px;
+}
+.view--main .perform-col--center .mix__strip--master > .knob {
+  min-width: 0;
+  max-width: 100%;
+}
+.view--main .perform-col--center .mix__strip--master > .row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  justify-items: center;
+  align-items: start;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+}
+.view--main .perform-col--center .mix__strip--master > .row > .knob {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+}
+.view--main .perform-col--center .mix__strip--master .knob__svg {
+  max-width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+}
+.view--main .perform-col--center .mix__strip--master .knob__value {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}

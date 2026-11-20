@@ -1,12 +1,12 @@
 #include "../src/loaders/Sf2Loader.h"
-#include "../src/modules/NordPianoEngine.h"
+#include "../src/modules/StagePianoEngine.h"
 #include <cmath>
 #include <iostream>
 #include <memory>
 #include <vector>
-using namespace NordDSP;
+using namespace SonusDSP;
 static double tailEnergy(const std::shared_ptr<const PianoInstrument>& bank,float releaseSec){
- NordPianoEngine e;e.setSampleRate(48000);e.setPianoEnabled(true);e.multiSynth_.synthEnabled=false;e.organModule_.organEnabled=false;
+ StagePianoEngine e;e.setSampleRate(48000);e.setPianoEnabled(true);e.multiSynth_.synthEnabled=false;e.organModule_.organEnabled=false;
  for(int i=1;i<5;i++)e.setPianoLayerEnabled(i,false);
  e.setPianoLayerSampleParam(0,0,.005f);e.setPianoLayerSampleParam(0,1,.1f);e.setPianoLayerSampleParam(0,2,1.f);
  e.setPianoLayerSampleParam(0,3,releaseSec);e.setPianoLayerSampleParam(0,4,1.f);

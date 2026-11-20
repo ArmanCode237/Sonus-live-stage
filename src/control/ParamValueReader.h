@@ -7,7 +7,7 @@
 #include <optional>
 #include <string>
 
-namespace NordDSP {
+namespace SonusDSP {
 
 std::optional<float> readParamValue(const nlohmann::json& params, const std::string& id);
 
@@ -20,4 +20,4 @@ int soundLayerOfParam(const std::string& id);
 /** The same Sound parameter on another piano layer ("pianoSample0Cut" → "pianoSample3Cut"). */
 std::string retargetSoundParam(const std::string& id, int layer);
 
-} // namespace NordDSP
+} // namespace SonusDSP

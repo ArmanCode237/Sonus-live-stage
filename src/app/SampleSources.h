@@ -2,7 +2,7 @@
 // Sample-source persistence shared by programs, Sounds and performances.
 #include "app/AppCommon.h"
 #include "loaders/InstrumentPool.h"
-#include "modules/NordPianoEngine.h"
+#include "modules/StagePianoEngine.h"
 #include <mutex>
 #include <utility>
 #include <vector>
@@ -17,6 +17,6 @@ extern std::vector<std::pair<fs::path,fs::path>> relocatedPaths;
 // Never replace an existing file with a partial/truncated JSON document.
 bool saveJsonAtomic(const fs::path& destination,const json& value);
 fs::path resolveSavedSamplePath(const fs::path& requested);
-json serializePianoLayerSources(const NordPianoEngine& engine);
-bool restorePianoLayerSources(const json& program, NordPianoEngine& engine,
+json serializePianoLayerSources(const StagePianoEngine& engine);
+bool restorePianoLayerSources(const json& program, StagePianoEngine& engine,
                               const std::string& libraryRoot, std::string& statusMsg);

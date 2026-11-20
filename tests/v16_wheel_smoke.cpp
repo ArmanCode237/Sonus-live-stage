@@ -1,11 +1,11 @@
-#include "../src/modules/NordSynthModule.h"
+#include "../src/modules/StageSynthModule.h"
 #include <iostream>
 #include <vector>
 #include <array>
 #include <cmath>
-using namespace NordDSP;
+using namespace SonusDSP;
 int main(){
- NordSynthModule s;s.init(48000);s.synthEnabled=true;
+ StageSynthModule s;s.init(48000);s.synthEnabled=true;
  // Family 13 = plucked keys; CC1 changes layer filter and level.
  auto render=[&](float wheel){
   s.loadBuiltInSynthPreset(210);s.synthEnabled=true;

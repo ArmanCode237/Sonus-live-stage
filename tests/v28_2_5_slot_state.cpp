@@ -1,13 +1,13 @@
 // Assertions carry the checks (some with side effects): keep them in Release builds.
 #undef NDEBUG
 // Check v3 slot storage, control API field mapping, and independent rack state.
-#include "../src/modules/NordPianoEngine.h"
+#include "../src/modules/StagePianoEngine.h"
 #include <cassert>
 #include <cmath>
 #include <iostream>
-using namespace NordDSP;
+using namespace SonusDSP;
 int main(){
- NordPianoEngine host;
+ StagePianoEngine host;
  host.setStudioSlot(0,0,0,5); // Delay Piano
  host.setStudioSlot(3,0,0,5); // Delay Master
  host.setStudioSlot(0,0,10,.75f); // p8 local BPM ~232.5

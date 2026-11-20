@@ -1,12 +1,12 @@
-#include "../src/modules/NordOrganModule.h"
+#include "../src/modules/StageOrganModule.h"
 #include <vector>
 #include <cmath>
 #include <cassert>
 #include <cstdio>
 #include <algorithm>
-using namespace NordDSP;
+using namespace SonusDSP;
 static std::vector<float> sound(int model,float mix,bool fast,float sampleRate){
- NordOrganModule org;org.init(sampleRate);org.organEnabled=true;org.organModel=model;
+ StageOrganModule org;org.init(sampleRate);org.organEnabled=true;org.organModel=model;
  org.organRotaryFast=fast;org.rotaryMix=mix;org.organDrive=.05f;org.percussionEnabled=false;
  org.drawbars={1.0f,0.8f,0.9f,0.5f,0.3f,0.2f,0.12f,0.1f,0.04f};
  org.noteOn(60,60,100);

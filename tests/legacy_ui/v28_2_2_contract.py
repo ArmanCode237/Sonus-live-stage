@@ -10,8 +10,8 @@ from pathlib import Path
 from html.parser import HTMLParser
 root=Path(__file__).resolve().parents[1]
 main=_stage_app_source()
-model=(root/'src/core/NordTypes.h').read_text()
-engine=(root/'src/modules/NordPianoEngine.cpp').read_text()
+model=(root/'src/core/StageTypes.h').read_text()
+engine=(root/'src/modules/StagePianoEngine.cpp').read_text()
 registry=(root/'src/core/WorkstationHost.cpp').read_text()
 editor=(root/'ui/js/piano-sample-editor.js').read_text()
 program=(root/'ui/js/programs.js').read_text()

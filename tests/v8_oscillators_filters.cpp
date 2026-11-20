@@ -1,12 +1,12 @@
-#include "../src/modules/NordSynthModule.h"
+#include "../src/modules/StageSynthModule.h"
 #include <vector>
 #include <cmath>
 #include <iostream>
 #include <algorithm>
 #include <set>
-using namespace NordDSP;
+using namespace SonusDSP;
 int main(){
- NordSynthModule s;s.init(48000);s.synthEnabled=true;s.synthMasterVol=.9f;
+ StageSynthModule s;s.init(48000);s.synthEnabled=true;s.synthMasterVol=.9f;
  std::vector<float> out(512*2);
  std::set<int> audible;
  for(int wav=0;wav<15;wav++){

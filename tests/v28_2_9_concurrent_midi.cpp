@@ -1,7 +1,7 @@
 // Assertions carry the checks (some with side effects): keep them in Release builds.
 #undef NDEBUG
 // Multithreaded MIDI producer regression: HTTP and RtMidi may both enqueue.
-#include "../src/modules/NordPianoEngine.h"
+#include "../src/modules/StagePianoEngine.h"
 #include <atomic>
 #include <cassert>
 #include <cmath>
@@ -10,7 +10,7 @@
 #include <vector>
 
 int main() {
-  NordDSP::NordPianoEngine engine;
+  SonusDSP::StagePianoEngine engine;
   engine.setSampleRate(48000);
   constexpr int blocks = 180;
   constexpr int producers = 3;

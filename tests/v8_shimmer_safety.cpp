@@ -1,7 +1,7 @@
-#include "../src/dsp/NordDspEffects.h"
+#include "../src/dsp/StageDspEffects.h"
 #include <cmath>
 #include <iostream>
-using namespace NordDSP;
+using namespace SonusDSP;
 int main(){
  for(float sr:{44100.f,48000.f,96000.f}){
   for(int mode=1;mode<=2;mode++){

@@ -78,8 +78,8 @@ function Eq({ p }: { p: string }) {
       <div className="eq-layout__filters">
         <Row wrap>
           <ParamToggle id={`${p}Eq0`} label="EQ ON" small />
-          <ParamSegmented id={`${p}Eq3`} label="Pendiente HP" options={['12', '24', '36', '48']} values={[12, 24, 36, 48]} />
-          <ParamSegmented id={`${p}Eq4`} label="Pendiente LP" options={['12', '24', '36', '48']} values={[12, 24, 36, 48]} />
+          <ParamSegmented id={`${p}Eq3`} label="Pendiente HP" options={['12', '24', '48']} values={[12, 24, 48]} />
+          <ParamSegmented id={`${p}Eq4`} label="Pendiente LP" options={['12', '24', '48']} values={[12, 24, 48]} />
         </Row>
         <div className="knobs"><ParamKnob id={`${p}EqHP`} label="HIGH PASS" size="sm" /><ParamKnob id={`${p}EqLP`} label="LOW PASS" size="sm" /></div>
       </div>

@@ -8,7 +8,7 @@
 #include <filesystem>
 #include <mutex>
 
-namespace NordDSP {
+namespace SonusDSP {
 namespace fs = std::filesystem;
 
 namespace {
@@ -156,4 +156,4 @@ void Mt32LayerEngine::render(float* left, float* right, unsigned numFrames) {
     }
 }
 
-} // namespace NordDSP
+} // namespace SonusDSP

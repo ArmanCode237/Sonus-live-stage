@@ -6,7 +6,7 @@
 #include <variant>
 #include <vector>
 
-namespace NordDSP {
+namespace SonusDSP {
 namespace {
 using json = nlohmann::json;
 using Key = std::variant<std::string, int>;
@@ -49,7 +49,8 @@ const Table LAYER_FIELDS = {
     {"wheelVibrato", "wheelVibratoCents"}, {"wheelVibRate", "wheelVibratoRateHz"}, {"wheelWtMorph", "wheelWtMorph"},
     {"voiceMode", "voiceMode"}, {"portamentoOn", "portamentoEnabled"}, {"portamento", "portamento"}, {"glideMode", "glideMode"},
     {"slide", "slide"}, {"keyLow", "keyLow"}, {"keyHigh", "keyHigh"}, {"keyTrans", "keyTranspose"},
-    {"seqOn", "seqEnabled"}, {"seqBpm", "seqBpm"}, {"seqSteps", "seqSteps"}, {"seqGate", "seqGate"}, {"seqDiv", "seqDivision"}, {"seqSync", "seqSync"},
+    {"seqOn", "seqEnabled"}, {"seqBpm", "seqBpm"}, {"seqSteps", "seqSteps"}, {"seqGate", "seqGate"}, {"seqDiv", "seqDivision"}, {"seqSync", "seqSync"}, {"gain", "outGainDb"},
+    {"eqOn", "eqEnabled"}, {"eqHp", "eqHighPass"}, {"eqLp", "eqLowPass"}, {"eqHpSlope", "eqHighPassSlope"}, {"eqLpSlope", "eqLowPassSlope"},
     {"analog", "analog"}, {"fm4Algo", "fm4Algorithm"}, {"fm4Fb", "fm4Feedback"}, {"fm4Vel", "fm4VelMod"}, {"laMix", "laMix"}, {"laRing", "laRing"},
     {"trType", "transientType"}, {"trLevel", "transientLevel"}, {"trDecay", "transientDecay"}, {"trBright", "transientTone"},
 };
@@ -65,7 +66,7 @@ const Table INSERT_FIELDS = {
     {"type", "type"}, {"damp", "damping"}, {"predelay", "preDelayMs"},
 };
 const Table BUS = {{"Mod", "modulation"}, {"Delay", "delay"}, {"Reverb", "reverb"}};
-const Table ZONE_EDGE = {{"Low", "low"}, {"High", "high"}};
+const Table ZONE_EDGE = {{"Low", "low"}, {"High", "high"}, {"Oct", "octave"}, {"Semi", "transpose"}};
 const Table MODULE_FX = {
     {"ChorusOn", "chorusEnabled"}, {"ChorusRate", "chorusRate"}, {"ChorusDepth", "chorusDepth"}, {"ChorusMix", "chorusMix"},
     {"DelayOn", "delayEnabled"}, {"DelayTime", "delayMs"}, {"DelayFeedback", "delayFeedback"}, {"DelayMix", "delayMix"},
@@ -107,6 +108,7 @@ const std::vector<Rule>& rules() {
         {std::regex(R"(^L([1-4])_fx([0-5])_(\w+)$)"), [](const std::smatch& m) { return withField({std::string("synthLayers"), n(m, 1, -1), std::string("insertFx"), n(m, 2)}, look(INSERT_FIELDS, m[3].str())); }},
         {std::regex(R"(^L([1-4])_seqStep(\d+)$)"), [](const std::smatch& m) { return std::optional<Path>(Path{std::string("synthLayers"), n(m, 1, -1), std::string("seqNotes"), n(m, 2)}); }},
         {std::regex(R"(^synthMacro([1-4])$)"), [](const std::smatch& m) { return std::optional<Path>(Path{std::string("synthMacros"), n(m, 1, -1)}); }},
+        {std::regex(R"(^L([1-4])_eq(F|Q|G)([0-2])$)"), [](const std::smatch& m) { const std::string f = m[2].str() == "F" ? "eqFreq" : m[2].str() == "Q" ? "eqQ" : "eqGain"; return std::optional<Path>(Path{std::string("synthLayers"), n(m, 1, -1), f, n(m, 3)}); }},
         {std::regex(R"(^L([1-4])_seqAcc(\d+)$)"), [](const std::smatch& m) { return std::optional<Path>(Path{std::string("synthLayers"), n(m, 1, -1), std::string("seqAccent"), n(m, 2)}); }},
         {std::regex(R"(^L([1-4])_seqSlide(\d+)$)"), [](const std::smatch& m) { return std::optional<Path>(Path{std::string("synthLayers"), n(m, 1, -1), std::string("seqSlide"), n(m, 2)}); }},
         {std::regex(R"(^L([1-4])_op([1-4])(Ratio|Level|Atk|Dec|Sus)$)"), [](const std::smatch& m) { return withField({std::string("synthLayers"), n(m, 1, -1)}, look(OP_FIELDS, m[3].str()), n(m, 2, -1)); }},
@@ -117,7 +119,7 @@ const std::vector<Rule>& rules() {
         {std::regex(R"(^pianoSample([0-4])(\w+)$)"), [](const std::smatch& m) { return withField({std::string("pianoSampleConfig"), n(m, 1)}, look(SAMPLE_FIELDS, m[2].str())); }},
         {std::regex(R"(^pianoLayerVol([0-4])$)"), [](const std::smatch& m) { return std::optional<Path>(Path{std::string("pianoLayers"), n(m, 1), std::string("volume")}); }},
         {std::regex(R"(^pianoLayerEnabled([0-4])$)"), [](const std::smatch& m) { return std::optional<Path>(Path{std::string("pianoLayers"), n(m, 1), std::string("enabled")}); }},
-        {std::regex(R"(^pianoZone([0-4])(Low|High)$)"), [](const std::smatch& m) { return withField({std::string("pianoLayerZones"), n(m, 1)}, look(ZONE_EDGE, m[2].str())); }},
+        {std::regex(R"(^pianoZone([0-4])(Low|High|Oct|Semi)$)"), [](const std::smatch& m) { return withField({std::string("pianoLayerZones"), n(m, 1)}, look(ZONE_EDGE, m[2].str())); }},
         {std::regex(R"(^(piano|synth|organ)Zone(Low|High)$)"), [](const std::smatch& m) { return withField({m[1].str() + "Zone"}, look(ZONE_EDGE, m[2].str())); }},
         {std::regex(R"(^eqGain([0-4])$)"), [](const std::smatch& m) { return std::optional<Path>(Path{std::string("eqBands"), n(m, 1), std::string("gainDb")}); }},
         {std::regex(R"(^eqFreq([0-4])$)"), [](const std::smatch& m) { return std::optional<Path>(Path{std::string("eqBands"), n(m, 1), std::string("freqHz")}); }},
@@ -222,4 +224,4 @@ std::string retargetSoundParam(const std::string& id, int layer) {
     return id;
 }
 
-} // namespace NordDSP
+} // namespace SonusDSP

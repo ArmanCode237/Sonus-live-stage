@@ -9,9 +9,9 @@ def _stage_app_source():
 from pathlib import Path
 root=Path(__file__).resolve().parents[1]
 read=lambda p:(root/p).read_text(encoding='utf8')
-cpp=read('src/core/WorkstationHost.cpp');types=read('src/core/NordTypes.h')
+cpp=read('src/core/WorkstationHost.cpp');types=read('src/core/StageTypes.h')
 synth=read('ui/js/synth.js');v=read('ui/js/v701.js')
-fx=read('ui/js/fx-sends.js');engine=read('src/modules/NordPianoEngine.cpp')
+fx=read('ui/js/fx-sends.js');engine=read('src/modules/StagePianoEngine.cpp')
 for s in ['synthFx','organFx']:
     assert s in engine
     assert '"'+s+'"' in _stage_app_source()
@@ -31,9 +31,9 @@ assert 'studio-fader' in v and 'Math.log10' in v and 'v701FaderRequests' in v
 assert 'chooseFxSendGroup' in fx and 'state.fxSends' in fx
 assert 'v701MainZones' in read('ui/index.html') and 'studio-racks.css' in read('ui/index.html')
 assert 'organFxSends' in cpp and 'organFxSends' in _stage_app_source() and 'organFxSends' in types
-assert 'setOrganFxSend' in engine or 'setOrganFxSend' in read('src/modules/NordPianoEngine.h')
+assert 'setOrganFxSend' in engine or 'setOrganFxSend' in read('src/modules/StagePianoEngine.h')
 assert 'v701LocalOrganMixer' in v and 'organSend' in v
 assert 'v701BuildPianoLayerMixers' in v
-assert 'none_of(item.voices.begin()' in read('src/modules/NordSynthModule.cpp')
+assert 'none_of(item.voices.begin()' in read('src/modules/StageSynthModule.cpp')
 assert 'pianoSignal' in engine and 'synthSignal' in engine and 'organSignal' in engine
 print('PASS v9 static: split notes, local/master independent FX, engine persistence, faders, idle bypass')

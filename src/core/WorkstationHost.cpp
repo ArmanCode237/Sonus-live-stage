@@ -1,5 +1,5 @@
 #include "WorkstationHost.h"
-#include "../modules/NordSynthModule.h"
+#include "../modules/StageSynthModule.h"
 #include "SynthLayerExtras.h"
 #include "InsertFxJson.h"
 #include <nlohmann/json.hpp>
@@ -8,9 +8,9 @@
 
 using json = nlohmann::json;
 
-namespace NordDSP {
+namespace SonusDSP {
 
-WorkstationHost::WorkstationHost() : NordPianoEngine() {
+WorkstationHost::WorkstationHost() : StagePianoEngine() {
     registerAllParameters();
     // Every write (UI, OSC, MIDI) keeps the mappings' pickup state in step.
     registry_.setWriteObserver([this](const std::string& id, float v) { mappings_.noteWritten(id, v); });
@@ -209,6 +209,7 @@ void WorkstationHost::registerAllParameters() {
     registry_.registerParam("synthMacroCutoff", 0.1f, 2.0f, [this](float v) { multiSynth_.synthMacroCutoff = v; });
     registry_.registerParam("synthWheelGlobalCutoff",-6.f,6.f,[this](float v){multiSynth_.synthWheelGlobalCutoff=v;});
     registry_.registerParam("synthWheelGlobalAmpDb",-24.f,12.f,[this](float v){multiSynth_.synthWheelGlobalAmpDb=v;});
+    registry_.registerParam("synthOutGainDb",-24.f,24.f,[this](float v){multiSynth_.synthOutGainDb=v;});
     registry_.registerParam("synthVoiceMaster",0.f,1.f,[this](float v){multiSynth_.synthVoiceMaster=v>=.5f;queueSynthAllNotesOff();});
     for (int m = 0; m < 4; ++m)
         registry_.registerParam("synthMacro" + std::to_string(m + 1), 0.f, 1.f, [this, m](float v) { multiSynth_.macros[size_t(m)] = v; });
@@ -228,6 +229,9 @@ void WorkstationHost::registerAllParameters() {
     for(int layer=0;layer<PIANO_LAYER_COUNT;layer++) {
         registry_.registerParam("pianoZone"+std::to_string(layer)+"Low",0.f,127.f,[this,layer](float v){setPianoZone(layer,false,int(std::lround(v)));});
         registry_.registerParam("pianoZone"+std::to_string(layer)+"High",0.f,127.f,[this,layer](float v){setPianoZone(layer,true,int(std::lround(v)));});
+        // v32.5: per-layer OCTAVE / SEMI (stored with the layer's keyzone).
+        registry_.registerParam("pianoZone"+std::to_string(layer)+"Oct",-2.f,2.f,[this,layer](float v){setPianoLayerOctave(layer,int(std::lround(v)));});
+        registry_.registerParam("pianoZone"+std::to_string(layer)+"Semi",-12.f,12.f,[this,layer](float v){setPianoLayerSemi(layer,int(std::lround(v)));});
     }
     // The same mod/delay/reverb, drive and autopan algorithms are shared across independent racks.
     const char* fxFields[30]={"ChorusOn","ChorusRate","ChorusDepth","ChorusMix","DelayOn","DelayTime","DelayFeedback","DelayMix","ReverbOn","ReverbType","ReverbMix","ReverbSize","DriveOn","DriveAmount","AutoPanOn","AutoPanRate","AutoPanDepth",
@@ -295,6 +299,19 @@ void WorkstationHost::registerAllParameters() {
         registry_.registerParam(p + "seqSteps",1.f,16.f,[this,l](float v){multiSynth_.layers[l].cfg.seqSteps=std::clamp(int(std::lround(v)),1,16);});
         registry_.registerParam(p + "seqGate",.05f,1.f,[this,l](float v){multiSynth_.layers[l].cfg.seqGate=v;});
         registry_.registerParam(p + "seqDiv",0.f,5.f,[this,l](float v){multiSynth_.layers[l].cfg.seqDivision=std::clamp(int(std::lround(v)),0,5);});
+        registry_.registerParam(p + "gain",-24.f,24.f,[this,l](float v){multiSynth_.layers[l].cfg.outGainDb=v;});
+        // v32.4 layer EQ
+        registry_.registerParam(p + "eqOn",0.f,1.f,[this,l](float v){multiSynth_.layers[l].cfg.eqEnabled=v>=.5f;});
+        registry_.registerParam(p + "eqHp",20.f,1000.f,[this,l](float v){multiSynth_.layers[l].cfg.eqHighPass=v;});
+        registry_.registerParam(p + "eqLp",1000.f,20000.f,[this,l](float v){multiSynth_.layers[l].cfg.eqLowPass=v;});
+        registry_.registerParam(p + "eqHpSlope",12.f,48.f,[this,l](float v){multiSynth_.layers[l].cfg.eqHighPassSlope=SonusDSP::normalizeEqSlope(int(std::lround(v)));});
+        registry_.registerParam(p + "eqLpSlope",12.f,48.f,[this,l](float v){multiSynth_.layers[l].cfg.eqLowPassSlope=SonusDSP::normalizeEqSlope(int(std::lround(v)));});
+        for(int b=0;b<3;++b){
+            const std::string k=std::to_string(b);
+            registry_.registerParam(p + "eqF"+k,30.f,16000.f,[this,l,b](float v){multiSynth_.layers[l].cfg.eqFreq[size_t(b)]=v;});
+            registry_.registerParam(p + "eqQ"+k,.3f,12.f,[this,l,b](float v){multiSynth_.layers[l].cfg.eqQ[size_t(b)]=v;});
+            registry_.registerParam(p + "eqG"+k,-15.f,15.f,[this,l,b](float v){multiSynth_.layers[l].cfg.eqGain[size_t(b)]=v;});
+        }
         registry_.registerParam(p + "seqSync",0.f,1.f,[this,l](float v){multiSynth_.layers[l].cfg.seqSync=v>=.5f;});
         for(int step=0;step<16;++step){
             registry_.registerParam(p+"seqAcc"+std::to_string(step),0.f,1.f,[this,l,step](float v){multiSynth_.layers[l].cfg.seqAccent[size_t(step)]=v>=.5f?1:0;});
@@ -474,7 +491,8 @@ json WorkstationHost::getSynthLayersJson() const {
             {"keyLow",c.keyLow},{"keyHigh",c.keyHigh},{"keyTranspose",c.keyTranspose},
             {"seqEnabled",c.seqEnabled},{"seqBpm",c.seqBpm},{"seqSteps",c.seqSteps},
             {"seqGate",c.seqGate},{"seqNotes",c.seqNotes},{"seqAccent",c.seqAccent},{"seqSlide",c.seqSlide},
-            {"seqDivision",c.seqDivision},{"seqSync",c.seqSync},
+            {"seqDivision",c.seqDivision},{"seqSync",c.seqSync},{"outGainDb",c.outGainDb},
+            {"eqEnabled",c.eqEnabled},{"eqHighPass",c.eqHighPass},{"eqLowPass",c.eqLowPass},{"eqHighPassSlope",c.eqHighPassSlope},{"eqLowPassSlope",c.eqLowPassSlope},{"eqFreq",c.eqFreq},{"eqQ",c.eqQ},{"eqGain",c.eqGain},
             {"insertFx",insertFxToJson(c.insertFx)},
             {"wheelCutoffOctaves",c.wheelCutoffOctaves},{"wheelAmpDb",c.wheelAmpDb},
             {"wheelVibratoCents",c.wheelVibratoCents},{"wheelVibratoRateHz",c.wheelVibratoRateHz},
@@ -487,7 +505,7 @@ json WorkstationHost::getSynthLayersJson() const {
             {"unisonDetune", c.unisonDetune}, {"unisonSpread", c.unisonSpread},
             {"phaseOffset", c.phaseOffset}, {"keyTrack", c.keyTrack},
             {"velToCutoff", c.velToCutoff}, {"velToAmp", c.velToAmp},
-            {"wavetableIdx", c.wavetableIdx}, {"samplePath", c.samplePath},
+            {"wavetableIdx", c.wavetableIdx}, {"samplePath", c.samplePath.str()},
             {"filterType", c.filterType}, {"filterEnvAmt", c.filterEnvAmt},
             {"filterKeyTrack", c.filterKeyTrack},
             {"filtAttackSec", c.filtAttackSec}, {"filtDecaySec", c.filtDecaySec},
@@ -567,6 +585,7 @@ json WorkstationHost::getOrganParamsJson() const {
 
 void WorkstationHost::applySynthLayerJson(size_t i, const json& lp) {
     if (i >= SYNTH_LAYER_COUNT) return;
+    PatchChangeGuard hold(multiSynth_);   // v32.4: whole-layer write, faded out
     auto& c = multiSynth_.layers[i].cfg;
     // A patch that omits a field must not inherit that parameter
     // from the PREVIOUS synth preset.
@@ -591,6 +610,17 @@ void WorkstationHost::applySynthLayerJson(size_t i, const json& lp) {
     c.seqGate=std::clamp(lp.value("seqGate",c.seqGate),.05f,1.f);
     c.seqDivision=std::clamp(lp.value("seqDivision",c.seqDivision),0,5);
     c.seqSync=lp.value("seqSync",c.seqSync);
+    c.outGainDb=std::clamp(lp.value("outGainDb",c.outGainDb),-24.f,24.f);
+    c.eqEnabled=lp.value("eqEnabled",c.eqEnabled);
+    c.eqHighPass=std::clamp(lp.value("eqHighPass",c.eqHighPass),20.f,1000.f);
+    c.eqLowPass=std::clamp(lp.value("eqLowPass",c.eqLowPass),1000.f,20000.f);
+    c.eqHighPassSlope=SonusDSP::normalizeEqSlope(lp.value("eqHighPassSlope",c.eqHighPassSlope));
+    c.eqLowPassSlope=SonusDSP::normalizeEqSlope(lp.value("eqLowPassSlope",c.eqLowPassSlope));
+    for(int b=0;b<3;++b){
+        if(lp.contains("eqFreq")&&lp["eqFreq"].is_array()&&b<int(lp["eqFreq"].size()))c.eqFreq[size_t(b)]=std::clamp(lp["eqFreq"][size_t(b)].get<float>(),30.f,16000.f);
+        if(lp.contains("eqQ")&&lp["eqQ"].is_array()&&b<int(lp["eqQ"].size()))c.eqQ[size_t(b)]=std::clamp(lp["eqQ"][size_t(b)].get<float>(),.3f,12.f);
+        if(lp.contains("eqGain")&&lp["eqGain"].is_array()&&b<int(lp["eqGain"].size()))c.eqGain[size_t(b)]=std::clamp(lp["eqGain"][size_t(b)].get<float>(),-15.f,15.f);
+    }
     for(const char* key:{"seqAccent","seqSlide"})
         if(lp.contains(key)&&lp[key].is_array())
             for(size_t k=0;k<std::min<size_t>(16,lp[key].size());++k)
@@ -629,7 +659,7 @@ void WorkstationHost::applySynthLayerJson(size_t i, const json& lp) {
     c.velToCutoff = lp.value("velToCutoff", c.velToCutoff);
     c.velToAmp = lp.value("velToAmp", c.velToAmp);
     c.wavetableIdx = std::clamp(lp.value("wavetableIdx",c.wavetableIdx),0,63);
-    c.samplePath = lp.value("samplePath", c.samplePath);
+    c.samplePath = lp.value("samplePath", c.samplePath.str());
     c.filterType = std::clamp(lp.value("filterType",c.filterType),0,SYNTH_FILTER_TYPE_COUNT-1);
     c.filterEnvAmt = lp.value("filterEnvAmt", c.filterEnvAmt);
     c.filterKeyTrack = lp.value("filterKeyTrack", c.filterKeyTrack);
@@ -653,7 +683,17 @@ void WorkstationHost::applySynthLayerJson(size_t i, const json& lp) {
     synthLayerExtrasFromJson(lp, c);
 }
 
+// v32.4: transactional. The synth fades out around the write, and a malformed preset
+// (a JSON type error half-way) restores the previous synth patch instead of leaving
+// a mix of both; the error is still reported to the caller.
 void WorkstationHost::applySynthPresetJson(const json& p) {
+    PatchChangeGuard hold(multiSynth_);
+    const SynthPresetParams backup = getCurrentParams();
+    try { applySynthPresetJsonImpl(p); }
+    catch (...) { applySynthParams(backup); throw; }
+}
+
+void WorkstationHost::applySynthPresetJsonImpl(const json& p) {
     // A preset is a self-contained instrument, not a delta from the previous
     // edit buffer. Missing fields in legacy Factory JSON take factory defaults.
     const SynthPresetParams presetDefaults{};
@@ -665,6 +705,7 @@ void WorkstationHost::applySynthPresetJson(const json& p) {
     multiSynth_.synthMacroCutoff = p.value("synthMacroCutoff", presetDefaults.synthMacroCutoff);
     multiSynth_.synthWheelGlobalCutoff=std::clamp(p.value("synthWheelGlobalCutoff",presetDefaults.synthWheelGlobalCutoff),-6.f,6.f);
     multiSynth_.synthWheelGlobalAmpDb=std::clamp(p.value("synthWheelGlobalAmpDb",presetDefaults.synthWheelGlobalAmpDb),-24.f,12.f);
+    multiSynth_.synthOutGainDb=std::clamp(p.value("synthOutGainDb",presetDefaults.synthOutGainDb),-24.f,24.f);
     multiSynth_.synthVoiceMaster = p.value("synthVoiceMaster",presetDefaults.synthVoiceMaster);
     // Zone is intrinsic to the Synth preset, not the previously loaded patch.
     const auto zone = p.value("synthZone", json::object());
@@ -768,7 +809,7 @@ void WorkstationHost::applySynthPresetJson(const json& p) {
 void WorkstationHost::applyOrganPresetJson(const json& p) {
     // Organ presets are module-local snapshots. Older partial files receive
     // defaults rather than inheriting effects/drawbars from another preset.
-    const NordOrganModule defaults{};
+    const StageOrganModule defaults{};
     const ModuleFxConfig defaultFx{};
     if (p.contains("organZone") && p["organZone"].is_object()) {
         const auto& zone = p["organZone"];
@@ -858,4 +899,4 @@ bool WorkstationHost::applyParamById(const std::string& id, float val, bool norm
     return registry_.setParamValue(id, val, normalized);
 }
 
-} // namespace NordDSP
+} // namespace SonusDSP

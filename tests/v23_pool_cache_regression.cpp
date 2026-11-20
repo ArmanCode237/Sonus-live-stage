@@ -12,7 +12,7 @@
 #include <iostream>
 #include <thread>
 #include <vector>
-using namespace NordDSP;
+using namespace SonusDSP;
 namespace fs=std::filesystem;
 
 static void put16(std::vector<uint8_t>& b,size_t i,uint16_t x){b[i]=uint8_t(x>>8);b[i+1]=uint8_t(x);}

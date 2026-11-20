@@ -1,15 +1,15 @@
 // SONUS V21: four independent LFOs and per-layer CC1 mode verification.
-// Build: g++ -std=c++17 -O2 -I src/core -I src/dsp tests/v21_lfo_wheel_isolation.cpp src/modules/NordSynthModule.cpp -o /tmp/v21_lfo
-#include "../src/modules/NordSynthModule.h"
+// Build: g++ -std=c++17 -O2 -I src/core -I src/dsp tests/v21_lfo_wheel_isolation.cpp src/modules/StageSynthModule.cpp -o /tmp/v21_lfo
+#include "../src/modules/StageSynthModule.h"
 #include <array>
 #include <vector>
 #include <algorithm>
 #include <cmath>
 #include <iostream>
-using namespace NordDSP;
+using namespace SonusDSP;
 using Audio=std::array<std::vector<float>,4>;
 static Audio audio(int wheelMode, float cc1, bool lfoLayerD, float cutoffOctaves=0.f){
-    NordSynthModule m;
+    StageSynthModule m;
     m.init(48000.f);m.synthEnabled=true;m.synthMasterVol=1.f;
     for(int i=0;i<4;i++){
         auto& cfg=m.layers[i].cfg;
@@ -53,7 +53,7 @@ int main(){
     for(int i=0;i<3;i++)if(diff(off[i],lfoD[i])>.0001){std::cerr<<"LFO D leaked to layer "<<i<<"\n";return 5;}
     if(diff(off[3],lfoD[3])<.01){std::cerr<<"LFO D did not modulate its layer\n";return 6;}
     // Factory change must reset each layer LFO, not inherit previous patch.
-    NordSynthModule m;m.init(48000.f);for(auto& l:m.lfos){l.enabled=true;l.rateHz=25.f;l.depth=1.f;l.destPitch=1000;}
+    StageSynthModule m;m.init(48000.f);for(auto& l:m.lfos){l.enabled=true;l.rateHz=25.f;l.depth=1.f;l.destPitch=1000;}
     m.loadBuiltInSynthPreset(2);
     for(int i=0;i<4;i++){
       const auto& l=m.lfos[i];

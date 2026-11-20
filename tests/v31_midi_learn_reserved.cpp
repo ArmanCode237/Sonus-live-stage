@@ -8,18 +8,18 @@
 #include <cstdio>
 
 int main() {
-    NordDSP::ParameterRegistry registry;
+    SonusDSP::ParameterRegistry registry;
     float sustain = .7f;
     registry.registerParam("L1_sus", 0.f, 1.f, [&](float v) { sustain = v; });
-    NordDSP::ControlMappings mappings(registry);
+    SonusDSP::ControlMappings mappings(registry);
 
     mappings.armLearn();
     for (int cc : {1, 64, 120, 123, 127}) {
-        mappings.handleMidi(NordDSP::MidiKind::CC, 1, cc, 0);
+        mappings.handleMidi(SonusDSP::MidiKind::CC, 1, cc, 0);
         assert(mappings.learnState()["active"] == true);   // still waiting for a real control
         assert(sustain == .7f);                            // and nothing was written
     }
-    mappings.handleMidi(NordDSP::MidiKind::CC, 1, 74, 127);  // a real knob
+    mappings.handleMidi(SonusDSP::MidiKind::CC, 1, 74, 127);  // a real knob
     const auto state = mappings.learnState();
     assert(state["active"] == false && state["captured"]["number"] == 74);
     std::puts("PASS v31 MIDI learn ignores CC1 / CC64 / CC120-127");

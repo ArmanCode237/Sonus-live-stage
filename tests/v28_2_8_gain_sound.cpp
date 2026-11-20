@@ -1,16 +1,16 @@
 // Assertions carry the checks (some with side effects): keep them in Release builds.
 #undef NDEBUG
 // v28.2.8 Gain per Sound, PCM16 remains unchanged, no external audio driver.
-// Build with NordPianoEngine.cpp, NordSynthModule.cpp and NordOrganModule.cpp.
-#include "../src/modules/NordPianoEngine.h"
+// Build with StagePianoEngine.cpp, StageSynthModule.cpp and StageOrganModule.cpp.
+#include "../src/modules/StagePianoEngine.h"
 #include <cassert>
 #include <cmath>
 #include <iostream>
 #include <memory>
 #include <vector>
-using namespace NordDSP;
+using namespace SonusDSP;
 static std::shared_ptr<PianoInstrument> bank(){
- auto p=std::make_shared<PianoInstrument>();p->formatType="NORD SAMPLE (.nsmp4)";
+ auto p=std::make_shared<PianoInstrument>();p->formatType="NSMP SAMPLE (.nsmp4)";
  StrokeSample s;s.frames=48000;s.sampleRate=48000;s.actualRootMidi=60;
  s.lokey=0;s.hikey=127;s.lovel=1;s.hivel=127;s.sampleScale=1.f/32768.f;
  s.pcmL.resize(s.frames);s.pcmR.resize(s.frames);
@@ -24,7 +24,7 @@ static std::shared_ptr<PianoInstrument> bank(){
 }
 static double audibleGain(float gain){
  auto p=bank();const int16_t source=p->strokes[0].pcmL[400];
- NordPianoEngine e;e.setSampleRate(48000);e.setInstrument(p);e.setPianoEnabled(true);
+ StagePianoEngine e;e.setSampleRate(48000);e.setInstrument(p);e.setPianoEnabled(true);
  e.multiSynth_.synthEnabled=false;e.organModule_.organEnabled=false;
  for(int i=1;i<PIANO_LAYER_COUNT;++i)e.setPianoLayerEnabled(i,false);
  e.setPianoLayerSampleParam(0,9,gain);
@@ -38,13 +38,13 @@ static double audibleGain(float gain){
 }
 int main(){
  // V4 must survive both live edits and full Performance/Program rack restores.
- NordPianoEngine stage;stage.setSampleRate(48000);
+ StagePianoEngine stage;stage.setSampleRate(48000);
  assert(stage.setStudioSlot(0,0,0,6));
  assert(stage.setStudioSlot(0,0,18,4));
  assert(stage.setStudioSlot(0,0,26,1));
  auto rack=stage.getStudioRack(0);
  assert(rack.slots[0].version==4 && rack.slots[0].p[23]==1.f);
- NordPianoEngine restored;restored.setSampleRate(48000);restored.setStudioRack(0,rack);
+ StagePianoEngine restored;restored.setSampleRate(48000);restored.setStudioRack(0,rack);
  auto after=restored.getStudioRack(0);
  assert(after.slots[0].version==4 && after.slots[0].p[23]==1.f);
  const auto normal=audibleGain(0.f), quieter=audibleGain(-12.f), louder=audibleGain(6.f);

@@ -14,7 +14,7 @@ int main(int argc, char** argv) {
     const json params = load("params.json"), resolved = load("resolved.json");
     int checked = 0, failures = 0;
     for (const auto& [id, expected] : resolved.items()) {
-        const auto got = NordDSP::readParamValue(params, id);
+        const auto got = SonusDSP::readParamValue(params, id);
         const bool same = expected.is_null() ? !got : (got && std::abs(*got - expected.get<float>()) <= 1e-4f * std::max(1.f, std::abs(expected.get<float>())));
         if (!same) {
             ++failures;

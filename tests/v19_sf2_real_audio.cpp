@@ -1,10 +1,10 @@
 #include "../src/loaders/Sf2Loader.h"
-#include "../src/modules/NordPianoEngine.h"
+#include "../src/modules/StagePianoEngine.h"
 #include <iostream>
 #include <cmath>
 #include <memory>
 #include <vector>
-using namespace NordDSP;
+using namespace SonusDSP;
 int main(int argc,char**argv){
  if(argc!=3){std::cerr<<"Usage: v19_sf2_real_audio Fantasia.sf2 Roland-D50.sf2\n";return 8;}
  for(int a=1;a<3;a++){
@@ -15,7 +15,7 @@ int main(int argc,char**argv){
   int regions=0;for(const auto& s:ins.strokes)if(s.lokey<=60&&s.hikey>=60&&s.lovel<=105&&s.hivel>=105)regions++;
   if((a==1&&regions!=1)||(a==2&&regions<4)){std::cerr<<"Wrong region coverage "<<regions;return 3;}
   auto bank=std::make_shared<PianoInstrument>(std::move(ins));
-  NordPianoEngine engine;engine.setSampleRate(48000);engine.setPianoEnabled(true);
+  StagePianoEngine engine;engine.setSampleRate(48000);engine.setPianoEnabled(true);
   engine.multiSynth_.synthEnabled=false;engine.organModule_.organEnabled=false;
   engine.setLayerInstrument(0,bank);
   for(int l=1;l<5;l++)engine.setPianoLayerEnabled(l,false);

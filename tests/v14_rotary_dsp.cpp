@@ -1,13 +1,13 @@
 // g++ -std=c++17 -O2 -Isrc -Isrc/core -Isrc/modules -Isrc/dsp \
-//    tests/v14_rotary_dsp.cpp src/modules/NordOrganModule.cpp -o /tmp/v14_rotary_dsp && /tmp/v14_rotary_dsp
-#include "../src/modules/NordOrganModule.h"
+//    tests/v14_rotary_dsp.cpp src/modules/StageOrganModule.cpp -o /tmp/v14_rotary_dsp && /tmp/v14_rotary_dsp
+#include "../src/modules/StageOrganModule.h"
 #include <cmath>
 #include <iostream>
 #include <vector>
 #include <algorithm>
-using namespace NordDSP;
+using namespace SonusDSP;
 static std::vector<float> output(float speed,float ramp,float width,int sampleRate=48000){
-    NordOrganModule organ;
+    StageOrganModule organ;
     organ.init(sampleRate);
     organ.organEnabled=true;organ.organRotaryFast=true;
     organ.organVolume=.8f;organ.rotaryMix=1.0f;

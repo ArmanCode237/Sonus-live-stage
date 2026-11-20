@@ -1,15 +1,15 @@
 // Assertions carry the checks (some with side effects): keep them in Release builds.
 #undef NDEBUG
-#include "../src/modules/NordSynthModule.h"
+#include "../src/modules/StageSynthModule.h"
 #include <cassert>
 #include <cmath>
 #include <algorithm>
 #include <iostream>
 #include <vector>
-using namespace NordDSP;
+using namespace SonusDSP;
 int main(){
  for(int sr:{44100,48000,96000}){
-  NordSynthModule synth; synth.init(float(sr)); synth.synthEnabled=true;
+  StageSynthModule synth; synth.init(float(sr)); synth.synthEnabled=true;
   synth.synthMasterVol=.8f; synth.voiceLimitPerLayer=1;
   for(auto& l:synth.layers){l.cfg=SynthLayerConfig{};l.cfg.enabled=false;l.reset();l.voiceLimit=1;}
   auto& c=synth.layers[0].cfg;c.enabled=true;c.waveType=3;

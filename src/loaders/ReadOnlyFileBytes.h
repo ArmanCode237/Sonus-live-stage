@@ -21,7 +21,7 @@
 #  include <unistd.h>
 #endif
 
-namespace NordDSP {
+namespace SonusDSP {
 class ReadOnlyFileBytes {
 public:
     explicit ReadOnlyFileBytes(const std::string& filename) {
@@ -88,4 +88,4 @@ private:
     bool mapped_ = false;
     std::vector<uint8_t> fallback_;
 };
-} // namespace NordDSP
+} // namespace SonusDSP

@@ -1,12 +1,12 @@
-// Run: g++ -std=c++17 -O2 -Isrc -Isrc/core -Isrc/modules -Ithird_party tests/studio_rack_dsp_smoke.cpp src/modules/{NordPianoEngine,NordSynthModule,NordOrganModule}.cpp -o /tmp/studio_rack_smoke && /tmp/studio_rack_smoke
-#include "../src/modules/NordPianoEngine.h"
+// Run: g++ -std=c++17 -O2 -Isrc -Isrc/core -Isrc/modules -Ithird_party tests/studio_rack_dsp_smoke.cpp src/modules/{StagePianoEngine,StageSynthModule,StageOrganModule}.cpp -o /tmp/studio_rack_smoke && /tmp/studio_rack_smoke
+#include "../src/modules/StagePianoEngine.h"
 #include <vector>
 #include <cmath>
 #include <iostream>
-using namespace NordDSP;
+using namespace SonusDSP;
 int main(){
   for(float sr:{44100.f,48000.f,96000.f}){
-    NordPianoEngine e;
+    StagePianoEngine e;
     e.setSampleRate(sr);
     // Default new program; support two distinct instances of the same effect type.
     e.setStudioRoutingEnabled(true);

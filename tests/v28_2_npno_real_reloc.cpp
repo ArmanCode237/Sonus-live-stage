@@ -5,7 +5,7 @@
 #include <iostream>
 #include <fstream>
 namespace fs=std::filesystem;
-using namespace NordDSP;
+using namespace SonusDSP;
 uint64_t checksum(const PianoInstrument& p){
  uint64_t h=14695981039346656037ULL;
  auto mix=[&](const std::vector<int16_t>& v){for(const auto& x:v){const uint16_t n=static_cast<uint16_t>(x);h^=(n&255);h*=1099511628211ULL;h^=(n>>8);h*=1099511628211ULL;}};

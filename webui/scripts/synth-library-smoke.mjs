@@ -1,4 +1,4 @@
-// Synth library end-to-end check against a running NordVirtualStage:
+// Synth library end-to-end check against a running SonusLiveStage:
 //  - favourites: ★ in SYNTH appears in ★ FAVORITOS on SYNTH and the PERFORM browser window; it offers ALL;
 //  - GUARDAR stores an edit over a factory slot (name + sound) and RESTAURAR ORIGINAL reverts it;
 //  - VOICE tab edits the voice settings that are in effect (global or per layer).
@@ -40,16 +40,18 @@ try {
   // ---------------------------------------------------------- favourites
   await open('/synth');
   await page.locator('.patch-bar .btn', { hasText: 'BROWSER' }).click();   // v32.4: library overlay
-  const browserPanel = page.locator('.synth-browser');
+  const browserPanel = page.locator('.sb');
+  await browserPanel.locator('.sb__row').first().waitFor();
+  await browserPanel.locator('.sb__facet--factory').click();
   await browserPanel.locator('input[type=search]').fill('Fat Saw Lead');
-  const star = browserPanel.locator('.browser__row', { hasText: 'Fat Saw Lead' }).locator('.star');
+  const star = browserPanel.locator('.sb__row', { hasText: 'Fat Saw Lead' }).first().locator('.star');
   const wasFav = metaBefore.favorites.includes(FAV_SLOT);
   if (wasFav) { await star.click(); await sleep(300); }
   await star.click(); await sleep(400);
   check((await get('/api/synth/factory/edits')).favorites.includes(FAV_SLOT), 'star in SYNTH stores the favourite');
   await browserPanel.locator('input[type=search]').fill('');
-  await browserPanel.locator('.segmented__item', { hasText: '★ FAVORITOS' }).click();
-  const favNames = await browserPanel.locator('.browser__name').allTextContents();
+  await browserPanel.locator('.sb__facet', { hasText: '★ FAVORITOS' }).click(); await sleep(200);
+  const favNames = await browserPanel.locator('.sb__name').allTextContents();
   check(favNames.some(n => n.includes('Fat Saw Lead')), `SYNTH ★ FAVORITOS lists it (${favNames.length} favourites)`);
   await page.keyboard.press('Escape'); await sleep(200);
 
@@ -57,18 +59,20 @@ try {
   const mini = page.locator('.synth-mini');
   const optionTexts = await mini.locator('select').locator('option').allTextContents();
   check(optionTexts[0] === 'ALL' && optionTexts[1] === '★ FAVORITOS', `PERFORM categories start with ALL, ★ FAVORITOS (${optionTexts.slice(0, 3).join(', ')})`);
-  check(await mini.locator('.browser__item').count() === 0, 'PERFORM hides the preset list (it lives in the BROWSER window)');
+  check(await mini.locator('.sb__row, .browser__item').count() === 0, 'PERFORM hides the preset list (it lives in the BROWSER window)');
   // The BROWSER button opens the preset window (modal, portalled to <body>).
   await mini.locator('.btn', { hasText: 'BROWSER' }).click();
   const modal = page.locator('.modal');
   await modal.waitFor();
-  const modalSelect = modal.locator('select');
-  await modalSelect.selectOption('★ FAVORITOS'); await sleep(200);
-  check((await modal.locator('.browser__name').allTextContents()).some(n => n.includes('Fat Saw Lead')), 'PERFORM BROWSER ★ FAVORITOS lists it');
-  await modalSelect.selectOption('ALL'); await sleep(200);
-  check(await modal.locator('.browser__item').count() === 184, 'PERFORM BROWSER ALL lists the whole bank (184)');
+  await modal.locator('.sb__row').first().waitFor();
+  const favFacet = modal.locator('.sb__facet', { hasText: '★ FAVORITOS' });
+  await favFacet.click(); await sleep(200);
+  check((await modal.locator('.sb__name').allTextContents()).some(n => n.includes('Fat Saw Lead')), 'PERFORM BROWSER ★ FAVORITOS lists it');
+  await favFacet.click();
+  await modal.locator('.sb__facet--factory').click(); await sleep(200);
+  check(await modal.locator('.sb__row').count() === 184, 'PERFORM BROWSER FÁBRICA lists the whole bank (184)');
   // un-star from PERFORM: both views share the same state
-  await modal.locator('.browser__row', { hasText: 'Fat Saw Lead' }).locator('.star').click(); await sleep(400);
+  await modal.locator('.sb__row', { hasText: 'Fat Saw Lead' }).first().locator('.star').click(); await sleep(400);
   check(!(await get('/api/synth/factory/edits')).favorites.includes(FAV_SLOT), 'star in PERFORM removes the favourite');
   await page.keyboard.press('Escape'); await sleep(200);
   check(await page.locator('.modal').count() === 0, 'Escape closes the BROWSER window');
@@ -79,8 +83,18 @@ try {
   const originalCut = loaded.params.synthLayers[0].cutoffHz;
   await post('/api/param', { id: 'L1_cut', value: 1234 });
   await open('/synth');
+  // v32.4: GUARDAR offers a NEW user preset (default) or the factory slot.
   await page.locator('.patch-bar .btn', { hasText: 'GUARDAR' }).click();
   const dialog = page.locator('.modal__window');
+  await dialog.locator('input').fill('Smoke New Preset');
+  await dialog.locator('button[type=submit]').click();
+  await sleep(500);
+  check((await get('/api/synth/presets')).some(p => p.name === 'Smoke New Preset'), 'GUARDAR → NUEVO PRESET creates a user preset');
+  check((await page.locator('.patch-lcd__name').textContent()) === 'Smoke New Preset', 'LCD shows the new user preset');
+  check((await get('/api/synth/factory/edits')).overrides[EDIT_SLOT] === undefined, 'the factory slot is left untouched');
+  await post('/api/synth/presets/delete', { name: 'Smoke New Preset' });
+  await page.locator('.patch-bar .btn', { hasText: 'GUARDAR' }).click();
+  await dialog.locator('.segmented__item', { hasText: 'SOBRE FÁBRICA' }).click();
   await dialog.locator('input').fill('Smoke Test Edit');
   await dialog.locator('button', { hasText: 'GUARDAR' }).click();
   await sleep(500);
@@ -92,6 +106,7 @@ try {
   const reloaded = await post('/api/synth/factory/load', { id: EDIT_SLOT });
   check(Math.round(reloaded.params.synthLayers[0].cutoffHz) === 1234, `reloading the slot recalls the saved sound (${reloaded.params.synthLayers[0].cutoffHz} Hz)`);
   await page.locator('.patch-bar .btn', { hasText: 'GUARDAR' }).click();
+  await page.locator('.modal__window .segmented__item', { hasText: 'SOBRE FÁBRICA' }).click();
   await page.locator('.modal__window button', { hasText: 'RESTAURAR ORIGINAL' }).click();
   await sleep(700);
   check(!(String(EDIT_SLOT) in (await get('/api/synth/factory/edits')).overrides), 'RESTAURAR ORIGINAL removes the saved edit');

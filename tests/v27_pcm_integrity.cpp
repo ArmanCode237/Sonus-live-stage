@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <iostream>
 #include <string>
-using namespace NordDSP;
+using namespace SonusDSP;
 int main(int argc,char**argv){
  if(argc<2)return 2;
  PianoInstrument bank;std::string status;

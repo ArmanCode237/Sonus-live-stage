@@ -1,14 +1,14 @@
 // Live Stage v9: DSP independence, bypass, active tails and bounded stereo effects.
 // g++ -std=c++17 -O2 -Isrc/core tests/v9_studio_fx_smoke.cpp -o /tmp/v9_studio_fx_smoke
-#include "../src/dsp/NordDspEffects.h"
+#include "../src/dsp/StageDspEffects.h"
 #include <array>
 #include <cmath>
 #include <iostream>
-using namespace NordDSP;
+using namespace SonusDSP;
 static bool finite(float a,float b) { return std::isfinite(a)&&std::isfinite(b)&&std::fabs(a)<6.f&&std::fabs(b)<6.f; }
 int main(){
  for(float sr:{44100.f,48000.f,96000.f}){
-  NordModuleFxRack rack;rack.init(sr);
+  StageModuleFxRack rack;rack.init(sr);
   ModuleFxConfig cfg;
   float wetL=99.f,wetR=99.f;
   const float dry[3][2]={{.8f,.25f},{.8f,.25f},{.8f,.25f}};

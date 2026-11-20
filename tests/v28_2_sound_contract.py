@@ -32,5 +32,5 @@ for field in ('pianoSources','studioRack','pianoSampleConfig','synthPortamento',
 assert 'selectedSoundRefs' in main and 'soundRefs' in main
 assert 'legacyModule' in main and 'soundLibrary' in main
 assert 'saveJsonAtomic(soundsFilePath' in main
-assert 'std::vector<float> audioL' not in (root/'src/core/NordTypes.h').read_text()
+assert 'std::vector<float> audioL' not in (root/'src/core/StageTypes.h').read_text()
 print('v28.2 UI routes, DOM, persistence, module patch and backwards compatibility: STATIC PASS')

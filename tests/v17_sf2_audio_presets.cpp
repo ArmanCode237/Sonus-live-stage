@@ -1,17 +1,17 @@
 #include "../src/loaders/Sf2Loader.h"
-#include "../src/modules/NordPianoEngine.h"
+#include "../src/modules/StagePianoEngine.h"
 #include <iostream>
 #include <cmath>
 #include <memory>
 #include <vector>
 #include <algorithm>
-using namespace NordDSP;
+using namespace SonusDSP;
 int main(int argc,char**argv){
  if(argc<2)return 8;
  std::string msg;PianoInstrument instrument;
  if(!Sf2Loader::load(argv[1],instrument,msg,1)){std::cerr<<msg;return 1;}
  auto shared=std::make_shared<PianoInstrument>(std::move(instrument));
- NordPianoEngine e;e.setSampleRate(48000);e.setPianoEnabled(true);
+ StagePianoEngine e;e.setSampleRate(48000);e.setPianoEnabled(true);
  e.multiSynth_.synthEnabled=false;e.organModule_.organEnabled=false;
  for(int i=0;i<5;++i){e.setLayerInstrument(i,shared);e.setPianoLayerEnabled(i,i==0);}
  e.setPianoLayerSampleParam(0,0,.005f);

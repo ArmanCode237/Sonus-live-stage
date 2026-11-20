@@ -5,6 +5,7 @@ import type { ProgramSlot } from '../../api/types';
 import { ORGAN_MODELS, PIANO_LAYER_COUNT, PROGRAM_SLOTS, SYNTH_LAYER_COUNT } from '../../data/constants';
 import { SYNTH_FACTORY } from '../../data/synthFactory';
 import { displayName, useFactoryMeta } from '../../store/synthFactory';
+import { useOrganPresetRef, useSynthPresetRef } from '../../store/synthUserPatch';
 import { useEngine } from '../../store/hooks';
 import { runAction } from '../../store/notify';
 import { Btn, Lcd, Panel, Row } from '../../ui/controls';
@@ -37,10 +38,12 @@ export function ProgramDisplay() {
   const synthId = Math.round(useEngine(s => s?.params?.synthPresetId ?? 1));
   const organModel = Math.round(useEngine(s => s?.params?.organModel ?? 0));
   const { overrides } = useFactoryMeta();
+  const synthRef = useSynthPresetRef();
+  const organRef = useOrganPresetRef();
   const engines = [
     pianoOn && { kind: 'piano' as const, type: 'PIANO', text: pianoLayers || 'SIN MUESTRA' },
-    synthOn && { kind: 'synth' as const, type: 'SYNTH', text: displayName(SYNTH_FACTORY[synthId - 1], overrides) },
-    organOn && { kind: 'organ' as const, type: 'ORGAN', text: ORGAN_MODELS[organModel] ?? 'ORGAN' },
+    synthOn && { kind: 'synth' as const, type: 'SYNTH', text: synthRef?.name ?? displayName(SYNTH_FACTORY[synthId - 1], overrides) },
+    organOn && { kind: 'organ' as const, type: 'ORGAN', text: organRef?.name ?? ORGAN_MODELS[organModel] ?? 'ORGAN' },
   ].filter(Boolean) as { kind: 'piano' | 'synth' | 'organ'; type: string; text: string }[];
   return (
     <Lcd className="program-lcd">

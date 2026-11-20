@@ -1,13 +1,13 @@
 // Build: g++ -std=c++17 -O2 -Isrc -Isrc/core -Isrc/modules -Isrc/dsp \
-//   tests/v13_organ_fx_behavior.cpp src/modules/NordOrganModule.cpp -o /tmp/v13_organ_fx && /tmp/v13_organ_fx
-#include "../src/modules/NordOrganModule.h"
+//   tests/v13_organ_fx_behavior.cpp src/modules/StageOrganModule.cpp -o /tmp/v13_organ_fx && /tmp/v13_organ_fx
+#include "../src/modules/StageOrganModule.h"
 #include <vector>
 #include <cmath>
 #include <iostream>
 #include <algorithm>
-using namespace NordDSP;
+using namespace SonusDSP;
 static std::vector<float> render(bool rotaryFast,int scannerMode,bool internalChorus){
-    NordOrganModule organ;
+    StageOrganModule organ;
     organ.init(48000);organ.organEnabled=true;
     organ.organRotaryFast=rotaryFast;organ.rotaryMix=.83f;
     organ.organDrive=.06f;organ.vibratoMode=scannerMode;
