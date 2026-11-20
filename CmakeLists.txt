@@ -98,6 +98,7 @@ if(STAGE_NATIVE_WINDOW AND (WIN32 OR APPLE))
     FetchContent_MakeAvailable(webview)
 endif()
 
+
 # MT-32: Munt's libmt32emu (LGPL-2.1+, third_party/mt32emu/COPYING.LESSER.txt), static,
 # C++ API only. It needs the user's own MT-32 control + PCM ROM dumps at run time
 # (Roland's ROMs are copyrighted and are not part of this project).
@@ -121,6 +122,7 @@ link_libraries(stage_msfa mt32emu)
 add_executable(SonusLiveStage
     src/main.cpp
     src/app/NativeWindow.cpp
+    $<$<AND:$<BOOL:${STAGE_NATIVE_WINDOW}>,$<PLATFORM_ID:Darwin>>:src/app/NativeFileDialogMac.mm>
     src/app/StageApp.cpp
     src/app/AudioCallbacks.cpp
     src/app/MidiInput.cpp
@@ -191,6 +193,7 @@ if(WIN32)
         shell32        # ACERCA DE: links open in the default browser
         winmm
         ole32
+        uuid
         ksuser
         mfplat
         mfuuid
@@ -491,7 +494,7 @@ if(APPLE)
         MACOSX_BUNDLE_GUI_IDENTIFIER "com.sonus.livestage")
     if(STAGE_NATIVE_WINDOW)
         target_compile_definitions(SonusLiveStage PRIVATE STAGE_NATIVE_WINDOW=1)
-        target_link_libraries(SonusLiveStage PRIVATE webview::core_static)
+        target_link_libraries(SonusLiveStage PRIVATE webview::core_static "-framework AppKit")
     endif()
 endif()
 

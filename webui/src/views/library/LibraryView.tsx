@@ -1,6 +1,7 @@
 // Library: sample sources & PCM cache, Sounds of every module, piano Performances.
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../api/client';
+import { chooseSamplePath, hasNativeSamplePicker } from '../../api/nativePicker';
 import type { SampleLibraryStatus, SoundSummary } from '../../api/types';
 import { notify, runAction } from '../../store/notify';
 import { PianoPerformances } from '../shared/PianoPerformances';
@@ -10,6 +11,7 @@ function Sources() {
   const [status, setStatus] = useState<SampleLibraryStatus | null>(null);
   const [error, setError] = useState('');
   const [path, setPath] = useState('');
+  const [pickerBusy, setPickerBusy] = useState(false);
   const [type, setType] = useState<'root' | 'file'>('root');
   const [cacheDir, setCacheDir] = useState<string | null>(null);
   const [oldRoot, setOldRoot] = useState('');
@@ -23,6 +25,16 @@ function Sources() {
     return () => clearInterval(t);
   }, [running, load]);
 
+  const pick = async (kind: 'folder' | 'file', onPicked: (value: string) => void) => {
+    setPickerBusy(true);
+    try {
+      const selected = await chooseSamplePath(kind);
+      if (selected !== null) onPicked(selected);
+    } catch (e) {
+      notify(`No se pudo abrir el explorador: ${(e as Error).message}`, 'error');
+    } finally { setPickerBusy(false); }
+  };
+  const nativePicker = hasNativeSamplePicker();
   const add = async () => {
     const r = await runAction(() => api.sampleLibrarySource('add', type, path.trim()), 'Fuente añadida');
     if (r) { setStatus(r); setPath(''); }
@@ -39,6 +51,8 @@ function Sources() {
         <Segmented label="Tipo de fuente" options={['CARPETA', 'ARCHIVO']} value={type === 'root' ? 0 : 1} onChange={i => setType(i === 0 ? 'root' : 'file')} />
         <input className="input grow" placeholder={type === 'root' ? 'Ruta absoluta de una carpeta, p. ej. D:\\Samples' : 'Ruta absoluta de un .npno, .nsmp, .sf2 o .sfz'}
           value={path} onChange={e => setPath(e.target.value)} aria-label="Ruta de la fuente" />
+        {nativePicker && <Btn type="button" disabled={pickerBusy} onClick={() => void pick(type === 'root' ? 'folder' : 'file', setPath)}
+          title={type === 'root' ? 'Seleccionar carpeta de samples' : 'Seleccionar archivo de samples'}>EXPLORAR…</Btn>}
         <Btn variant="primary" type="submit" disabled={!path.trim()}>AÑADIR</Btn>
       </form>
       <ul className="list">
@@ -65,6 +79,7 @@ function Sources() {
         <Field label="Caché PCM16">
           <input className="input" value={cacheDir ?? status?.configuration.cacheDir ?? ''} onChange={e => setCacheDir(e.target.value)} />
         </Field>
+        {nativePicker && <Btn type="button" disabled={pickerBusy} onClick={() => void pick('folder', setCacheDir)}>EXPLORAR…</Btn>}
         <Btn type="submit" disabled={cacheDir === null}>GUARDAR</Btn>
       </form>
       <details className="details">
@@ -72,6 +87,7 @@ function Sources() {
         <form className="form" onSubmit={e => { e.preventDefault(); void runAction(() => api.sampleLibraryRelocate(oldRoot.trim(), newRoot.trim()), 'Referencias reparadas'); }}>
           <Field label="Carpeta anterior"><input className="input" value={oldRoot} onChange={e => setOldRoot(e.target.value)} placeholder="D:\Samples Antiguos" /></Field>
           <Field label="Carpeta actual"><input className="input" value={newRoot} onChange={e => setNewRoot(e.target.value)} placeholder="D:\Samples Nuevos" /></Field>
+          {nativePicker && <Btn type="button" disabled={pickerBusy} onClick={() => void pick('folder', setNewRoot)}>EXPLORAR CARPETA…</Btn>}
           <Btn variant="primary" type="submit" disabled={!oldRoot.trim() || !newRoot.trim() || running}>REPARAR REFERENCIAS</Btn>
         </form>
       </details>

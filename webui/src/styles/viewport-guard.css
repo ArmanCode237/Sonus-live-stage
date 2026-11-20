@@ -1,0 +1,13 @@
+/* El marco mantiene 16:10 incluso en fullscreen, navegador o host VST.
+ * No altera tokens ni tamaños internos; solo limita el lienzo de la consola.
+ * Para resoluciones pequeñas, el ajuste de Settings usa CSS zoom nativo. */
+html, body, #root { width: 100%; height: 100%; margin: 0; }
+#root { display: grid; place-items: center; overflow: hidden; background: var(--bg); }
+#root > .console {
+  width: min(100vw, 160vh);
+  height: min(100vh, 62.5vw);
+  min-width: 0;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
