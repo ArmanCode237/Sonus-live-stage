@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(SonusLiveStage VERSION 1.1.4 LANGUAGES CXX)
+project(SonusLiveStage VERSION 1.1.4 LANGUAGES C CXX)
 if(WIN32)
     enable_language(RC)   # application icon (resources/SonusLiveStage.rc)
 endif()
