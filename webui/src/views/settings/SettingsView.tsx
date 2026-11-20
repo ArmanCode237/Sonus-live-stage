@@ -6,7 +6,8 @@ import type { ControlState, HardwareStatus, MapScope } from '../../api/types';
 import { notify, runAction } from '../../store/notify';
 import { ParamKnob } from '../../ui/Knob';
 import { THEMES, useTheme } from '../../store/theme';
-import { setUiPref, useUiPrefs } from '../../store/uiPrefs';
+import { setUiPref, useUiPrefs, UI_ZOOM_OPTIONS } from '../../store/uiPrefs';
+import { applyUiZoom } from '../../store/uiZoom';
 import { useEngine } from '../../store/hooks';
 import { HttpAccess, OscDevice } from './NetworkSettings';
 import { describeConflict, loadMappings, refLabel, setMappingState, sourceLabel, useMappings } from '../../store/mappings';
@@ -170,6 +171,26 @@ function StatusBarChoice() {
   );
 }
 
+/** Preferencia local de visualizacion: no modifica presets ni el estado DSP. */
+function InterfaceZoomChoice() {
+  const { uiZoom } = useUiPrefs();
+  const change = (value: number) => {
+    setUiPref('uiZoom', value);
+    applyUiZoom(value);
+  };
+  return (
+    <div className="cfg-zoom">
+      <Row wrap>
+        <span className="live-safety__label">ZOOM UI</span>
+        <Segmented wrap label="Escala de la interfaz" options={UI_ZOOM_OPTIONS.map(v => `${v}%`)}
+          values={[...UI_ZOOM_OPTIONS]} value={uiZoom} onChange={v => change(Number(v))} />
+        <Btn small onClick={() => change(100)} disabled={uiZoom === 100}>RESTABLECER</Btn>
+      </Row>
+      <p className="hint">Escala de toda la consola. Se guarda únicamente en este equipo y no modifica el diseño, los sonidos ni los programas. En pantallas pequeñas prueba 75–90 %.</p>
+    </div>
+  );
+}
+
 /** v32.4 live safety: sample-RAM budget, audio telemetry and MIDI clock follow. */
 function LiveSafety() {
   const [sys, setSys] = useState<SystemSettings | null>(null);
@@ -257,6 +278,7 @@ export default function SettingsView() {
         <Panel title="SYSTEM" className="cfg-system" actions={<ThemeChoice />}>
           <div className="knobs"><ParamKnob id="maxVoices" label="MAX VOICES" /><ParamKnob id="tune" label="MASTER TUNE" /></div>
           <StatusBarChoice />
+          <InterfaceZoomChoice />
           <LiveSafety />
           <HttpAccess />
           <p className="hint">Interfaz única React · sincronización de parámetros en tiempo real con el motor C++.</p>
