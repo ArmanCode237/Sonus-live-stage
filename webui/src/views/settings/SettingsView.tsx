@@ -1,13 +1,14 @@
 // Configuration: audio device, MIDI ports, MIDI CC / OSC mapping, system.
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api, type SystemSettings } from '../../api/client';
 import { MidiRouting } from './MidiRouting';
 import type { ControlState, HardwareStatus, MapScope } from '../../api/types';
 import { notify, runAction } from '../../store/notify';
 import { ParamKnob } from '../../ui/Knob';
 import { THEMES, useTheme } from '../../store/theme';
-import { setUiPref, useUiPrefs, UI_ZOOM_OPTIONS } from '../../store/uiPrefs';
-import { applyUiZoom } from '../../store/uiZoom';
+import { setUiPref, useUiPrefs, UI_SCALE_OPTIONS } from '../../store/uiPrefs';
+import { UI_REF_H, UI_REF_W, useUiScaleInfo } from '../../store/uiZoom';
 import { useEngine } from '../../store/hooks';
 import { HttpAccess, OscDevice } from './NetworkSettings';
 import { describeConflict, loadMappings, refLabel, setMappingState, sourceLabel, useMappings } from '../../store/mappings';
@@ -120,7 +121,7 @@ function Mapping() {
       )}
       <div className="mapping">
         <div className="mapping__lists">
-          <Segmented label="Ámbito" options={SCOPE_FILTERS} value={filter} onChange={setFilter} />
+          <Segmented wrap label="Ámbito" options={SCOPE_FILTERS} value={filter} onChange={setFilter} />
           <ul className="list list--scroll list--dense mapping-list">
             {rows.map(a => (
               <li key={`${a.scope}-${a.module ?? ''}-${a.paramId}`} className={`list__row${a.effective ? '' : ' is-shadowed'}`}>
@@ -171,23 +172,38 @@ function StatusBarChoice() {
   );
 }
 
-/** Preferencia local de visualizacion: no modifica presets ni el estado DSP. */
-function InterfaceZoomChoice() {
-  const { uiZoom } = useUiPrefs();
-  const change = (value: number) => {
-    setUiPref('uiZoom', value);
-    applyUiZoom(value);
-  };
+/** Pantalla: escala de la consola. Preferencia local de este equipo; no toca sonidos ni programas. */
+function DisplayPanel() {
+  const { uiAutoFit, uiScale } = useUiPrefs();
+  const scale = useUiScaleInfo();
+  const mod = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl';
   return (
-    <div className="cfg-zoom">
-      <Row wrap>
-        <span className="live-safety__label">ZOOM UI</span>
-        <Segmented wrap label="Escala de la interfaz" options={UI_ZOOM_OPTIONS.map(v => `${v}%`)}
-          values={[...UI_ZOOM_OPTIONS]} value={uiZoom} onChange={v => change(Number(v))} />
-        <Btn small onClick={() => change(100)} disabled={uiZoom === 100}>RESTABLECER</Btn>
-      </Row>
-      <p className="hint">Escala de toda la consola. Se guarda únicamente en este equipo y no modifica el diseño, los sonidos ni los programas. En pantallas pequeñas prueba 75–90 %.</p>
-    </div>
+    <Panel title="PANTALLA" className="cfg-display" actions={<ThemeChoice />}>
+      <div className="cfg-display__grid">
+        <div className="cfg-display__row">
+          <span className="live-safety__label">AJUSTE</span>
+          <Btn small led active={uiAutoFit} onClick={() => setUiPref('uiAutoFit', !uiAutoFit)}
+            title="AUTO: la consola se escala para ocupar la ventana en cualquier resolución">AUTO</Btn>
+          <span className="hint">{uiAutoFit
+            ? `La consola se adapta a la ventana (diseño base ${UI_REF_W}×${UI_REF_H}).`
+            : 'Escala fija: el tamaño no cambia al redimensionar la ventana.'}</span>
+        </div>
+        <div className="cfg-display__row">
+          <span className="live-safety__label">TAMAÑO</span>
+          <Segmented wrap label="Tamaño de la interfaz" options={UI_SCALE_OPTIONS.map(v => `${v}%`)}
+            values={[...UI_SCALE_OPTIONS]} value={uiScale} onChange={v => setUiPref('uiScale', Number(v))} />
+          <Btn small plain onClick={() => setUiPref("uiScale", 100)} disabled={uiScale === 100}>RESTABLECER</Btn>
+        </div>
+        <div className="cfg-display__readout" role="status">
+          <span>ZOOM EFECTIVO <b>{Math.round(scale.zoom * 100)} %</b></span>
+          <span>LIENZO <b>{scale.width}×{scale.height}</b></span>
+          <span>MOTOR <b>{scale.native ? 'NATIVO' : 'CSS'}</b></span>
+        </div>
+        {scale.limited && <p className="hint hint--warn">La ventana es demasiado pequeña para ese tamaño: se usa el máximo que cabe sin superponer paneles.</p>}
+        <p className="hint">Atajos: <kbd>{mod}</kbd> <kbd>+</kbd> / <kbd>{mod}</kbd> <kbd>−</kbd> cambian el tamaño y <kbd>{mod}</kbd> <kbd>0</kbd> lo restablece. Se guarda solo en este equipo.</p>
+      </div>
+      <StatusBarChoice />
+    </Panel>
   );
 }
 
@@ -221,9 +237,9 @@ function LiveSafety() {
       </Row>
       <Row wrap>
         <span className="live-safety__label">AUDIO</span>
+        <Btn small onClick={() => void runAction(() => api.resetAudioCounters(), 'Contadores de audio reiniciados')}>RESET XRUN</Btn>
         <span className="hint">DSP pico <b>{Math.round(peak * 100)} %</b> · render máx. <b>{maxRender} µs</b> · XRUN <b>{underflows}</b> ·
           bloques lentos <b>{over}</b> · recuperaciones <b>{recoveries}</b></span>
-        <Btn small onClick={() => void runAction(() => api.resetAudioCounters(), 'Contadores de audio reiniciados')}>RESET XRUN</Btn>
       </Row>
       <Row wrap>
         <span className="live-safety__label">MIDI CLOCK</span>
@@ -257,34 +273,81 @@ function ThemeChoice() {
     onChange={i => setTheme(THEMES[i].id)} />;
 }
 
-export default function SettingsView() {
+// Pestañas de SETTINGS: cada una ocupa toda la vista, sin paneles ocultos al fondo de una columna.
+const TABS = [
+  { id: 'audio', label: 'AUDIO · MIDI', hint: 'Interfaz de audio, buffer y teclados MIDI conectados' },
+  { id: 'routing', label: 'ENRUTADO MIDI', hint: 'Qué teclado o canal toca cada capa' },
+  { id: 'mapping', label: 'MAPEOS · OSC', hint: 'Controladores MIDI / OSC asignados a parámetros' },
+  { id: 'system', label: 'SISTEMA', hint: 'Voces, afinación, seguridad en directo y acceso de red' },
+  { id: 'display', label: 'PANTALLA', hint: 'Tamaño de la interfaz, tema y barra de estado' },
+] as const;
+type TabId = (typeof TABS)[number]['id'];
+
+function AudioTab() {
   const [hw, setHw] = useState<HardwareStatus | null>(null);
   useEffect(() => { api.hardware().then(setHw).catch(e => notify((e as Error).message, 'error')); }, []);
+  if (hw?.host === 'plugin') {
+    return (
+      <div className="settings-page settings-page--single">
+        <Panel title="AUDIO · MIDI" className="cfg-audio">
+          <p className="hint">Live Stage funciona como plug-in: el DAW gestiona la salida de audio, la frecuencia de muestreo, el buffer
+            y las entradas MIDI (la pista donde está insertado). Los Programs, presets, mapeos y la biblioteca son los mismos que en la app.</p>
+        </Panel>
+      </div>
+    );
+  }
   return (
-    <div className="view view--settings">
-      <div className="stack">
-        {hw?.host === 'plugin' ? (
-          <Panel title="AUDIO · MIDI" className="cfg-audio">
-            <p className="hint">Live Stage funciona como plug-in: el DAW gestiona la salida de audio, la frecuencia de muestreo, el buffer
-              y las entradas MIDI (la pista donde está insertado). Los Programs, presets, mapeos y la biblioteca son los mismos que en la app.</p>
-          </Panel>
-        ) : (
-          <>
-            <Audio hw={hw} setHw={setHw} />
-            <Midi hw={hw} setHw={setHw} />
-          </>
-        )}
-        <MidiRouting />
-        <Panel title="SYSTEM" className="cfg-system" actions={<ThemeChoice />}>
+    <div className="settings-page settings-page--split">
+      <div className="settings-col"><Audio hw={hw} setHw={setHw} /></div>
+      <div className="settings-col"><Midi hw={hw} setHw={setHw} /></div>
+    </div>
+  );
+}
+
+function SystemTab() {
+  return (
+    <div className="settings-page settings-page--split">
+      <div className="settings-col">
+        <Panel title="MOTOR" className="cfg-engine">
           <div className="knobs"><ParamKnob id="maxVoices" label="MAX VOICES" /><ParamKnob id="tune" label="MASTER TUNE" /></div>
-          <StatusBarChoice />
-          <InterfaceZoomChoice />
-          <LiveSafety />
+          <p className="hint">Polifonía máxima del motor y afinación global (A4 = 440 Hz ± cents).</p>
+        </Panel>
+        <Panel title="RED · ACCESO" className="cfg-network">
           <HttpAccess />
           <p className="hint">Interfaz única React · sincronización de parámetros en tiempo real con el motor C++.</p>
         </Panel>
       </div>
-      <Mapping />
+      <div className="settings-col">
+        <Panel title="SEGURIDAD EN DIRECTO" className="cfg-system">
+          <LiveSafety />
+        </Panel>
+      </div>
+    </div>
+  );
+}
+
+export default function SettingsView() {
+  const [params, setParams] = useSearchParams();
+  const requested = params.get('tab') as TabId | null;
+  const tab: TabId = TABS.some(t => t.id === requested) ? requested! : 'audio';
+  const select = (id: TabId) => setParams(id === 'audio' ? {} : { tab: id }, { replace: true });
+  const current = TABS.find(t => t.id === tab)!;
+  return (
+    <div className="view view--settings">
+      <nav className="subnav settings-tabs" aria-label="Secciones de configuración" role="tablist">
+        {TABS.map(t => (
+          <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} title={t.hint}
+            className={`subnav__item${tab === t.id ? ' is-active' : ''}`} onClick={() => select(t.id)}>{t.label}</button>
+        ))}
+        <span className="subnav__title">{current.hint}</span>
+      </nav>
+      <div className="settings-body" role="tabpanel" aria-label={current.label}>
+        {tab === 'audio' && <AudioTab />}
+        {tab === 'routing' && <div className="settings-page settings-page--single"><MidiRouting /></div>}
+        {tab === 'mapping' && <div className="settings-page settings-page--fill"><Mapping /></div>}
+        {tab === 'system' && <SystemTab />}
+        {tab === 'display' && <div className="settings-page settings-page--single"><DisplayPanel /></div>}
+      </div>
     </div>
   );
 }

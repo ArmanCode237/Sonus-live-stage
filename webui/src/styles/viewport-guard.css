@@ -1,13 +1,22 @@
-/* El marco mantiene 16:10 incluso en fullscreen, navegador o host VST.
- * No altera tokens ni tamaños internos; solo limita el lienzo de la consola.
- * Para resoluciones pequeñas, el ajuste de Settings usa CSS zoom nativo. */
+/* Lienzo de la consola.
+ * store/uiZoom.ts publica en <html> las medidas del viewport ya compensadas por el zoom:
+ *   --app-w / --app-h  tamaño del viewport en px CSS de la consola
+ *   --vw / --vh        1 % de cada eje (sustituyen a vw/vh, que el zoom CSS no compensa)
+ * La consola ocupa toda la ventana mientras su proporción esté entre 5:4 y 16:9 (pantallas
+ * 16:10, 16:9, MacBook con notch, 4:3 ancho); fuera de ese rango se centra con bandas. */
+:root { --app-w: 100vw; --app-h: 100vh; --vw: 1vw; --vh: 1vh; }
 html, body, #root { width: 100%; height: 100%; margin: 0; }
 #root { display: grid; place-items: center; overflow: hidden; background: var(--bg); }
 #root > .console {
-  width: min(100vw, 160vh);
-  height: min(100vh, 62.5vw);
+  width: min(var(--app-w), calc(var(--app-h) * 1.78));
+  height: min(var(--app-h), calc(var(--app-w) / 1.25));
   min-width: 0;
   max-width: 100%;
   max-height: 100%;
   overflow: hidden;
 }
+/* Contenedor de consultas: los breakpoints (@container console) se evalúan sobre el lienzo
+ * real de la consola, no sobre la ventana: coinciden con zoom nativo, zoom CSS y bandas. */
+#root > .console { container: console / size; }
+/* Los diálogos se montan en <body>: su capa es su propio contenedor (≈ viewport). */
+.modal { container: console / size; }

@@ -242,6 +242,7 @@ void StageApp::registerProgramRoutes() {
         if(!saveJsonAtomic(programsFilePath,userPrograms)){
             res.status=500;res.set_content(R"({"ok":false,"error":"Error al guardar programs.json"})","application/json");return;
         }
+        validateSetlist();   // v34: a stored slot replaces its old (possibly missing) references
 
         res.set_content(json({
             {"ok", true},

@@ -63,7 +63,13 @@ void StageApp::registerLibraryRoutes() {
          if(!saveJsonAtomic(sampleLibraryFile,config)){res.status=500;res.set_content(R"({"ok":false,"error":"No se pudo guardar el índice"})","application/json");return;}
          sampleLibraryConfig=config;
         }
-        res.set_content(json{{"ok",true},{"configuration",config}}.dump(),"application/json");
+        // v34: programs that referenced samples from another computer resolve against the
+        // new folder at once; the header warning is recomputed.
+        refreshSampleSearchRoots();
+        {std::lock_guard<std::mutex> lock(dataMutex);validateSetlist();}
+        // Same shape as GET /status: the console replaces its whole status with this reply.
+        res.set_content(json{{"ok",true},{"configuration",config},
+            {"progress",libraryProgressJson()}}.dump(),"application/json");
     });
 
     svr.Post("/api/sample-library/cache-directory",[this](const httplib::Request& req,httplib::Response& res){
@@ -274,6 +280,7 @@ void StageApp::registerLibraryRoutes() {
         sampleLibraryConfig=changedConfig;userPrograms=changedPrograms;soundLibrary=changedSounds;
         if(fs::path(libraryRootDir).lexically_normal()==oldRoot)libraryRootDir=newRoot.generic_string();
         {std::lock_guard<std::mutex> g(libraryIndexMutex);indexedSignature.clear();indexedItems=json::array();}
+        validateSetlist();                       // dataMutex held (programGuard)
         res.set_content(json{{"ok",true},{"updatedFiles",movedFiles.size()},
             {"reusedCaches",reused},{"requiresRebuild",needsRebuild},
             {"message","Rutas reubicadas; las dependencias SFZ se preparan de nuevo desde la biblioteca."}}.dump(),"application/json");

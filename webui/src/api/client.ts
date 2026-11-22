@@ -68,6 +68,7 @@ export interface MidiRouting {
 /** ACERCA DE (config/links.json): empty links are not configured yet. */
 export interface AboutInfo {
   name: string; version: string; host: 'app' | 'plugin'; dataDir: string; license: string;
+  edition?: 'full' | 'demo';
   links: { support: string; website: string; source: string };
 }
 export interface OscStatus {

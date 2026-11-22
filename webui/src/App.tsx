@@ -1,7 +1,8 @@
-import { lazy, Suspense } from 'react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { lazy, Suspense, type ReactNode } from 'react';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { Shell } from './layout/Shell';
 import { MainView } from './views/main/MainView';
+import { ViewBoundary } from './ui/ViewBoundary';
 
 // MAIN (performance screen) loads first; editors are split into separate chunks.
 const PianoView = lazy(() => import('./views/piano/PianoView').then(m => ({ default: m.PianoView })));
@@ -14,19 +15,25 @@ const SettingsView = lazy(() => import('./views/settings/SettingsView'));
 
 const Loading = () => <div className="view-loading" aria-busy="true">CARGANDO…</div>;
 
+/** Each view in its own error boundary (reset when the route changes). */
+function Page({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation();
+  return <ViewBoundary key={pathname}><Suspense fallback={<Loading />}>{children}</Suspense></ViewBoundary>;
+}
+
 export function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
         <Route element={<Shell />}>
-          <Route index element={<MainView />} />
-          <Route path="piano" element={<Suspense fallback={<Loading />}><PianoView /></Suspense>} />
-          <Route path="synth" element={<Suspense fallback={<Loading />}><SynthView /></Suspense>} />
-          <Route path="organ" element={<Suspense fallback={<Loading />}><OrganView /></Suspense>} />
-          <Route path="fx" element={<Suspense fallback={<Loading />}><FxView /></Suspense>} />
-          <Route path="zones" element={<Suspense fallback={<Loading />}><ZonesView /></Suspense>} />
-          <Route path="library" element={<Suspense fallback={<Loading />}><LibraryView /></Suspense>} />
-          <Route path="settings" element={<Suspense fallback={<Loading />}><SettingsView /></Suspense>} />
+          <Route index element={<Page><MainView /></Page>} />
+          <Route path="piano" element={<Page><PianoView /></Page>} />
+          <Route path="synth" element={<Page><SynthView /></Page>} />
+          <Route path="organ" element={<Page><OrganView /></Page>} />
+          <Route path="fx" element={<Page><FxView /></Page>} />
+          <Route path="zones" element={<Page><ZonesView /></Page>} />
+          <Route path="library" element={<Page><LibraryView /></Page>} />
+          <Route path="settings" element={<Page><SettingsView /></Page>} />
           <Route path="library-manager" element={<Navigate to="/library" replace />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>

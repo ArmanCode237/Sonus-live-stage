@@ -7,6 +7,7 @@
   <key>CFBundleDisplayName</key><string>Sonus Live Stage</string>
   <key>CFBundleExecutable</key><string>@STAGE_MACOS_EXECUTABLE_NAME@</string>
   <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleIconFile</key><string>SonusLiveStage</string>
   <key>CFBundleVersion</key><string>@PROJECT_VERSION@</string>
   <key>CFBundleShortVersionString</key><string>@PROJECT_VERSION@</string>
   <key>LSMinimumSystemVersion</key><string>@STAGE_MACOS_DEPLOYMENT_TARGET@</string>

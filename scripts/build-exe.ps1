@@ -11,8 +11,9 @@
     .\build-exe.cmd -SkipUi         keep the current ui\app (no Node.js needed)
     .\build-exe.cmd -NoPackage      only the exe
     .\build-exe.cmd -Clean          rebuild from scratch (new dependency download)
+    .\build-exe.cmd -Demo           DEMO edition (src/core/Edition.h) in build\release-demo, dist\demo
 #>
-param([switch]$SkipUi, [switch]$NoPackage, [switch]$Clean)
+param([switch]$SkipUi, [switch]$NoPackage, [switch]$Clean, [switch]$Demo)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
@@ -29,9 +30,12 @@ Need 'g++'   'Instala MinGW-w64 (por ejemplo WinLibs, UCRT, POSIX threads) en C:
 Need 'cmake' 'Instala CMake 3.22 o superior (incluido en WinLibs).'
 Need 'ninja' 'Instala Ninja (incluido en WinLibs).'
 
-$build = Join-Path $root 'build\release'
-$dist = Join-Path $root 'dist'
-if ($Clean -and (Test-Path $build)) { Step 'Borrando build\release'; Remove-Item -Recurse -Force $build }
+# Demo and full editions never share a build folder: CMake caches STAGE_DEMO.
+$suffix = if ($Demo) { '-demo' } else { '' }
+$demoFlag = if ($Demo) { 'ON' } else { 'OFF' }
+$build = Join-Path $root "build\release$suffix"
+$dist = if ($Demo) { Join-Path $root 'dist\demo' } else { Join-Path $root 'dist' }
+if ($Clean -and (Test-Path $build)) { Step "Borrando $build"; Remove-Item -Recurse -Force $build }
 
 if (-not $SkipUi) {
     Need 'npm' 'Instala Node.js 20+ o usa -SkipUi para conservar la interfaz ya compilada en ui\app.'
@@ -44,7 +48,7 @@ if (-not $SkipUi) {
 }
 
 Step 'Configurando (Release, ASIO + WASAPI, runtime estático)'
-cmake -S . -B $build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSTAGE_ENABLE_ASIO=ON -DSTAGE_BUILD_PLUGIN=OFF
+cmake -S . -B $build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSTAGE_ENABLE_ASIO=ON -DSTAGE_BUILD_PLUGIN=OFF -DSTAGE_DEMO=$demoFlag
 if ($LASTEXITCODE) { throw 'La configuración de CMake falló' }
 
 Step 'Compilando SonusLiveStage.exe'

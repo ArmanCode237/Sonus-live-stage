@@ -18,7 +18,7 @@ function Sources() {
   const [newRoot, setNewRoot] = useState('');
   const load = useCallback(() => api.sampleLibraryStatus().then(s => { setStatus(s); setError(''); }).catch(e => setError((e as Error).message)), []);
   useEffect(() => { void load(); }, [load]);
-  const running = status?.progress.running ?? false;
+  const running = status?.progress?.running ?? false;
   useEffect(() => {
     if (!running) return;
     const t = setInterval(() => void load(), 700);
@@ -37,9 +37,9 @@ function Sources() {
   const nativePicker = hasNativeSamplePicker();
   const add = async () => {
     const r = await runAction(() => api.sampleLibrarySource('add', type, path.trim()), 'Fuente añadida');
-    if (r) { setStatus(r); setPath(''); }
+    if (r) { setPath(''); void load(); }   // reload the full status (never trust a partial reply)
   };
-  const remove = async (kind: 'root' | 'file', p: string) => { const r = await runAction(() => api.sampleLibrarySource('remove', kind, p), 'Fuente eliminada'); if (r) setStatus(r); };
+  const remove = async (kind: 'root' | 'file', p: string) => { const r = await runAction(() => api.sampleLibrarySource('remove', kind, p), 'Fuente eliminada'); if (r) void load(); };
   const progress = status?.progress;
   const pct = progress && progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
   const sources = [...(status?.configuration.roots ?? []).map(p => ['root', p] as const), ...(status?.configuration.files ?? []).map(p => ['file', p] as const)];

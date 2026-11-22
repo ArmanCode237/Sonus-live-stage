@@ -1,6 +1,10 @@
 #include "app/SampleSources.h"
 #include "core/LibraryPathRelocation.h"
+#include <algorithm>
+#include <cctype>
+#include <chrono>
 #include <fstream>
+#include <unordered_map>
 #if defined(_WIN32)
 #include <windows.h>
 #endif
@@ -30,14 +34,115 @@ std::mutex relocatedPathsMutex;
 std::vector<std::pair<fs::path,fs::path>> relocatedPaths;
 fs::path resolveSavedSamplePath(const fs::path& requested){
     std::error_code ec;
+    if(requested.empty())return requested;
     if(fs::is_regular_file(requested,ec))return requested;
-    std::lock_guard<std::mutex> guard(relocatedPathsMutex);
-    for(auto it=relocatedPaths.rbegin();it!=relocatedPaths.rend();++it){
-        std::string target;
-        if(relocateSourcePath(requested.generic_string(),it->first,it->second,target))
-            return fs::path(target);
+    {
+        std::lock_guard<std::mutex> guard(relocatedPathsMutex);
+        for(auto it=relocatedPaths.rbegin();it!=relocatedPaths.rend();++it){
+            std::string target;
+            if(relocateSourcePath(requested.generic_string(),it->first,it->second,target))
+                return fs::path(target);
+        }
     }
+    if(auto found=findSampleInSearchRoots(requested.string());!found.empty())return found;
     return requested;
+}
+
+// ---------------------------------------------------------------- v34 sample search roots
+namespace {
+std::mutex searchMutex;
+std::vector<fs::path> searchRoots;
+std::unordered_map<std::string,fs::path> nameIndex;   // lower-case file name -> first match
+bool nameIndexBuilt=false;
+std::chrono::steady_clock::time_point nameIndexTime{};
+
+std::string lowerCopy(std::string s){
+    std::transform(s.begin(),s.end(),s.begin(),[](unsigned char c){return char(std::tolower(c));});
+    return s;
+}
+bool isSampleExtension(const fs::path& p){
+    const auto ext=lowerCopy(p.extension().string());
+    return ext==".npno"||ext==".nsp"||ext==".nsmp"||ext==".nsmp3"||ext==".nsmp4"||ext==".sf2"||ext==".sfz";
+}
+// Caller holds searchMutex. Bounded walk: libraries are large but shallow.
+void buildNameIndex(){
+    nameIndex.clear();
+    size_t visited=0;
+    for(const auto& root:searchRoots){
+        std::error_code ec;
+        fs::recursive_directory_iterator it(root,fs::directory_options::skip_permission_denied,ec),end;
+        for(;!ec&&it!=end&&visited<200000;it.increment(ec)){
+            ++visited;
+            if(it.depth()>8){it.disable_recursion_pending();continue;}
+            std::error_code fileEc;
+            if(!it->is_regular_file(fileEc)||!isSampleExtension(it->path()))continue;
+            nameIndex.emplace(lowerCopy(it->path().filename().string()),it->path());
+        }
+    }
+    nameIndexBuilt=true;
+    nameIndexTime=std::chrono::steady_clock::now();
+}
+} // namespace
+
+void setSampleSearchRoots(const std::vector<fs::path>& roots){
+    std::vector<fs::path> unique;
+    for(const auto& r:roots){
+        std::error_code ec;
+        if(r.empty()||!fs::is_directory(r,ec))continue;
+        auto canonical=fs::weakly_canonical(r,ec);
+        if(ec)canonical=r.lexically_normal();
+        if(std::find(unique.begin(),unique.end(),canonical)==unique.end())unique.push_back(canonical);
+    }
+    std::lock_guard<std::mutex> guard(searchMutex);
+    if(unique==searchRoots)return;
+    searchRoots=std::move(unique);
+    nameIndex.clear();
+    nameIndexBuilt=false;
+}
+
+fs::path findSampleInSearchRoots(const std::string& saved){
+    // Programs saved on Windows keep backslashes; normalise before splitting.
+    std::string normalised=saved;
+    std::replace(normalised.begin(),normalised.end(),'\\','/');
+    const fs::path path(normalised);
+    const fs::path filename=path.filename();
+    if(filename.empty())return {};
+    // Relative tails to try under each root, most specific first:
+    //   ./samples/piano-ep/X.npno -> piano-ep/X.npno ; C:/Lib/piano-ep/X.npno -> piano-ep/X.npno ; X.npno
+    std::vector<fs::path> tails;
+    {
+        std::vector<fs::path> parts;
+        for(const auto& part:path)if(!part.empty()&&part!="/"&&part!="."&&part.string().find(':')==std::string::npos)parts.push_back(part);
+        for(size_t i=0;i+1<parts.size();++i){
+            if(lowerCopy(parts[i].string())=="samples"){
+                fs::path tail;for(size_t j=i+1;j<parts.size();++j)tail/=parts[j];
+                tails.push_back(tail);break;
+            }
+        }
+        if(parts.size()>=2)tails.push_back(parts[parts.size()-2]/filename);
+        tails.push_back(filename);
+    }
+    std::lock_guard<std::mutex> guard(searchMutex);
+    for(const auto& root:searchRoots)for(const auto& tail:tails){
+        std::error_code ec;
+        const auto candidate=root/tail;
+        if(fs::is_regular_file(candidate,ec))return candidate;
+    }
+    // Same file name anywhere inside the roots (a library reorganised into subfolders).
+    const auto key=lowerCopy(filename.string());
+    const auto lookup=[&]()->fs::path{
+        const auto it=nameIndex.find(key);
+        std::error_code ec;
+        return it!=nameIndex.end()&&fs::is_regular_file(it->second,ec)?it->second:fs::path{};
+    };
+    if(!nameIndexBuilt)buildNameIndex();
+    if(auto hit=lookup();!hit.empty())return hit;
+    // Files copied in after the index was built: refresh at most every 15 s on a miss.
+    if(std::chrono::steady_clock::now()-nameIndexTime>std::chrono::seconds(15)){
+        buildNameIndex();
+        return lookup();
+    }
+    return {};
 }
 
 // The piano-layer source paths are stored separately from the realtime DSP parameters.
@@ -73,6 +178,7 @@ bool restorePianoLayerSources(const json& program, StagePianoEngine& engine,
         if ((!fs::exists(resolved) || savedPath.empty()) && !filename.empty()) {
             const fs::path replacement = fs::path(libraryRoot) / filename;
             if (fs::exists(replacement)) resolved = replacement;
+            else if (auto found = findSampleInSearchRoots(filename); !found.empty()) resolved = found;
         }
         if (savedPath.empty() && filename.empty()) {
             engine.setLayerInstrument(i, {});

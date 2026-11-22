@@ -1,5 +1,6 @@
 // HTML pages, static UI assets and the request guard shared by all routes.
 #include "app/StageApp.h"
+#include "core/Edition.h"
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -50,6 +51,12 @@ void StageApp::installHttpGuard() {
                                 "<b>SETTINGS &rarr; SYSTEM &rarr; ACCESO WEB</b> para usarlo en un navegador.</p>","text/html; charset=utf-8");
                 return httplib::Server::HandlerResponse::Handled;
             }
+        }
+        // Demo edition: locked features answer 403 with a readable message (core/Edition.h).
+        if(Edition::routeBlocked(req.method,req.path)){
+            res.status=403;
+            res.set_content(json{{"ok",false},{"demo",true},{"error",Edition::kLockedMessage}}.dump(),"application/json");
+            return httplib::Server::HandlerResponse::Handled;
         }
         // Page routes of the React console (ui/app). Handled here because
         // httplib serves the "/" file mount before regular GET handlers.

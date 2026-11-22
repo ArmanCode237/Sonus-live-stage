@@ -1,5 +1,6 @@
 #pragma once
 #include "../core/StageTypes.h"
+#include "../core/Edition.h"
 #include "../dsp/StageDspEffects.h"
 #include "../dsp/StageSlotFxRack.h"
 #include "../dsp/RtPublish.h"
@@ -79,7 +80,7 @@ public:
     std::shared_ptr<const PianoInstrument> getLayerInstrument(int layer) const;
     std::array<std::shared_ptr<const PianoInstrument>, PIANO_LAYER_COUNT> getPianoInstruments() const;
     void setPianoVolume(float level) { pianoVolume_.store(std::clamp(level, 0.0f, 1.5f)); }
-    void setPianoLayerEnabled(int layer, bool enabled) { if (layer >= 0 && layer < PIANO_LAYER_COUNT) pianoLayerEnabled_[layer].store(enabled); }
+    void setPianoLayerEnabled(int layer, bool enabled) { if (layer >= 0 && layer < PIANO_LAYER_COUNT) pianoLayerEnabled_[layer].store(enabled && Edition::pianoLayerAllowed(layer)); }
     void setPianoLayerVolume(int layer, float volume) { if (layer >= 0 && layer < PIANO_LAYER_COUNT) pianoLayerVolume_[layer].store(std::clamp(volume, 0.0f, 1.5f)); }
 
     void setModuleFxSend(int layer, int bus,float level) {

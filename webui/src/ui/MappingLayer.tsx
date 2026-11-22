@@ -3,6 +3,7 @@
 // button mode, range, remove. One instance lives in the shell (event delegation).
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { eventToCssPx } from '../store/uiZoom';
 import { api } from '../api/client';
 import type { Assignment, ButtonMode, LearnCapture, MapScope, MidiSource, Takeover } from '../api/types';
 import { engine } from '../store/engine';
@@ -108,10 +109,12 @@ function MappingMenu({ target, onClose }: { target: Target; onClose: () => void 
   useLayoutEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const r = el.getBoundingClientRect();
+    // Coordenadas del evento → px CSS (con el zoom CSS de respaldo no coinciden).
+    const x = eventToCssPx(target.x), y = eventToCssPx(target.y);
+    const vw = eventToCssPx(window.innerWidth), vh = eventToCssPx(window.innerHeight);
     setPos({
-      left: Math.max(8, Math.min(target.x, window.innerWidth - r.width - 8)),
-      top: Math.max(8, Math.min(target.y, window.innerHeight - r.height - 8)),
+      left: Math.max(8, Math.min(x, vw - el.offsetWidth - 8)),
+      top: Math.max(8, Math.min(y, vh - el.offsetHeight - 8)),
     });
   }, [target.x, target.y, scope, learning, pending, all.length]);
 

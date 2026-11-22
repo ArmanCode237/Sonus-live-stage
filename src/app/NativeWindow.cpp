@@ -190,6 +190,32 @@ bool runNativeWindow(const std::string& url, NativeWindowState& state, std::stri
             const bool folder = args.find("folder") != std::string::npos;
             return nlohmann::json(selectLocalSamplePath(folder, hwnd)).dump();
         });
+        // UI scale (webui/src/store/uiZoom.ts): WebView2 ZoomFactor, the same zoom as
+        // Edge's Ctrl+/Ctrl−, so layout, media queries and pointer coordinates agree.
+        // The built-in Ctrl+wheel / Ctrl+± zoom is disabled: the console owns the scale.
+        ICoreWebView2Controller* zoomController = nullptr;
+        if (auto controller = w.browser_controller(); controller.ok())
+            zoomController = static_cast<ICoreWebView2Controller*>(controller.value());
+        if (zoomController) {
+            ICoreWebView2* core = nullptr;
+            if (SUCCEEDED(zoomController->get_CoreWebView2(&core)) && core) {
+                ICoreWebView2Settings* settings = nullptr;
+                if (SUCCEEDED(core->get_Settings(&settings)) && settings) {
+                    settings->put_IsZoomControlEnabled(FALSE);
+                    settings->Release();
+                }
+                core->Release();
+            }
+        }
+        w.bind("__liveStageSetZoom", [zoomController](const std::string& args) -> std::string {
+            if (!zoomController) return "0";
+            const auto j = nlohmann::json::parse(args, nullptr, false);
+            const double requested = (j.is_array() && !j.empty() && j[0].is_number()) ? j[0].get<double>() : 0.0;
+            if (requested > 0) zoomController->put_ZoomFactor(std::clamp(requested, 0.3, 4.0));
+            double current = 0;
+            if (FAILED(zoomController->get_ZoomFactor(&current))) current = 0;
+            return nlohmann::json(current).dump();
+        });
         // F11: full screen (stage mode). The page asks C++ through a bound function.
         w.bind("__liveStageFullscreen", [hwnd](const std::string&) -> std::string {
             setFullscreen(hwnd, !g_fullscreen);
@@ -212,10 +238,23 @@ bool runNativeWindow(const std::string& url, NativeWindowState& state, std::stri
 #include "webview/webview.h"
 #include <algorithm>
 #include <exception>
+#include <iostream>
 #include <nlohmann/json.hpp>
 
 std::string stageMacSelectSamplePath(bool directory);
 void stageMacApplyWindowAspect(void* nativeWindow);
+void stageMacFitWindow(void* nativeWindow, int desiredWidth);
+double stageMacSetPageZoom(void* webView, double zoom);
+void stageMacToggleFullScreen(void* nativeWindow);
+
+namespace {
+// Binding arguments arrive as a JSON array: [1.25] sets, [null] only queries.
+double zoomArgument(const std::string& args) {
+    const auto j = nlohmann::json::parse(args, nullptr, false);
+    if (j.is_array() && !j.empty() && j[0].is_number()) return j[0].get<double>();
+    return 0;
+}
+} // namespace
 
 bool nativeWindowAvailable() { return true; }
 bool runNativeWindow(const std::string& url, NativeWindowState& state, std::string& error) {
@@ -223,19 +262,36 @@ bool runNativeWindow(const std::string& url, NativeWindowState& state, std::stri
         // Cocoa/WKWebView: the DSP continues independently on the audio callback.
         webview::webview window(false, nullptr);
         window.set_title("Sonus Live Stage");
-        // MacBook Pro M1 13" often has a 1280x800 logical display. Start inside
-        // the visible desktop rather than using the Windows default of 1440x900.
-        // The user can resize normally, including on larger external monitors.
-        const int cw = std::clamp(state.width, 800, 1152);
-        window.set_size(cw, cw * 5 / 8, WEBVIEW_HINT_NONE);
+        window.set_size(1280, 800, WEBVIEW_HINT_NONE);
         auto handle = window.window();
         if (!handle.ok()) { error = "WKWebView: no native window"; return false; }
         stageMacApplyWindowAspect(handle.value());
+        // Fit the saved width (default 1440) into the visible desktop of this Mac:
+        // 13" MacBooks, 14"/16" notched screens and large external monitors alike.
+        stageMacFitWindow(handle.value(), state.width);
+        void* const nativeWindow = handle.value();
+        auto widget = window.widget();
+        void* const webView = widget.ok() ? widget.value() : nullptr;
         window.bind("__liveStageSelectSamplePath", [](const std::string& args) -> std::string {
             const bool folder = args.find("folder") != std::string::npos;
             return nlohmann::json(stageMacSelectSamplePath(folder)).dump();
         });
-        window.init("window.__liveStageNative=true;");
+        // UI scale: the React console asks for a page zoom (see webui/src/store/uiZoom.ts).
+        window.bind("__liveStageSetZoom", [webView](const std::string& args) -> std::string {
+            const double requested = zoomArgument(args);
+            const double applied = webView ? stageMacSetPageZoom(webView, requested) : 0.0;
+            if (requested > 0) std::cerr << "[UI] Zoom de la interfaz (WKWebView): " << applied << "\n";
+            return nlohmann::json(applied).dump();
+        });
+        window.bind("__liveStageFullscreen", [nativeWindow](const std::string&) -> std::string {
+            stageMacToggleFullScreen(nativeWindow);
+            return "true";
+        });
+        // ⌃⌘F (macOS standard) or F11 toggles full screen.
+        window.init("window.addEventListener('keydown',function(e){"
+                    "if(e.key==='F11'||((e.key==='f'||e.key==='F')&&e.metaKey&&e.ctrlKey)){e.preventDefault();"
+                    "window.__liveStageFullscreen&&window.__liveStageFullscreen();}},true);"
+                    "window.__liveStageNative=true;");
         window.navigate(url);
         window.run();
         return true;
