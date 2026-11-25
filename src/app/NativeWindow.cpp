@@ -67,8 +67,8 @@ void constrainSizing(HWND hwnd, WPARAM edge, RECT* r) {
     const int decorationH = (window.bottom - window.top) - (client.bottom - client.top);
     constexpr double ratio = 1.6;
     const bool verticalOnly = edge == WMSZ_TOP || edge == WMSZ_BOTTOM;
-    int newClientW = std::max(800, r->right - r->left - decorationW);
-    int newClientH = std::max(500, r->bottom - r->top - decorationH);
+    int newClientW = std::max(800, static_cast<int>(r->right - r->left) - decorationW);
+    int newClientH = std::max(500, static_cast<int>(r->bottom - r->top) - decorationH);
     if (verticalOnly) newClientW = static_cast<int>(std::lround(newClientH * ratio));
     else newClientH = static_cast<int>(std::lround(newClientW / ratio));
     const int outW = newClientW + decorationW, outH = newClientH + decorationH;
@@ -170,8 +170,8 @@ bool runNativeWindow(const std::string& url, NativeWindowState& state, std::stri
         GetClientRect(hwnd, &current);
         const int chromeW = (rc.right - rc.left) - (current.right - current.left);
         const int chromeH = (rc.bottom - rc.top) - (current.bottom - current.top);
-        const int maxW = std::max(800, display.rcWork.right - display.rcWork.left - chromeW - 12);
-        const int maxH = std::max(500, display.rcWork.bottom - display.rcWork.top - chromeH - 12);
+        const int maxW = std::max(800, static_cast<int>(display.rcWork.right - display.rcWork.left) - chromeW - 12);
+        const int maxH = std::max(500, static_cast<int>(display.rcWork.bottom - display.rcWork.top) - chromeH - 12);
         const int desiredW = state.width >= 800 ? state.width : 1280;
         const int contentW = std::max(800, std::min({desiredW, maxW, maxH * 8 / 5}));
         const int outerW = contentW + chromeW;
