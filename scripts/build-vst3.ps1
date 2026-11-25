@@ -9,11 +9,12 @@
     .\build-vst3.cmd                 build the VST3 into dist\VST3
     .\build-vst3.cmd -Install        also copy it to C:\Program Files\Common Files\VST3 (run as administrator)
     .\build-vst3.cmd -Clean          rebuild from scratch
+    .\build-vst3.cmd -Demo           DEMO edition (src/core/Edition.h) in build\vst3-demo, dist\demo\VST3
 
   One-time requirement (free): Visual Studio 2022 Build Tools with the C++ workload:
     winget install Microsoft.VisualStudio.2022.BuildTools --override "--quiet --wait --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
 #>
-param([switch]$Install, [switch]$Clean)
+param([switch]$Install, [switch]$Clean, [switch]$Demo)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
 Set-Location $root
@@ -38,8 +39,10 @@ if (-not (Get-Command cmake -ErrorAction SilentlyContinue)) {
     if (Test-Path $cmakeVs) { $env:PATH = "$cmakeVs;$env:PATH" } else { throw 'No se encontró CMake 3.22+.' }
 }
 
-$build = Join-Path $root 'build\vst3'
-if ($Clean -and (Test-Path $build)) { Step 'Borrando build\vst3'; Remove-Item -Recurse -Force $build }
+# Demo and full editions never share a build folder: CMake caches STAGE_DEMO.
+$demoFlag = if ($Demo) { 'ON' } else { 'OFF' }
+$build = Join-Path $root $(if ($Demo) { 'build\vst3-demo' } else { 'build\vst3' })
+if ($Clean -and (Test-Path $build)) { Step "Borrando $build"; Remove-Item -Recurse -Force $build }
 
 # v33: the editor embeds WebView2, linked statically (WebView2LoaderStatic.lib from the
 # official Microsoft.Web.WebView2 NuGet package; same version as the vendored headers).
@@ -62,7 +65,7 @@ if (-not (Test-Path (Join-Path $root 'ui\app\index.html'))) {
 }
 
 Step 'Configurando (Visual Studio 17 2022, x64, JUCE 8 se descarga la primera vez)'
-cmake -S . -B $build -G 'Visual Studio 17 2022' -A x64 -DSTAGE_BUILD_PLUGIN=ON -DSTAGE_BUILD_AUDIO_PROBE=OFF -DSTAGE_ENABLE_ASIO=OFF
+cmake -S . -B $build -G 'Visual Studio 17 2022' -A x64 -DSTAGE_BUILD_PLUGIN=ON -DSTAGE_BUILD_AUDIO_PROBE=OFF -DSTAGE_ENABLE_ASIO=OFF -DSTAGE_DEMO=$demoFlag
 if ($LASTEXITCODE) { throw 'La configuración de CMake falló' }
 
 Step 'Compilando el plug-in VST3 (Release)'
@@ -74,8 +77,8 @@ $bundle = Get-ChildItem $build -Recurse -Directory -Filter '*.vst3' |
           Sort-Object LastWriteTime -Descending | Select-Object -First 1   # the one just built (renames leave old bundles)
 if (-not $bundle) { throw 'No se encontró el bundle .vst3 generado' }
 
-Step 'Copiando a dist\VST3'
-$dest = Join-Path $root 'dist\VST3'
+$dest = Join-Path $root $(if ($Demo) { 'dist\demo\VST3' } else { 'dist\VST3' })
+Step "Copiando a $dest"
 New-Item -ItemType Directory -Force $dest | Out-Null
 $target = Join-Path $dest $bundle.Name
 if (Test-Path $target) { Remove-Item -Recurse -Force $target }

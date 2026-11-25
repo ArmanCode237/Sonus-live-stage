@@ -39,13 +39,17 @@ export function MissingSamples() {
   if (!missing.length) return null;
   return (
     <>
-      <button type="button" className="head-alert" onClick={() => setOpen(true)} title="Hay programas con samples que no se encuentran en disco">
-        <span className="led is-on" aria-hidden="true" />{missing.length} SAMPLE{missing.length > 1 ? 'S' : ''} NO ENCONTRADO{missing.length > 1 ? 'S' : ''}
+      <button type="button" className="head-alert" onClick={() => setOpen(true)}
+        title={`${missing.length} sample${missing.length > 1 ? 's' : ''} de los programas no se encuentra${missing.length > 1 ? 'n' : ''} en disco: clic para ver cuáles`}
+        aria-label={`${missing.length} samples no encontrados`}>
+        <span className="led is-on" aria-hidden="true" /><b className="head-alert__count">{missing.length}</b>
+        <span className="head-alert__text">SAMPLE{missing.length > 1 ? 'S' : ''} <span className="head-alert__long">NO ENCONTRADO{missing.length > 1 ? 'S' : ''}</span><span className="head-alert__short">FALTA{missing.length > 1 ? 'N' : ''}</span></span>
       </button>
       {open && (
         <Modal title="SAMPLES NO ENCONTRADOS" onClose={() => setOpen(false)}>
-          <p className="hint">Estos programas usan archivos que no están en disco: esas capas sonarán vacías. Vuelve a cargar el sample
-            o reubica la librería en LIBRARY antes de la presentación.</p>
+          <p className="hint">Estos programas usan archivos que no se encontraron ni en su ruta guardada ni en las carpetas registradas en
+            LIBRARY: esas capas sonarán vacías. Añade la carpeta que los contiene en LIBRARY (se buscan por nombre de archivo) o vuelve a
+            cargar el sample antes de la presentación.</p>
           <ul className="list">{missing.map((m, i) => (
             <li key={i} className="list__row"><span className="list__main">PROGRAM {String(m.slot).padStart(2, '0')} · {m.program || '—'}</span>
               <code>{m.file}</code></li>))}</ul>

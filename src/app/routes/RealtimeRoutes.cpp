@@ -20,7 +20,9 @@ void StageApp::registerRealtimeRoutes() {
         // frames and reading commands, so only this thread ever writes to `ws`.
         ws.set_read_timeout(std::chrono::milliseconds(4));
         std::string message;
-        while (ws.is_open() && !client->closed()) {
+        // svr.stop() waits for every handler: leave as soon as the server stops, even if
+        // the peer keeps the socket open (WKWebView does after its window closes).
+        while (ws.is_open() && !client->closed() && !httpStopping_.load()) {
             bool sendFailed = false;
             for (const auto& frame : client->take(std::chrono::milliseconds(4)))
                 if (!ws.send(frame)) { sendFailed = true; break; }

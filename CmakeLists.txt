@@ -11,6 +11,17 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     message(STATUS "Live Stage: CMAKE_BUILD_TYPE not set, defaulting to Release")
 endif()
 
+# Demo / beta edition: same code, limits in src/core/Edition.h.
+#   cmake -B build-demo -DSTAGE_DEMO=ON
+option(STAGE_DEMO "Build the DEMO edition (2 piano layers, no saving, no MIDI/OSC mapping)" OFF)
+if(STAGE_DEMO)
+    add_compile_definitions(STAGE_DEMO=1)
+    set(STAGE_VERSION_LABEL "${PROJECT_VERSION}-demo")
+    message(STATUS "Live Stage: DEMO edition")
+else()
+    set(STAGE_VERSION_LABEL "${PROJECT_VERSION}")
+endif()
+
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -164,7 +175,7 @@ add_executable(SonusLiveStage
 )
 
 # Version shown in ACERCA DE (and the plug-in).
-target_compile_definitions(SonusLiveStage PRIVATE STAGE_VERSION="${PROJECT_VERSION}")
+target_compile_definitions(SonusLiveStage PRIVATE STAGE_VERSION="${STAGE_VERSION_LABEL}")
 
 target_include_directories(SonusLiveStage PRIVATE
     src
@@ -492,9 +503,13 @@ if(APPLE)
         OUTPUT_NAME "${STAGE_MACOS_EXECUTABLE_NAME}"
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_BINARY_DIR}/SonusLiveStage-Info.plist"
         MACOSX_BUNDLE_GUI_IDENTIFIER "com.sonus.livestage")
+    # Dock / Finder icon (regenerate with scripts/make_macos_icon.sh).
+    set(STAGE_MACOS_ICON "${CMAKE_SOURCE_DIR}/resources/macos/SonusLiveStage.icns")
+    target_sources(SonusLiveStage PRIVATE "${STAGE_MACOS_ICON}")
+    set_source_files_properties("${STAGE_MACOS_ICON}" PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
     if(STAGE_NATIVE_WINDOW)
         target_compile_definitions(SonusLiveStage PRIVATE STAGE_NATIVE_WINDOW=1)
-        target_link_libraries(SonusLiveStage PRIVATE webview::core_static "-framework AppKit")
+        target_link_libraries(SonusLiveStage PRIVATE webview::core_static "-framework AppKit" "-framework WebKit")
     endif()
 endif()
 
@@ -568,11 +583,14 @@ if(WIN32)
     set(CPACK_GENERATOR "ZIP")
   endif()
   set(CPACK_NSIS_DISPLAY_NAME "Live Stage")
-  set(CPACK_NSIS_PACKAGE_NAME "Sonus Live Stage ${PROJECT_VERSION}")
+  set(CPACK_NSIS_PACKAGE_NAME "Sonus Live Stage ${STAGE_VERSION_LABEL}")
   set(CPACK_NSIS_INSTALLED_ICON_NAME "SonusLiveStage.exe")
+  # Installer / uninstaller icon: the same as the app (scripts/make_icons.py).
+  set(CPACK_NSIS_MUI_ICON "${CMAKE_SOURCE_DIR}/resources/SonusLiveStage.ico")
+  set(CPACK_NSIS_MUI_UNIICON "${CMAKE_SOURCE_DIR}/resources/SonusLiveStage.ico")
   # Start-menu shortcut "Live Stage" -> SonusLiveStage.exe (NSIS installer).
   set(CPACK_PACKAGE_EXECUTABLES "SonusLiveStage" "Live Stage")
-  set(CPACK_PACKAGE_FILE_NAME "SonusLiveStage-${PROJECT_VERSION}-win64")
+  set(CPACK_PACKAGE_FILE_NAME "SonusLiveStage-${STAGE_VERSION_LABEL}-win64")
 elseif(APPLE)
   set(CPACK_GENERATOR "ZIP") # scripts/build_macos.sh creates the actual .pkg
 else()

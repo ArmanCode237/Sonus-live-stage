@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App';
 import { engine } from './store/engine';
 import { applyTheme } from './store/theme';
-import { getUiZoom } from './store/uiZoom';
+import { installUiZoom } from './store/uiZoom';
 import './styles/theme.css';
 import './styles/components.css';
 import './styles/views.css';
@@ -15,7 +15,7 @@ import './browser/browser.css';
 import './styles/viewport-guard.css';
 
 applyTheme();
-getUiZoom(); // aplica el zoom guardado antes de pintar la interfaz // before the first paint: no flash of the wrong theme
+installUiZoom(); // escala (nativa o CSS) antes del primer pintado
 engine.start();
 createRoot(document.getElementById('root')!).render(<StrictMode><App /></StrictMode>);
 

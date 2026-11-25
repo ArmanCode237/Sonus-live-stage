@@ -120,6 +120,7 @@ void StagePianoEngine::setInstrument(std::shared_ptr<const PianoInstrument> inst
 
 void StagePianoEngine::setLayerInstrument(int layer, std::shared_ptr<const PianoInstrument> inst) {
     if(layer<0 || layer>=PIANO_LAYER_COUNT)return;
+    if(inst && !Edition::pianoLayerAllowed(layer))return;   // demo: locked layers stay empty
     // Control-only producer: serializes multiple REST/plugin callers, but is
     // never taken by render(). The SPSC ring has no heap allocations.
     std::lock_guard<std::mutex> lock(instPtrMutex_);

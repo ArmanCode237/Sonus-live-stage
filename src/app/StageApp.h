@@ -127,6 +127,11 @@ private:
     void autosaveSessionIfNeeded(bool force);
     /** Samples referenced by the 8 programs that no longer exist (checked at startup). */
     void validateSetlist();
+    /** v34: library folders (LIBRARY roots, registered files, bundled samples) used to find
+     *  samples whose saved path no longer exists. Call after any sample-library change. */
+    void refreshSampleSearchRoots();
+    /** Saved program/layer reference -> existing file, or empty. Control threads only. */
+    fs::path resolveProgramSample(const std::string& saved, const std::string& filename) const;
     void loadSystemSettings();
     void saveSystemSettings();
     /** What a global program stores: its own mappings plus the three modules' mappings. */
@@ -262,6 +267,7 @@ private:
     // v33 services (startServices / stopServices).
     std::atomic<bool> servicesRunning_{false};
     std::atomic<bool> listenOk_{true};
+    std::atomic<bool> httpStopping_{false};        // set before svr.stop(): long-lived handlers (/ws) leave
     int servicePort_ = 8080;
     std::thread programWorker_, maintenanceWorker_, serverThread_;
 

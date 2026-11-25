@@ -5,6 +5,7 @@
 // a link must leave the embedded WebView. Only the URLs of links.json can be opened, never a URL
 // sent by a request.
 #include "app/routes/RouteCommon.h"
+#include "core/Edition.h"
 #if defined(_WIN32)
 #include <shellapi.h>
 #elif defined(__APPLE__) || defined(__linux__)
@@ -81,6 +82,7 @@ void StageApp::registerAboutRoutes() {
             {"host", hw ? hw->hostKind() : "app"},
             {"dataDir", stageUserDataDir().string()},
             {"license", "GNU AGPL-3.0-or-later"},
+            {"edition", Edition::kName},
             {"links", readLinks()},
         };
         res.set_content(out.dump(), "application/json");

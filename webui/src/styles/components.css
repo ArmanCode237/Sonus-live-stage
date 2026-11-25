@@ -186,19 +186,19 @@
 .meter.is-clip .meter__bar { box-shadow: inset 0 0 0 1px var(--led); }
 
 /* ===================== keyboard ===================== */
-.keyboard { --black-w: 1.1%; height: clamp(44px, 7.5vh, 84px); }
+.keyboard { --black-w: 1.1%; height: clamp(44px, calc(var(--vh) * 7.5), 84px); }
 .keyboard__keys { position: relative; display: flex; height: 100%; max-width: 1400px; margin: 0 auto; user-select: none; touch-action: none; }
 .key--white { position: relative; flex: 1 1 0; margin-right: 1px; background: linear-gradient(180deg, #e9e9e9, #fbfbfb 70%, #dcdcdc); border-radius: 0 0 3px 3px; }
 .key--black { position: absolute; top: 0; width: var(--black-w); height: 62%; z-index: 1; background: linear-gradient(180deg, #2a2a2a, #050505); border-radius: 0 0 2px 2px; }
 .key.is-down { background: linear-gradient(180deg, #ff6a5f, var(--led)); }
 .key.is-sustained { background: linear-gradient(180deg, #ffd96a, var(--amber)); }
-.key__label { position: absolute; bottom: 2px; left: 0; right: 0; text-align: center; font: 600 9px/1 var(--display); color: #777; pointer-events: none; }
+.key__label { position: absolute; bottom: 2px; left: 0; right: 0; text-align: center; font: 600 10px/1 var(--display); color: #777; pointer-events: none; }
 
 /* ===================== modal, lists, browser, toasts ===================== */
-.modal { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 3vh 3vw; background: rgba(0,0,0,.65); }
-.modal__window { display: flex; flex-direction: column; width: min(560px, 100%); max-height: 92vh;
+.modal { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: calc(var(--vh) * 3) calc(var(--vw) * 3); background: rgba(0,0,0,.65); }
+.modal__window { display: flex; flex-direction: column; width: min(560px, 100%); max-height: calc(var(--vh) * 92);
   background: linear-gradient(180deg, var(--section-hi), var(--section) 10%, var(--section-lo)); border-top: 4px solid var(--chassis); border-radius: 6px; box-shadow: 0 30px 80px #000; }
-.modal__window--wide { width: min(1100px, 100%); height: 86vh; }
+.modal__window--wide { width: min(1100px, 100%); height: calc(var(--vh) * 86); }
 .modal__window:focus { outline: none; }
 .modal__head { display: flex; align-items: center; padding: 8px 12px; border-bottom: 1px solid #0006; }
 .modal__head h2 { margin: 0; font-size: var(--fs-sm); letter-spacing: .14em; }
@@ -242,7 +242,7 @@ button.list__main:hover { background: #1c1f22; }
 @keyframes toast-in { from { opacity: 0; transform: translateY(6px); } }
 
 /* ===================== v32.4 level meters (visual reference) ===================== */
-.level-meter { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font: 700 9px/1 var(--mono); color: var(--muted); }
+.level-meter { display: inline-flex; align-items: center; gap: 6px; min-width: 0; font: 700 10px/1 var(--mono); color: var(--muted); }
 .level-meter__label { font-family: var(--font); font-weight: 800; letter-spacing: .14em; color: var(--label); }
 .level-meter__track { position: relative; flex: 1 1 auto; width: 190px; height: 8px; border-radius: 2px; overflow: hidden;
   background: #050607; box-shadow: inset 0 0 0 1px #000, 0 1px 0 #ffffff10; }
@@ -253,7 +253,7 @@ button.list__main:hover { background: #1c1f22; }
 .level-meter__tick { position: absolute; top: 0; bottom: 0; width: 1px; background: #ffffff24; }
 .level-meter__tick.is-zero { background: #ffffff70; }
 .level-meter__value { min-width: 4.5ch; text-align: right; color: var(--text); }
-.level-meter__clip { padding: 2px 4px; border-radius: 3px; font: 800 8px/1 var(--font); letter-spacing: .1em; color: #ff4b3a55; border: 1px solid #ff4b3a33; }
+.level-meter__clip { padding: 2px 4px; border-radius: 3px; font: 800 9px/1 var(--font); letter-spacing: .1em; color: #ff4b3a55; border: 1px solid #ff4b3a33; }
 .level-meter.is-clip .level-meter__clip { color: #fff; background: #e0261e; border-color: #ff6a5a; box-shadow: 0 0 8px #ff2a2a; }
 .level-meter--compact { display: flex; width: 100%; }
 .level-meter--compact .level-meter__track { width: auto; height: 100%; border-radius: 2px; box-shadow: none; }
@@ -269,7 +269,7 @@ button.list__main:hover { background: #1c1f22; }
 .about__tagline { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
 .about__modules { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
 .about__modules li { display: grid; grid-template-columns: 64px 1fr; gap: 10px; align-items: baseline; font-size: 12px; color: var(--text); }
-.about__modules b { font: 800 10px/1 var(--font); letter-spacing: .14em; color: var(--label); }
+.about__modules b { font: 800 10.5px/1 var(--font); letter-spacing: .14em; color: var(--label); }
 .about__support { padding: 14px; border-radius: 10px; border: 1px solid color-mix(in srgb, #f6a23a 45%, var(--line));
   background: linear-gradient(135deg, color-mix(in srgb, #ef3b55 14%, var(--inset)), color-mix(in srgb, #f6a23a 10%, var(--inset))); }
 .about__support p { margin: 0 0 10px; font-size: 12px; line-height: 1.5; color: var(--text); }
@@ -281,11 +281,11 @@ button.list__main:hover { background: #1c1f22; }
 .about__support-btn span { font-size: 14px; }
 .about__hint { margin: 8px 0 0 !important; font-size: 11px !important; color: var(--muted) !important; }
 .about__links { display: flex; gap: 8px; flex-wrap: wrap; }
-.about__link { padding: 7px 12px; cursor: pointer; font: 800 10px/1 var(--font); letter-spacing: .12em; color: var(--text);
+.about__link { padding: 7px 12px; cursor: pointer; font: 800 10.5px/1 var(--font); letter-spacing: .12em; color: var(--text);
   background: var(--surface-1); border: 1px solid var(--line); border-radius: 6px; }
 .about__link:hover { border-color: var(--cyan); }
 .about__facts { display: grid; grid-template-columns: auto 1fr; gap: 5px 14px; margin: 0; font-size: 12px; }
-.about__facts dt { font: 800 9px/1.7 var(--font); letter-spacing: .12em; color: var(--label); }
+.about__facts dt { font: 800 10px/1.7 var(--font); letter-spacing: .12em; color: var(--label); }
 .about__facts dd { margin: 0; color: var(--text); }
 .about__path { font-family: var(--mono); font-size: 11px; overflow-wrap: anywhere; }
-.about__legal { margin: 0; font-size: 10.5px; line-height: 1.5; color: var(--muted); }
+.about__legal { margin: 0; font-size: 11px; line-height: 1.5; color: var(--muted); }

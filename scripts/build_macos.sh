@@ -1,24 +1,28 @@
 #!/usr/bin/env bash
 # macOS 11+, Apple Silicon. Builds a standalone .app and JUCE VST3, then a .pkg.
-# Usage: ./scripts/build_macos.sh [--skip-ui] [--skip-pkg]
+# Usage: ./scripts/build_macos.sh [--demo] [--skip-ui] [--skip-pkg]
+#   --demo  DEMO edition (src/core/Edition.h) in its own build/dist folders
 # Optional for public distribution:
 #   STAGE_DEVELOPER_ID_APP="Developer ID Application: ..." \
 #   STAGE_DEVELOPER_ID_INSTALLER="Developer ID Installer: ..." \
 #   STAGE_NOTARY_PROFILE="live-stage-notary" ./scripts/build_macos.sh
 set -Eeuo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BUILD="${STAGE_MAC_BUILD_DIR:-$ROOT/build/macos-arm64}"
-OUT="${STAGE_MAC_OUT_DIR:-$ROOT/dist/macos-arm64}"
 ARCH="${STAGE_MAC_ARCH:-arm64}"
 MINIMUM="${STAGE_MAC_MIN_VERSION:-11.0}"
-SKIP_UI=0; SKIP_PKG=0
+SKIP_UI=0; SKIP_PKG=0; DEMO=0
 for arg in "$@"; do
   case "$arg" in
+    --demo) DEMO=1 ;;
     --skip-ui) SKIP_UI=1 ;;
     --skip-pkg) SKIP_PKG=1 ;;
-    *) echo "Uso: $0 [--skip-ui] [--skip-pkg]" >&2; exit 2 ;;
+    *) echo "Uso: $0 [--demo] [--skip-ui] [--skip-pkg]" >&2; exit 2 ;;
   esac
 done
+SUFFIX=''; DEMO_FLAG=OFF
+if (( DEMO )); then SUFFIX='-demo'; DEMO_FLAG=ON; fi
+BUILD="${STAGE_MAC_BUILD_DIR:-$ROOT/build/macos-arm64$SUFFIX}"
+OUT="${STAGE_MAC_OUT_DIR:-$ROOT/dist/macos-arm64$SUFFIX}"
 if [[ "$(uname -s)" != "Darwin" ]]; then
   echo "ERROR: .app/.vst3/.pkg arm64 requieren Xcode en macOS (M1 o runner macOS arm64)." >&2
   exit 1
@@ -39,7 +43,8 @@ cmake -S "$ROOT" -B "$BUILD" -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_OSX_ARCHITECTURES="$ARCH" \
   -DCMAKE_OSX_DEPLOYMENT_TARGET="$MINIMUM" \
-  -DSTAGE_BUILD_PLUGIN=ON -DSTAGE_NATIVE_WINDOW=ON
+  -DSTAGE_BUILD_PLUGIN=ON -DSTAGE_NATIVE_WINDOW=ON \
+  -DSTAGE_DEMO="$DEMO_FLAG"   # always explicit: CMake caches options
 cmake --build "$BUILD" --parallel "$(sysctl -n hw.ncpu)"
 
 STAGING="$OUT/payload"
@@ -85,6 +90,11 @@ if [[ -n "$AU" ]]; then
   package_resources "$AU_DEST"
 fi
 
+# Extended attributes become "._*" files in the .pkg and break codesign/notarization.
+xattr -cr "$STAGING"
+find "$STAGING" -name "._*" -delete
+
+
 if [[ -n "${STAGE_DEVELOPER_ID_APP:-}" ]]; then
   echo "Firmando .app y VST3 con Developer ID Application ..."
   for package in "$APP" "$VST3_DEST"; do
@@ -104,7 +114,7 @@ fi
 
 VERSION="$(sed -nE 's/^project\(SonusLiveStage VERSION ([0-9.]+).*/\1/p' "$ROOT/CMakeLists.txt" | head -1)"
 VERSION="${VERSION:-1.0.0}"
-PKG="$OUT/SonusLiveStage-${VERSION}-macOS-${ARCH}.pkg"
+PKG="$OUT/SonusLiveStage-${VERSION}${SUFFIX}-macOS-${ARCH// /}.pkg"
 if (( ! SKIP_PKG )); then
   args=(--root "$STAGING" --identifier com.sonus.livestage.installer --version "$VERSION" --install-location /)
   if [[ -n "${STAGE_DEVELOPER_ID_INSTALLER:-}" ]]; then

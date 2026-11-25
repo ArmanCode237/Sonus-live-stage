@@ -28,7 +28,7 @@ StageApp::StageApp(int argc, char* argv[], StageAppOptions options) : options_(s
         bootStep(SonusDSP::Mt32Roms::status().message.c_str());
     }
     // OSC listens on a fixed port: the app only (several plug-in instances would collide).
-    if(!options_.plugin) oscMapper.startOscServer(9000);
+    if(!options_.plugin && SonusDSP::Edition::kCanMap) oscMapper.startOscServer(9000);
 
     // Flags ("--lan") are not positional; the first other argument is the library.
     libraryRootDir = "./samples";
@@ -74,6 +74,7 @@ StageApp::StageApp(int argc, char* argv[], StageAppOptions options) : options_(s
      DecodedSampleCache::setDirectory(dir);
      BankLoader::setNpnoCacheDirectory(dir);
     }
+    refreshSampleSearchRoots();   // v34: before any program restores its samples
     {
         std::ifstream in(relocationFile);
         if(in)try{
@@ -176,10 +177,8 @@ StageApp::StageApp(int argc, char* argv[], StageAppOptions options) : options_(s
         const auto& program=userPrograms[slot];
         if(!program.is_object())continue;
         const auto appendPath=[&](const std::string& saved,const std::string& filename,int sf2Preset){
-            fs::path resolved(saved);
-            if((saved.empty() || !fs::is_regular_file(resolved)) && !filename.empty())
-                resolved=fs::path(libraryRootDir)/filename;
-            if(fs::is_regular_file(resolved))setlistPaths.emplace_back(resolved.string(),sf2Preset);
+            const fs::path resolved=resolveProgramSample(saved,filename);
+            if(!resolved.empty())setlistPaths.emplace_back(resolved.generic_string(),sf2Preset);
         };
         if(program.contains("pianoLayers") && program["pianoLayers"].is_array()){
             for(const auto& layer:program["pianoLayers"]){
@@ -288,6 +287,7 @@ StageApp::~StageApp() { stopServices(); }   // threads must stop before the memb
 
 bool StageApp::startServices(const std::string& bindAddress, int port) {
     if(servicesRunning_.exchange(true)) return true;
+    httpStopping_=false;
     // MIDI program changes are deferred to a worker so decoding SF2/SFZ cannot
     // block MIDI input or the audio callback. Latest selection wins.
     programWorker_=std::thread([this]{
@@ -336,6 +336,7 @@ bool StageApp::startServices(const std::string& bindAddress, int port) {
 
 void StageApp::stopServices() {
     if(!servicesRunning_.load()) return;
+    httpStopping_=true;
     svr.stop();
     if(serverThread_.joinable())serverThread_.join();
     hub->stop();
@@ -373,6 +374,7 @@ int StageApp::run() {
         if(runNativeWindow(consoleUrl(),windowState,error)){
             std::cout<<"[GUI] Ventana cerrada: deteniendo el servidor\n";
             saveSystemSettings();                       // window size / position / full screen
+            httpStopping_=true;
             svr.stop();
         }else{
             // No WebView2 runtime: fall back to the browser (it needs web access this session).
@@ -546,7 +548,7 @@ void StageApp::loadControlMappings(){
         persistControlMaps();
     }
     const int storedPort=cfg.value("port",9000);
-    if(storedPort>=1024&&storedPort<=65535&&storedPort!=9000)oscMapper.startOscServer(storedPort);
+    if(SonusDSP::Edition::kCanMap&&storedPort>=1024&&storedPort<=65535&&storedPort!=9000)oscMapper.startOscServer(storedPort);
 }
 
 bool StageApp::persistControlMaps(){
@@ -636,6 +638,7 @@ void StageApp::maintenanceTick(){
 }
 
 void StageApp::autosaveSessionIfNeeded(bool force){
+    if(!SonusDSP::Edition::kCanSave) return;   // demo: nothing persists between sessions
     const uint64_t rev=paramRevCounter.load(), epoch=editEpoch.load();
     if(rev==autosaveRev && epoch==autosaveEpoch) return;
     const auto now=std::chrono::steady_clock::now();
@@ -658,6 +661,37 @@ void StageApp::autosaveSessionIfNeeded(bool force){
     }
 }
 
+fs::path StageApp::resolveProgramSample(const std::string& saved, const std::string& filename) const {
+    std::error_code ec;
+    if(!saved.empty()){
+        const auto resolved=resolveSavedSamplePath(fs::path(saved));
+        if(fs::is_regular_file(resolved,ec))return resolved;
+    }
+    if(!filename.empty()){
+        const auto inRoot=fs::path(libraryRootDir)/filename;
+        if(fs::is_regular_file(inRoot,ec))return inRoot;
+        if(auto found=findSampleInSearchRoots(filename);!found.empty())return found;
+    }
+    return {};
+}
+
+void StageApp::refreshSampleSearchRoots(){
+    std::vector<fs::path> roots;
+    {
+        std::lock_guard<std::mutex> guard(sampleLibraryMutex);
+        if(sampleLibraryConfig.contains("roots")&&sampleLibraryConfig["roots"].is_array())
+            for(const auto& r:sampleLibraryConfig["roots"])if(r.is_string())roots.emplace_back(r.get<std::string>());
+        // Folders of individually registered files (their siblings are usually the rest of the set).
+        if(sampleLibraryConfig.contains("files")&&sampleLibraryConfig["files"].is_array())
+            for(const auto& f:sampleLibraryConfig["files"])if(f.is_string())roots.push_back(fs::path(f.get<std::string>()).parent_path());
+    }
+    std::error_code ec;
+    roots.push_back(fs::absolute(fs::path(libraryRootDir),ec));
+    roots.push_back(fs::path(findUiDir()).parent_path()/"samples");     // samples shipped with the app
+    roots.push_back(stageUserDataDir()/"samples");
+    setSampleSearchRoots(roots);
+}
+
 void StageApp::validateSetlist(){
     missingSamples=json::array();
     for(size_t slot=0;slot<std::min<size_t>(kProgramSlots,userPrograms.size());++slot){
@@ -667,9 +701,8 @@ void StageApp::validateSetlist(){
             if(!layer.is_object()) continue;
             const std::string saved=layer.value("sourcePath",std::string{}), file=layer.value("fileName",std::string{});
             if(saved.empty() && file.empty()) continue;
-            const bool found=(!saved.empty() && fs::is_regular_file(fs::path(saved))) ||
-                             (!file.empty() && fs::is_regular_file(fs::path(libraryRootDir)/file));
-            if(!found){
+            // Same resolution as RECALL: saved path, relocations, LIBRARY folders, file name.
+            if(resolveProgramSample(saved,file).empty()){
                 missingSamples.push_back({{"slot",int(slot)+1},{"program",program.value("name",std::string())},
                                           {"file",file.empty()?fs::path(saved).filename().string():file}});
             }

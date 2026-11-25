@@ -1,14 +1,16 @@
-param([switch]$WithPlugin)
+param([switch]$WithPlugin, [switch]$Demo)
 $ErrorActionPreference='Stop'
 Set-Location (Split-Path $PSScriptRoot -Parent)
 $root=(Get-Location).Path
 $pluginFlag=if($WithPlugin){'ON'}else{'OFF'}
-cmake -S . -B build/win64 -A x64 -DSTAGE_BUILD_PLUGIN=$pluginFlag -DSTAGE_ENABLE_ASIO=ON
+$demoFlag=if($Demo){'ON'}else{'OFF'}
+$build=if($Demo){'build/win64-demo'}else{'build/win64'}   # CMake caches STAGE_DEMO
+cmake -S . -B $build -A x64 -DSTAGE_BUILD_PLUGIN=$pluginFlag -DSTAGE_ENABLE_ASIO=ON -DSTAGE_DEMO=$demoFlag
 if($LASTEXITCODE -ne 0){throw 'CMake configure failed'}
-cmake --build build/win64 --config Release --parallel
+cmake --build $build --config Release --parallel
 if($LASTEXITCODE -ne 0){throw 'Compilation failed'}
-Push-Location build/win64
+Push-Location $build
 cpack -C Release -G NSIS
 if($LASTEXITCODE -ne 0){throw 'NSIS installer generation failed; install NSIS'}
 Pop-Location
-Write-Host "Installer is in build/win64. VST3 target is in build/win64/*_artefacts/Release/VST3."
+Write-Host "Installer is in $build. VST3 target is in $build/*_artefacts/Release/VST3."

@@ -265,6 +265,11 @@ void StageApp::registerPianoRoutes() {
         auto body = json::parse(req.body, nullptr, false);
         std::string targetPath = body.value("path", "");
         int pianoLayer = std::clamp(body.value("layer", 0), 0, PIANO_LAYER_COUNT - 1);
+        if (!Edition::pianoLayerAllowed(pianoLayer)) {
+            res.status = 403;
+            res.set_content(json{{"ok", false}, {"demo", true}, {"error", Edition::kLockedMessage}}.dump(), "application/json");
+            return;
+        }
 
         fs::path p(targetPath);
         std::string ext = p.extension().string();

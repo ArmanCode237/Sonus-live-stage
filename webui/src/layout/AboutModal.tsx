@@ -50,6 +50,11 @@ export function AboutModal({ onClose }: { onClose: () => void }) {
             <p className="about__version">
               Versión <b>{info?.version ?? '…'}</b> · {info?.host === 'plugin' ? 'plug-in VST3' : 'aplicación'}
             </p>
+            {info?.edition === 'demo' && (
+              <p className="about__version">
+                <b>EDICIÓN DEMO</b> · 2 capas de piano · sin guardar programas · sin mapeos MIDI/OSC
+              </p>
+            )}
             <p className="about__tagline">Instrumento virtual de escenario</p>
           </div>
         </header>
