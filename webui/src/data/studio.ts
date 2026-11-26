@@ -53,7 +53,7 @@ const REVERB_CONTROLS: readonly (readonly ControlDef[])[] = [
   [[0, 'WET', '%'], [1, 'HIGH DAMP', '%'], [3, 'PRE-DELAY', 'ms'], [4, 'DECAY', '%']],
   [[0, 'WET', '%'], [1, 'AIR DAMP', '%'], [3, 'PRE-DELAY', 'ms'], [4, 'HALL SIZE', '%']],
   [[0, 'WET', '%'], [1, 'DARKNESS', '%'], [2, 'PITCH RETURN', '%'], [3, 'PRE-DELAY', 'ms'], [4, 'SPACE', '%'],
-    [6, 'PITCH A', 'st'], [7, 'DECAY', '%'], [8, 'LOW CUT', 'Hz'], [9, 'HIGH CUT', 'Hz'],
+    [6, 'PITCH A', 'st'], [7, 'DECAY', 's'], [8, 'LOW CUT', 'Hz'], [9, 'HIGH CUT', 'Hz'],
     [10, 'MOD RATE', 'Hz'], [11, 'MOD DEPTH', '%'], [15, 'DIFFUSION', '%']],
 ];
 
@@ -81,8 +81,11 @@ const SHIMMER_V3_EXTRAS: readonly ControlDef[] = [
 ];
 const SHIMMER_V4_EXTRAS: readonly ControlDef[] = [[22, 'BLOOM', '%']];
 
-/** Shimmer Atmosphere v4 (StageAtmosphericShimmer) needs slot version 4. */
-export const SHIMMER_ATMOSPHERE_VERSION = 4;
+/** Shimmer Atmosphere v5 (StageAtmosphericShimmer); older shimmer slots are cleared on load. */
+export const SHIMMER_ATMOSPHERE_VERSION = 5;
+/** Mid-band RT60 (s) of the shimmer for a DECAY value (StageAtmosphericShimmer::decaySeconds). */
+export const shimmerDecaySeconds = (value: number): number =>
+  1.2 * (40 / 1.2) ** (Math.min(1, Math.max(0, value)) ** 1.25);
 export const SHIMMER_FREEZE_PARAM = 23;
 export const isShimmer = (slot: StudioSlot): boolean => slot.type === 6 && reverbModel(slot) === 3;
 
@@ -164,6 +167,7 @@ export function slotValueText(value: number, unit: string, type: number, param: 
         : param === 10 ? 0.05 + 2.95 * value : param === 19 ? 300 * 55 ** value : NaN;
       if (!Number.isNaN(hz)) return hz >= 1000 ? `${(hz / 1000).toFixed(1)} kHz` : hz < 10 ? `${hz.toFixed(2)} Hz` : `${Math.round(hz)} Hz`;
     }
+    if (unit === 's' && param === 7) { const sec = shimmerDecaySeconds(value); return sec < 10 ? `${sec.toFixed(1)} s` : `${Math.round(sec)} s`; }
     if (unit === 'width') return `${Math.round(value * 200)}%`;
     if (param === 7 && unit === '%' && version >= 3) return `${Math.round(0.992 * value * 100)}%`;
     return `${Math.round(value * 100)}%`;

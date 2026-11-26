@@ -280,6 +280,14 @@ struct StudioSlotConfig {
                              // p16..23 are opt-in Shimmer v3 parameters.
                              .6458333f,.30f,.40f,.50f,.70f,.50f,.65f,0.f}};
 };
+// v35: Shimmer Atmosphere v5 (dsp/StageAtmosphericShimmer.h). A REVERB slot set to the
+// SHIMMER model must carry this version; shimmer slots stored by older engines are cleared
+// when a program / performance / preset is loaded, so the user configures them again.
+constexpr int SHIMMER_ENGINE_VERSION=5;
+constexpr int STUDIO_SLOT_MAX_VERSION=5;
+inline bool isShimmerSlot(const StudioSlotConfig& s){
+    return s.type==6 && int(s.p[5]*3.999f)==3;
+}
 struct StudioRackConfig {
     bool eqEnabled=true;
     std::array<float,5> eqDb{{0.f,0.f,0.f,0.f,0.f}};

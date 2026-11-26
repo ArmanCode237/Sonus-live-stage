@@ -257,6 +257,9 @@ private:
     // v35 one-time data repair (StageApp.cpp): Sounds no longer remember a layer, and
     // Program / Performance Sound references are re-validated against their samples.
     void migrateSoundsV35();
+    // v35: removes shimmer slots stored by the retired v1–v4 engines from the user's
+    // Programs, Performances and module presets (backup "<file>.before-shimmer-v5.bak").
+    void retireOldShimmersV35();
 
     // V17 modular presets: only the selected module and its own Studio rack.
     const std::string pianoPresetsPath = stageUserPresetFile("piano");

@@ -19,7 +19,7 @@ public:
         if(type==1 || type==2 || type==3) mod_.init(sr_);
         if(type==4) flanger_.init(sr_);
         if(type==5) delay_.init(sr_);
-        if(type==6) { reverb_.init(sr_); shimmer_.init(sr_); atmospheric_.init(sr_); }
+        if(type==6) { reverb_.init(sr_); atmospheric_.init(sr_); }   // v35: classic shimmer retired
         if(type==7 || type==8) color_.init(sr_);
         if(type==12){ slotEqCached_=false; }
         env_=0.f; phase_=0.f; holdL_=holdR_=0.f; holdCountdown_=0;
@@ -111,15 +111,16 @@ public:
             case 6: { // Room, Plate, Hall, Shimmer (p5 selects model)
                 int model=std::clamp(int(p5*3.999f),0,3);
                 if(model==3) {
-                    // Full Shimmer control per slot, without reconfiguring IIRs per sample.
-                    // Pitch return is limited and low-passed to avoid metallic feedback.
+                    // Shimmer Atmosphere v5 (StageAtmosphericShimmer). v35: the v1–v4
+                    // engines are retired; slots stored with them are cleared when a
+                    // program is loaded (ParamSerialization), so every shimmer is v5.
+                    // Reconfigured only when a parameter changes (no IIR design per sample).
                     if(!shimmerConfigured_ || lastShimmerVersion_ != cfg.version ||
                        !std::equal(cfg.p.begin(),cfg.p.end(),lastShimmer_.begin())) {
                         lastShimmer_=cfg.p;
                         lastShimmerVersion_=cfg.version;
                         shimmerConfigured_=true;
-                        const float semitones=(cfg.version>=3?-24.f: -12.f)+
-                            (cfg.version>=3?48.f:24.f)*std::clamp(cfg.p[6],0.f,1.f);
+                        const float semitones=-24.f+48.f*std::clamp(cfg.p[6],0.f,1.f);
                         const float feedback=.992f*std::clamp(cfg.p[7],0.f,1.f);
                         const float lowcut=35.f+600.f*std::clamp(cfg.p[8],0.f,1.f);
                         const float highcut=1800.f+11500.f*std::clamp(cfg.p[9],0.f,1.f);
@@ -129,38 +130,19 @@ public:
                         const int stereoMode=std::clamp(int(cfg.p[13]*3.999f),0,3);
                         const int color=std::clamp(int(cfg.p[14]*1.999f),0,1);
                         const float diffusion=.42f+.5f*std::clamp(cfg.p[15],0.f,1.f);
-                        // V4 is a distinct acoustic design. Old stored performances
-                        // keep the original v1-v3 engine unless explicitly upgraded.
-                        if(cfg.version>=4){
-                            atmospheric_.setParams(1.f,semitones,feedback,diffusion,.10f+.88f*p4,
-                                lowcut,highcut,rate,depth,
-                                static_cast<ShimmerReverbEngine::PitchMode>(pitchMode),
-                                static_cast<ShimmerReverbEngine::ReverbMode>(stereoMode),
-                                static_cast<ShimmerReverbEngine::ColorMode>(color));
-                            atmospheric_.setPreDelayMs(240.f*p3);
-                            atmospheric_.setPitchReturnAmount(pitchMode==0 ? 0.f : p2);
-                            atmospheric_.setDamping(p1);
-                            atmospheric_.setMultiPitch(-24.f+48.f*cfg.p[16],cfg.p[17],
-                                65.f+140.f*cfg.p[18],cfg.p[19],cfg.p[20],cfg.p[21]);
-                            atmospheric_.setAtmosphere(cfg.p[22],cfg.p[23]>=.5f);
-                        }else{
-                            shimmer_.setParams(1.f,semitones,feedback,diffusion,.10f+.88f*p4,
-                                lowcut,highcut,rate,depth,
-                                static_cast<ShimmerReverbEngine::PitchMode>(pitchMode),
-                                static_cast<ShimmerReverbEngine::ReverbMode>(stereoMode),
-                                static_cast<ShimmerReverbEngine::ColorMode>(color));
-                            shimmer_.setPreDelayMs(240.f*p3);
-                            shimmer_.setPitchReturnAmount(pitchMode==0 ? 0.f : p2);
-                            shimmer_.setDamping(p1);
-                            if(cfg.version>=3) shimmer_.setMultiPitch(-24.f+48.f*cfg.p[16],cfg.p[17],
-                                65.f+140.f*cfg.p[18],cfg.p[19],cfg.p[20],cfg.p[21]);
-                            else shimmer_.setMultiPitchLegacy();
-                        }
+                        atmospheric_.setParams(1.f,semitones,feedback,diffusion,.10f+.88f*p4,
+                            lowcut,highcut,rate,depth,
+                            static_cast<ShimmerReverbEngine::PitchMode>(pitchMode),
+                            static_cast<ShimmerReverbEngine::ReverbMode>(stereoMode),
+                            static_cast<ShimmerReverbEngine::ColorMode>(color));
+                        atmospheric_.setPreDelayMs(240.f*p3);
+                        atmospheric_.setPitchReturnAmount(pitchMode==0 ? 0.f : p2);
+                        atmospheric_.setDamping(p1);
+                        atmospheric_.setMultiPitch(-24.f+48.f*cfg.p[16],cfg.p[17],
+                            65.f+140.f*cfg.p[18],cfg.p[19],cfg.p[20],cfg.p[21]);
+                        atmospheric_.setAtmosphere(cfg.p[22],cfg.p[23]>=.5f);
                     }
-                    if(cfg.version>=4)atmospheric_.processStereo(l,r);
-                    else shimmer_.processStereo(l,r);
-                    const float dryFactor=cfg.version>=4?0.f:std::cos(1.f*3.14159265358979323846f*.42f);
-                    l-=inL*dryFactor;r-=inR*dryFactor;
+                    atmospheric_.processStereo(l,r);   // 100 % wet: no dry copy to remove
                     // Same normalized wet gain as other reverbs, no dry duplication.
                     wetL=std::clamp(l*p0*.82f,-3.f,3.f);
                     wetR=std::clamp(r*p0*.82f,-3.f,3.f);
@@ -273,7 +255,6 @@ private:
     StageFlangerEffect flanger_;
     StereoDelayEffect delay_;
     StageReverbEffect reverb_;
-    ShimmerReverbEngine shimmer_;
     StageAtmosphericShimmer atmospheric_;
     std::array<float,STUDIO_PARAM_COUNT> lastShimmer_{};
     bool shimmerConfigured_=false;

@@ -171,6 +171,11 @@
   grid-template-areas: "sources sounds" "sources perf";
 }
 .lib-sources { grid-area: sources; }
+/* A path input with its own EXPLORAR button on the same line (one button per path field). */
+.path-field { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.path-field > .input { flex: 1 1 auto; min-width: 0; }
+.path-field > .btn { flex: none; }
+.lib-sources .row > .field { flex: 1 1 auto; min-width: 0; }
 .lib-sounds { grid-area: sounds; }
 .lib-perf { grid-area: perf; }
 .view--settings { display: flex; flex-direction: column; gap: 8px; min-height: 0; height: 100%; }

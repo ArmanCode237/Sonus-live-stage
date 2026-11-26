@@ -549,8 +549,24 @@ bool StagePianoEngine::setStudioSlot(int rack,int slot,int field,float value){
         if(enabled)prepareStudioSlot(rack,slot,studioSlotType_[rack][slot].load());
         studioSlotEnabled_[rack][slot].store(enabled);
     }else if(field==18){
-        studioSlotVersion_[rack][slot].store(std::clamp(int(std::lround(value)),1,4));
-    }else studioSlotParam_[rack][slot][field<=17?field-2:field-3].store(std::clamp(value,0.f,1.f));
+        studioSlotVersion_[rack][slot].store(std::clamp(int(std::lround(value)),1,STUDIO_SLOT_MAX_VERSION));
+    }else{
+        const int param=field<=17?field-2:field-3;
+        studioSlotParam_[rack][slot][param].store(std::clamp(value,0.f,1.f));
+        // v35: a REVERB slot switched to the SHIMMER model (p5) always runs Atmosphere v5,
+        // whatever path changed it (UI, API, MIDI), so it survives being saved and reloaded.
+        if(param==5&&studioSlotType_[rack][slot].load()==6&&int(std::clamp(value,0.f,1.f)*3.999f)==3&&
+           studioSlotVersion_[rack][slot].load()<SHIMMER_ENGINE_VERSION){
+            // A slot that becomes a shimmer starts from the v5 ambient preset (same as the
+            // UI's SHIMMER_START): +12 st with a quiet +7 st, ~11 s, 184 ms grains. Only
+            // params after p5: when a stored preset is applied (p0..p23 in order) its own
+            // values for these come next and replace them.
+            static constexpr std::pair<int,float> start[]={{6,.75f},{7,.70f},{12,(2.f+.01f)/5.f},
+                {16,(7.f+24.f)/48.f},{17,.30f},{18,.85f},{19,.5f},{20,.80f},{21,.5f},{22,.65f},{23,0.f}};
+            for(const auto& [k,v]:start)studioSlotParam_[rack][slot][k].store(v);
+            studioSlotVersion_[rack][slot].store(SHIMMER_ENGINE_VERSION);
+        }
+    }
     return true;
 }
 bool StagePianoEngine::setStudioSend(int rack,int source,int slot,float amount){
@@ -2140,9 +2156,9 @@ void StagePianoEngine::render(float* outInterleavedStereo, unsigned int numFrame
     // How long an effect may keep ringing after its input stops.
     const auto tailSamples=[&](const StudioSlotConfig& unit)->int{
         const int model=unit.type==6?std::clamp(int(unit.p[5]*3.999f),0,3):0;
-        // Shimmer feedback can deliberately sustain for well beyond 18 seconds,
-        // scaled with the actual FEEDBACK knob.
-        const float shimmerTail=8.f+115.f*std::pow(std::clamp(unit.p[7],0.f,1.f),2.3f);
+        // Shimmer v5: the tail lasts its mid-band RT60 (DECAY 1.2–40 s) plus margin for
+        // the regenerated octaves and the high band.
+        const float shimmerTail=3.f+1.25f*StageAtmosphericShimmer::decaySeconds(.992f*std::clamp(unit.p[7],0.f,1.f));
         // A quarter/whole-note Delay at low BPM can extend far beyond ten seconds.
         float delayTailSec=10.f;
         if(unit.type==5){

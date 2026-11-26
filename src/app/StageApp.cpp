@@ -110,6 +110,7 @@ StageApp::StageApp(int argc, char* argv[], StageAppOptions options) : options_(s
         } catch (...) {}
     }
     migrateSoundsV35();   // before slot 1 restores its Sound references
+    retireOldShimmersV35();
 
     bootStep("Banco de programas leido: iniciando restauracion del slot 1");
     bool loadedFromProgram1 = false;
@@ -619,6 +620,61 @@ void StageApp::migrateSoundsV35(){
     }
     if(soundsChanged||programsChanged||perfsChanged)
         std::cout<<"[SOUNDS] v35: sonidos sin capa fija; referencias de programas y performances verificadas.\n";
+}
+
+// ------------------------------------------------- v35 Shimmer Atmosphere v5
+// The v1–v4 shimmer engines are retired. Their settings do not translate to v5, so any
+// stored shimmer slot (REVERB slot, model SHIMMER, version < 5) becomes an EMPTY slot and
+// the user configures the new shimmer again. Loading already does this in memory
+// (ParamSerialization); this pass also removes them from the files once.
+namespace {
+bool stripOldShimmerSlots(json& node){
+    bool changed=false;
+    if(node.is_object()){
+        if(node.contains("slots")&&node["slots"].is_array()){
+            for(auto& slot:node["slots"]){
+                if(!slot.is_object()||slot.value("type",0)!=6)continue;
+                const auto& p=slot.value("params",json::array());
+                const bool shimmer=p.is_array()&&p.size()>5&&p[5].is_number()&&int(p[5].get<float>()*3.999f)==3;
+                if(!shimmer||slot.value("version",1)>=SHIMMER_ENGINE_VERSION)continue;
+                const StudioSlotConfig empty{};
+                slot={{"type",0},{"version",1},{"enabled",false},
+                      {"params",std::vector<float>(empty.p.begin(),empty.p.end())}};
+                changed=true;
+            }
+        }
+        for(auto it=node.begin();it!=node.end();++it)changed|=stripOldShimmerSlots(it.value());
+    }else if(node.is_array()){
+        for(auto& item:node)changed|=stripOldShimmerSlots(item);
+    }
+    return changed;
+}
+}
+
+void StageApp::retireOldShimmersV35(){
+    std::vector<fs::path> files={fs::path(programsFilePath),fs::path(pianoPerformancesPath)};
+    for(const char* module:{"piano","synth","organ"})files.emplace_back(stageUserPresetFile(module));
+    std::error_code ec;
+    const auto presetDir=stageUserDataDir()/"presets";
+    if(fs::is_directory(presetDir,ec))
+        for(fs::recursive_directory_iterator it(presetDir,fs::directory_options::skip_permission_denied,ec),end;it!=end;it.increment(ec)){
+            if(ec)break;
+            if(it->is_regular_file(ec)&&it->path().extension()==".json")files.push_back(it->path());
+        }
+    std::sort(files.begin(),files.end());files.erase(std::unique(files.begin(),files.end()),files.end());
+    int cleaned=0;
+    for(const auto& file:files){
+        if(!fs::is_regular_file(file,ec))continue;
+        json data;
+        try{std::ifstream in(file);data=json::parse(in);}catch(...){continue;}
+        if(!stripOldShimmerSlots(data))continue;
+        const fs::path backup=file.string()+".before-shimmer-v5.bak";
+        if(!fs::exists(backup,ec))fs::copy_file(file,backup,ec);
+        if(saveJsonAtomic(file,data))++cleaned;
+        else std::cerr<<"[FX] No se pudo actualizar "<<file.filename().string()<<"\n";
+    }
+    if(userPrograms.is_array()&&stripOldShimmerSlots(userPrograms)){}   // keep the in-memory bank in sync
+    if(cleaned)std::cout<<"[FX] Shimmer v5: se quitaron los shimmer antiguos de "<<cleaned<<" archivo(s); configúralos de nuevo.\n";
 }
 
 // v31 mappings ----------------------------------------------------------------

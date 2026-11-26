@@ -100,25 +100,24 @@ function RackEq({ rack, cfg }: { rack: number; cfg: StudioRack }) {
   );
 }
 
-/** Shimmer Atmosphere v4: FREEZE starts released (never inherit an old p23=1), then version 4. */
-async function upgradeShimmerV4(rack: number, slot: number): Promise<void> {
-  if (!await studioCommand({ op: 'slot', rack, slot, field: slotField(SHIMMER_FREEZE_PARAM), value: 0 })) return;
+/** Shimmer Atmosphere v5 starting point: every voice / tank control set to a musical,
+ *  ambient default (≈11 s decay, +12 st with a quiet +7 st, 184 ms grains), FREEZE released. */
+const SHIMMER_START: readonly [param: number, value: number][] = [
+  [7, 0.70], [2, 0.55], [4, 0.8], [1, 0.45], [6, 0.75], [12, (2 + 0.01) / 5],
+  [16, (7 + 24) / 48], [17, 0.30], [20, 0.80], [18, 0.85], [19, 0.5], [21, 0.5], [22, 0.65],
+  [SHIMMER_FREEZE_PARAM, 0],
+];
+async function startShimmerV5(rack: number, slot: number): Promise<void> {
+  for (const [p, v] of SHIMMER_START) if (!await studioCommand({ op: 'slot', rack, slot, field: slotField(p), value: v })) return;
   await studioCommand({ op: 'slot', rack, slot, field: FIELD_VERSION, value: SHIMMER_ATMOSPHERE_VERSION });
 }
-
-/** Starting point when SHIMMER is newly selected (decay, pitch return, size, +12 st). */
-const SHIMMER_START: readonly [param: number, value: number][] = [[7, 0.84], [2, 0.72], [4, 0.8], [6, 0.75]];
 
 function SlotOptionSelect({ rack, slot, s, param, label, options }: { rack: number; slot: number; s: StudioSlot; param: number; label: string; options: readonly string[] }) {
   const change = async (index: number) => {
     const wasShimmer = isShimmer(s);
     if (!await studioCommand({ op: 'slot', rack, slot, field: slotField(param), value: optionValue(index, options.length) })) return;
-    // Selecting SHIMMER in the algorithm list uses the Atmosphere v4 engine.
-    // Stored v1–v3 shimmers are only migrated with the explicit upgrade button.
-    if (s.type === 6 && param === 5 && index === 3 && !wasShimmer) {
-      for (const [p, v] of SHIMMER_START) await studioCommand({ op: 'slot', rack, slot, field: slotField(p), value: v });
-      if (s.version < SHIMMER_ATMOSPHERE_VERSION) await upgradeShimmerV4(rack, slot);
-    }
+    // Selecting SHIMMER in the algorithm list starts a fresh Atmosphere v5 shimmer.
+    if (s.type === 6 && param === 5 && index === 3 && !wasShimmer) await startShimmerV5(rack, slot);
   };
   return (
     <label className="field">
@@ -134,8 +133,8 @@ function ShimmerControls({ rack, slot, s }: { rack: number; slot: number; s: Stu
   if (s.version < SHIMMER_ATMOSPHERE_VERSION) {
     return (
       <div className="shimmer-upgrade">
-        <p className="hint">Shimmer v{s.version} (clásico). Atmosphere v4 añade BLOOM, FREEZE y un campo estéreo coherente.</p>
-        <Btn small variant="primary" onClick={() => void upgradeShimmerV4(rack, slot)}>ACTIVAR SHIMMER V4</Btn>
+        <p className="hint">Este shimmer usa un motor retirado y no suena. Configúralo de nuevo con Atmosphere v5.</p>
+        <Btn small variant="primary" onClick={() => void startShimmerV5(rack, slot)}>NUEVO SHIMMER V5</Btn>
       </div>
     );
   }
@@ -146,7 +145,7 @@ function ShimmerControls({ rack, slot, s }: { rack: number; slot: number; s: Stu
         onClick={() => studioCommand({ op: 'slot', rack, slot, field: slotField(SHIMMER_FREEZE_PARAM), value: frozen ? 0 : 1 })}>
         FREEZE
       </Btn>
-      <span className="tag">ATMOSPHERE V4</span>
+      <span className="tag">ATMOSPHERE V5</span>
     </div>
   );
 }

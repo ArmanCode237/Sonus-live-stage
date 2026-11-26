@@ -9,11 +9,14 @@
 #include <vector>
 using namespace SonusDSP;
 
+// v35: Shimmer Atmosphere v5. A pitch voice at 0 level is OFF (no comb filter), so the
+// voices need a level for PITCH RETURN to have anything to return.
 static StudioSlotConfig setup(){
     StudioSlotConfig c;
-    c.type=6;c.enabled=true;
+    c.type=6;c.enabled=true;c.version=SHIMMER_ENGINE_VERSION;
     c.p={{.87f,.42f,.78f,.18f,.7f,.99f,
-          .9f,.75f,.24f,.72f,.39f,.63f,.30f,.85f,.15f,.74f}};
+          .9f,.75f,.24f,.72f,.39f,.63f,.30f,.85f,.15f,.74f,
+          .6458333f,.35f,.85f,.5f,.8f,.5f,.65f,0.f}};
     return c;
 }
 static std::vector<float> render(const StudioSlotConfig& cfg,int rate=16000,int frames=32000){

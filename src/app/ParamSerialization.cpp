@@ -307,11 +307,14 @@ SynthPresetParams deserializeParams(const json& j, const SynthPresetParams& fall
                     const auto& slot=obj["slots"][k];if(!slot.is_object())continue;
                     auto& dst=c.slots[k];
                     if(slot.contains("type")&&slot["type"].is_number_integer())dst.type=std::clamp(slot["type"].get<int>(),0,12);
-                    dst.version=std::clamp(slot.value("version",1),1,4);
+                    dst.version=std::clamp(slot.value("version",1),1,STUDIO_SLOT_MAX_VERSION);
                     if(slot.contains("enabled")&&slot["enabled"].is_boolean())dst.enabled=slot["enabled"].get<bool>();
                     if(slot.contains("params")&&slot["params"].is_array())
                         for(size_t i=0;i<std::min<size_t>(STUDIO_PARAM_COUNT,slot["params"].size());++i)
                             if(slot["params"][i].is_number())dst.p[i]=std::clamp(slot["params"][i].get<float>(),0.f,1.f);
+                    // v35: a shimmer saved by the v1–v4 engines is removed (empty slot): its
+                    // settings do not translate to Atmosphere v5, so the user sets it up again.
+                    if(isShimmerSlot(dst)&&dst.version<SHIMMER_ENGINE_VERSION)dst=StudioSlotConfig{};
                 }
             }
             if(obj.contains("sends")&&obj["sends"].is_array())

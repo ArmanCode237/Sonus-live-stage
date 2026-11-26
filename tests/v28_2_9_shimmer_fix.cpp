@@ -1,24 +1,28 @@
 // Assertions carry the checks (some with side effects): keep them in Release builds.
 #undef NDEBUG
-// v28.2.9: Shimmer Atmosphere v4.2 regression (adds stereo coherence + early reflections vs Hall) (wet level, BLOOM, FREEZE, pitch return, stability, CPU).
+// Shimmer Atmosphere v5 regression (v35; first written for v4.2 in v28.2.9): wet level vs Hall,
+// BLOOM, FREEZE, pitch return, stability, stereo coherence, early reflections, CPU.
 // g++ -std=c++17 -O2 -Isrc -Isrc/core -Isrc/dsp tests/v28_2_9_shimmer_fix.cpp -o /tmp/shfix && /tmp/shfix
 #include "../src/dsp/StageSlotFxRack.h"
 #include <cassert>
 #include <chrono>
 #include <iostream>
 using namespace SonusDSP;
-static StudioSlotConfig base(int model=3,int ver=4){
+static StudioSlotConfig base(int model=3,int ver=5){
  StudioSlotConfig c;c.type=6;c.enabled=true;c.version=ver;
  c.p={{1.f,.55f,.72f,0.f,.80f,(model+.01f)/4.f,.75f,.84f,.25f,.48f,.30f,.15f,.30f,1.f,1.f,.8f,
        .6458333f,.35f,.50f,.50f,.70f,.50f,.65f,0.f}};return c;}
 struct R{double rmsLate=0,rmsIn=0,peak=0;};
+// f0 < 0: white noise instead of the two-partial tone (broadband measurements).
 static R run(StudioSlotConfig c,int sr,double secs,double inSecs,double f0,int freezeAt=-1){
- StudioSlotDSP d;d.init(float(sr),6);R r;double a=0,b=0;long n=0,m=0;
+ StudioSlotDSP d;d.init(float(sr),6);R r;double a=0,b=0;long n=0,m=0;unsigned seed=1;
  for(long i=0;i<long(secs*sr);++i){
   if(freezeAt>=0&&i==long(freezeAt)*sr)c.p[23]=1.f;
   if((i&63)==0)d.syncParameters(c);
   const double t=double(i)/sr;
-  const float x=t<inSecs?float(.2*std::sin(6.283185307*f0*t)+.1*std::sin(6.283185307*f0*2.01*t)):0.f;
+  seed=seed*1664525u+1013904223u;
+  const float noise=float(int(seed))/2147483648.f*.15f;
+  const float x=t<inSecs?(f0<0?noise:float(.2*std::sin(6.283185307*f0*t)+.1*std::sin(6.283185307*f0*2.01*t))):0.f;
   float l=0,rr=0;d.process(x,x,c,l,rr,120.f);
   assert(std::isfinite(l)&&std::isfinite(rr));
   r.peak=std::max(r.peak,double(std::max(std::abs(l),std::abs(rr))));
@@ -29,9 +33,9 @@ static R run(StudioSlotConfig c,int sr,double secs,double inSecs,double f0,int f
 int main(){
  for(int sr:{44100,48000,96000}){
   // 1) wet level: must be of the same order as Hall (was ~18 dB lower)
-  auto sh=run(base(3,4),sr,3,3,261.6),hall=run(base(2,3),sr,3,3,261.6);
+  auto sh=run(base(3,5),sr,3,3,261.6),hall=run(base(2,3),sr,3,3,261.6);
   const double dB=20*std::log10(sh.rmsLate/hall.rmsLate);
-  std::cout<<sr<<" Hz: shimmer v4 vs hall steady wet = "<<dB<<" dB\n";
+  std::cout<<sr<<" Hz: shimmer v5 vs hall steady wet = "<<dB<<" dB\n";
   assert(dB>-9.0 && dB<3.0);
   // 2) FREEZE keeps sustaining 20 s after the input stopped, release decays
   auto c=base();c.p[7]=.5f;
@@ -42,10 +46,13 @@ int main(){
   // 3) PITCH RETURN audible: wet energy rises with it
   auto p0=base();p0.p[2]=0.f;auto p1=base();p1.p[2]=1.f;
   assert(run(p1,sr,3,3,440).rmsLate>run(p0,sr,3,3,440).rmsLate*1.05);
-  // 4) BLOOM is not a plain volume knob: level changes <6 dB between extremes
+  // 4) BLOOM is not a plain volume knob. Measured with broadband noise: a single pure tone
+  //    is dominated by L/R interference of the stereo diffusers (several dB either way at
+  //    particular frequencies, inherent to any stereo-diffused reverb).
   auto b0=base();b0.p[22]=0;auto b1=base();b1.p[22]=1;
-  const double bd=std::abs(20*std::log10(run(b1,sr,3,3,261.6).rmsLate/run(b0,sr,3,3,261.6).rmsLate));
-  assert(bd<6.0); // BLOOM shapes the build-up; it is not a volume knob
+  const double bd=std::abs(20*std::log10(run(b1,sr,3,3,-1).rmsLate/run(b0,sr,3,3,-1).rmsLate));
+  std::cout<<"   BLOOM 0->1 level change (noise) = "<<bd<<" dB\n";
+  assert(bd<3.0); // BLOOM shapes the build-up; it is not a volume knob
   // 5) worst-case stability: bounded for 40 s
   auto w=base();for(int k:{7,2,20,17,22,4,9})w.p[k]=1.f;w.p[1]=0;w.p[12]=.5f;
   assert(run(w,sr,40,10,220).peak<1.3);
@@ -72,4 +79,4 @@ int main(){
  for(long i=0;i<48000L*20;++i){float l=0,r=0;d.process(i<100?.4f:0.f,i<100?.4f:0.f,c,l,r,120.f);}
  const double s=std::chrono::duration<double>(std::chrono::steady_clock::now()-t0).count();
  std::cout<<"20 s of audio in "<<s<<" s (silence tail)\n";assert(s<20*.2);
- std::cout<<"PASS v28.2.9 shimmer v4.1\n";}
+ std::cout<<"PASS shimmer Atmosphere v5\n";}

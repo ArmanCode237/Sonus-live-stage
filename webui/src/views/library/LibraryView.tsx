@@ -51,9 +51,9 @@ function Sources() {
         <Segmented label="Tipo de fuente" options={['CARPETA', 'ARCHIVO']} value={type === 'root' ? 0 : 1} onChange={i => setType(i === 0 ? 'root' : 'file')} />
         <input className="input grow" placeholder={type === 'root' ? 'Ruta absoluta de una carpeta, p. ej. D:\\Samples' : 'Ruta absoluta de un .npno, .nsmp, .sf2 o .sfz'}
           value={path} onChange={e => setPath(e.target.value)} aria-label="Ruta de la fuente" />
-        {nativePicker && <Btn type="button" disabled={pickerBusy} onClick={() => void pick(type === 'root' ? 'folder' : 'file', setPath)}
+        {nativePicker && <Btn plain type="button" disabled={pickerBusy} onClick={() => void pick(type === 'root' ? 'folder' : 'file', setPath)}
           title={type === 'root' ? 'Seleccionar carpeta de samples' : 'Seleccionar archivo de samples'}>EXPLORAR…</Btn>}
-        <Btn variant="primary" type="submit" disabled={!path.trim()}>AÑADIR</Btn>
+        <Btn plain variant="primary" type="submit" disabled={!path.trim()}>AÑADIR</Btn>
       </form>
       <ul className="list">
         {sources.map(([kind, p]) => (
@@ -72,23 +72,37 @@ function Sources() {
       </div>
       {progress?.lastError && <p className="hint hint--error">{progress.lastError}</p>}
       <Row>
-        <Btn variant="primary" disabled={running} onClick={() => runAction(() => api.sampleLibraryPrepare(), 'Preparación iniciada').then(() => load())}>PREPARAR BIBLIOTECA</Btn>
-        <Btn disabled={!running} onClick={() => runAction(() => api.sampleLibraryCancel(), 'Cancelado').then(() => load())}>CANCELAR</Btn>
+        <Btn plain variant="primary" disabled={running} onClick={() => runAction(() => api.sampleLibraryPrepare(), 'Preparación iniciada').then(() => load())}>PREPARAR BIBLIOTECA</Btn>
+        <Btn plain disabled={!running} onClick={() => runAction(() => api.sampleLibraryCancel(), 'Cancelado').then(() => load())}>CANCELAR</Btn>
       </Row>
       <form className="row" onSubmit={e => { e.preventDefault(); if (cacheDir?.trim()) void runAction(() => api.sampleLibraryCacheDir(cacheDir.trim()), 'Carpeta de caché actualizada').then(() => { setCacheDir(null); void load(); }); }}>
         <Field label="Caché PCM16">
-          <input className="input" value={cacheDir ?? status?.configuration.cacheDir ?? ''} onChange={e => setCacheDir(e.target.value)} />
+          <div className="path-field">
+            <input className="input" value={cacheDir ?? status?.configuration.cacheDir ?? ''} onChange={e => setCacheDir(e.target.value)} aria-label="Carpeta de la caché PCM16" />
+            {nativePicker && <Btn plain type="button" disabled={pickerBusy} onClick={() => void pick('folder', setCacheDir)} title="Seleccionar la carpeta de la caché">EXPLORAR…</Btn>}
+          </div>
         </Field>
-        {nativePicker && <Btn type="button" disabled={pickerBusy} onClick={() => void pick('folder', setCacheDir)}>EXPLORAR…</Btn>}
-        <Btn type="submit" disabled={cacheDir === null}>GUARDAR</Btn>
+        <Btn plain type="submit" disabled={cacheDir === null}>GUARDAR</Btn>
       </form>
       <details className="details">
         <summary>Reubicar una carpeta movida o renombrada</summary>
         <form className="form" onSubmit={e => { e.preventDefault(); void runAction(() => api.sampleLibraryRelocate(oldRoot.trim(), newRoot.trim()), 'Referencias reparadas'); }}>
-          <Field label="Carpeta anterior"><input className="input" value={oldRoot} onChange={e => setOldRoot(e.target.value)} placeholder="D:\Samples Antiguos" /></Field>
-          <Field label="Carpeta actual"><input className="input" value={newRoot} onChange={e => setNewRoot(e.target.value)} placeholder="D:\Samples Nuevos" /></Field>
-          {nativePicker && <Btn type="button" disabled={pickerBusy} onClick={() => void pick('folder', setNewRoot)}>EXPLORAR CARPETA…</Btn>}
-          <Btn variant="primary" type="submit" disabled={!oldRoot.trim() || !newRoot.trim() || running}>REPARAR REFERENCIAS</Btn>
+          {/* One EXPLORAR per path field. The previous folder may no longer exist: then type its path. */}
+          <Field label="Carpeta anterior">
+            <div className="path-field">
+              <input className="input" value={oldRoot} onChange={e => setOldRoot(e.target.value)} placeholder="D:\Samples Antiguos" aria-label="Carpeta anterior" />
+              {nativePicker && <Btn plain type="button" disabled={pickerBusy} onClick={() => void pick('folder', setOldRoot)}
+                title="Seleccionar la carpeta anterior (si ya no existe, escribe su ruta)">EXPLORAR…</Btn>}
+            </div>
+          </Field>
+          <Field label="Carpeta actual">
+            <div className="path-field">
+              <input className="input" value={newRoot} onChange={e => setNewRoot(e.target.value)} placeholder="D:\Samples Nuevos" aria-label="Carpeta actual" />
+              {nativePicker && <Btn plain type="button" disabled={pickerBusy} onClick={() => void pick('folder', setNewRoot)}
+                title="Seleccionar la carpeta donde están ahora los samples">EXPLORAR…</Btn>}
+            </div>
+          </Field>
+          <Row><Btn plain variant="primary" type="submit" disabled={!oldRoot.trim() || !newRoot.trim() || running}>REPARAR REFERENCIAS</Btn></Row>
         </form>
       </details>
     </Panel>
