@@ -6,7 +6,8 @@ export type Origin = 'factory' | 'edited' | 'user' | 'dx7' | 'd50' | 'mt32' | 's
 
 export const ORIGIN_LABEL: Record<Origin, string> = {
   factory: 'FÁBRICA', edited: 'EDITADO', user: 'USUARIO', dx7: 'DX7', d50: 'D-50', mt32: 'MT-32',
-  sample: 'BIBLIOTECA', sound: 'SOUND', performance: 'PERFORMANCE',
+  // Piano: every file is a Sound — with the file's own settings, or with settings saved by the user.
+  sample: 'DEL ARCHIVO', sound: 'GUARDADO', performance: 'PERFORMANCE',
 };
 
 /** Context of a load: the synth layer that receives a DX7 / MT-32 voice, the piano layer… */

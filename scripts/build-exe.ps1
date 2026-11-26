@@ -48,7 +48,7 @@ if (-not $SkipUi) {
 }
 
 Step 'Configurando (Release, ASIO + WASAPI, runtime estático)'
-cmake -S . -B $build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSTAGE_ENABLE_ASIO=ON -DSTAGE_BUILD_PLUGIN=OFF -DSTAGE_DEMO=$demoFlag
+cmake -S . -B $build -G Ninja -DCMAKE_BUILD_TYPE=Release -DSTAGE_ENABLE_ASIO=ON -DSTAGE_BUILD_PLUGIN=OFF "-DSTAGE_DEMO=$demoFlag"   # quoted: PS 5.1 passes an unquoted -X=$var literally
 if ($LASTEXITCODE) { throw 'La configuración de CMake falló' }
 
 Step 'Compilando SonusLiveStage.exe'

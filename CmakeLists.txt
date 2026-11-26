@@ -431,13 +431,13 @@ if(STAGE_BUILD_SAMPLE_TESTS)
     src/app/AudioCallbacks.cpp
     src/app/MidiInput.cpp
     src/app/AudioBackend.cpp
-    src/app/RtAudioBackend.cpp
+    src/app/RtAudioBackend.cpp src/app/UserDataPaths.cpp
     src/core/WorkstationHost.cpp
     src/control/ControlMappings.cpp
     src/control/ParamValueReader.cpp src/modules/StagePianoEngine.cpp
     src/modules/StageSynthModule.cpp src/modules/StageOrganModule.cpp)
   target_include_directories(LiveStageLiveSafetyCheck PRIVATE src src/core src/dsp src/modules third_party)
-  target_link_libraries(LiveStageLiveSafetyCheck PRIVATE nlohmann_json::nlohmann_json rtaudio)
+  target_link_libraries(LiveStageLiveSafetyCheck PRIVATE nlohmann_json::nlohmann_json rtaudio rtmidi)
   add_test(NAME live_safety_v324 COMMAND LiveStageLiveSafetyCheck)
 endif()
 

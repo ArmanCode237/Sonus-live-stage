@@ -103,7 +103,10 @@ function SoundsManager() {
   const [error, setError] = useState('');
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
+  // Piano Sounds have no layer of their own: they load into the layer chosen here.
+  const [target, setTarget] = useState(0);
   const mod = MODULES[module];
+  const piano = mod === 'piano';
   const reload = useCallback(() => { api.sounds(mod).then(r => setSounds(r.sounds)).catch(e => setError((e as Error).message)); }, [mod]);
   useEffect(() => { setSounds(null); reload(); }, [reload]);
   const save = async () => {
@@ -112,25 +115,37 @@ function SoundsManager() {
   const act = async (fn: () => Promise<unknown>, msg: string) => { if (await runAction(fn, msg)) reload(); };
   return (
     <Panel title="SOUNDS" className="lib-sounds" actions={<Segmented label="Módulo" options={['PIANO', 'SYNTH', 'ORGAN']} value={module} onChange={setModule} />}>
-      <form className="row" onSubmit={e => { e.preventDefault(); if (name.trim()) void save(); }}>
-        <input className="input grow" placeholder={`Guardar ${mod.toUpperCase()} actual como Sound…`} maxLength={64} value={name} onChange={e => setName(e.target.value)} aria-label="Nombre del Sound" />
-        <input className="input" placeholder="Categoría" maxLength={64} value={category} onChange={e => setCategory(e.target.value)} aria-label="Categoría" />
-        <Btn variant="primary" type="submit" disabled={!name.trim()}>GUARDAR</Btn>
-      </form>
+      {piano ? (
+        <div className="row">
+          <p className="hint grow">Un sonido de piano es un sample con sus ajustes: se guarda desde el editor de la capa (GUARDAR SONIDO).
+            Las 5 capas juntas se guardan como Performance. ◆ = sonido principal del sample.</p>
+          <Segmented label="Cargar en la capa" options={['L1', 'L2', 'L3', 'L4', 'L5']} value={target} onChange={setTarget} />
+        </div>
+      ) : (
+        <form className="row" onSubmit={e => { e.preventDefault(); if (name.trim()) void save(); }}>
+          <input className="input grow" placeholder={`Guardar ${mod.toUpperCase()} actual como Sound…`} maxLength={64} value={name} onChange={e => setName(e.target.value)} aria-label="Nombre del Sound" />
+          <input className="input" placeholder="Categoría" maxLength={64} value={category} onChange={e => setCategory(e.target.value)} aria-label="Categoría" />
+          <Btn variant="primary" type="submit" disabled={!name.trim()}>GUARDAR</Btn>
+        </form>
+      )}
       {error && <Empty>{error}</Empty>}
-      {sounds && sounds.length === 0 && <Empty>No hay Sounds de {mod}.</Empty>}
+      {sounds && sounds.length === 0 && <Empty>No hay sonidos de {mod}.</Empty>}
       <ul className="list list--scroll">
-        {sounds?.map(s => (
+        {sounds?.map(s => {
+          const layerSound = piano && s.scope === 'layer' && !s.legacy;
+          return (
           <li key={s.id} className="list__row">
-            <button type="button" className="list__main" onClick={() => act(() => api.loadSound(s.id, s.scope === 'layer' ? s.savedLayer : undefined), `«${s.name}» cargado`)}>
+            <button type="button" className="list__main" title={layerSound ? `Cargar en L${target + 1}` : s.legacy ? 'Instantánea antigua de las 5 capas' : undefined}
+              onClick={() => act(() => api.loadSound(s.id, layerSound ? target : undefined), layerSound ? `«${s.name}» → L${target + 1}` : `«${s.name}» cargado`)}>
               <span>{s.defaultForSource ? '◆ ' : ''}{s.name}</span>
-              <span className="muted">{[s.category, s.scope === 'layer' ? `L${(s.savedLayer ?? 0) + 1}` : '', s.instruments?.[0]].filter(Boolean).join(' · ')}</span>
+              <span className="muted">{[s.legacy ? 'LEGADO · 5 CAPAS' : '', s.category, s.sourceFile ?? s.instruments?.[0]].filter(Boolean).join(' · ')}</span>
             </button>
-            {mod === 'piano' && <Btn small onClick={() => act(() => api.setDefaultSound(s.id), 'Sound por defecto del instrumento')} title="Usar al cargar este instrumento">DEFAULT</Btn>}
+            {layerSound && !s.defaultForSource && <Btn small onClick={() => act(() => api.setDefaultSound(s.id), 'Sonido principal del sample')} title="Hacerlo el sonido principal de su sample (el que muestra el browser)">PRINCIPAL</Btn>}
             <Btn small onClick={() => act(() => api.duplicateSound(s.id, `${s.name} copy`), 'Duplicado')}>DUP</Btn>
             <button type="button" className="icon-btn" aria-label={`Eliminar ${s.name}`} onClick={() => act(() => api.deleteSound(s.id), `«${s.name}» eliminado`)}>×</button>
           </li>
-        ))}
+          );
+        })}
       </ul>
     </Panel>
   );

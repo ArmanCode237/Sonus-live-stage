@@ -83,6 +83,7 @@ json StageApp::captureProgramJson(int slot, const std::string& name) {
         {"pianoLayers", serializePianoLayerSources(engine)},
         {"params", serializeParams(engine.getCurrentParams())},
         {"soundRefs", selectedSoundRefs},
+        {"soundEdited", soundEditedJson()},     // v35: layers that are variations of their Sound
         // v31: program mappings + a copy of each module's mappings as they are now
         // (independent of the presets they came from).
         {"mappings", programMappingsJson()}
@@ -99,7 +100,7 @@ void StageApp::applyProgramJson(const json& prog) {
     }
     restoreProgramMappings(prog);
     for (auto& dirty : moduleDirty) dirty.store(false);
-    clearAllSoundDirty();
+    restoreSoundEdited(prog.value("soundEdited", json()));
     syncMappingValues();
     paramRevCounter.fetch_add(1);
 }

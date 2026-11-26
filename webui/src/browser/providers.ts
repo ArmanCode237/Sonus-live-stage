@@ -19,6 +19,9 @@ export interface Provider { items: BrowserItem[]; loading: boolean; activeKey: s
 const ok = (r: unknown) => Boolean(r);
 const engineName = (types: readonly number[]) => types.map(t => SYNTH_SYNTHESIS_TYPES[t] ?? '?').join(' + ');
 const stripExt = (n: string) => n.replace(/\.[^.]+$/, '');
+/** Sound timestamps are std::chrono::system_clock counts (ns or 100 ns depending on the
+ *  platform), not milliseconds: scale down to the millisecond range before formatting. */
+const soundDate = (v: number) => { let ms = v; while (ms > 1e13) ms /= 10; return new Date(ms).toLocaleString(); };
 
 /** Engines of a stored synth patch (its enabled layers). */
 function patchEngines(params: unknown): string | undefined {
@@ -169,41 +172,78 @@ export function usePianoSources(layer: number): Provider {
       .finally(() => setLoading(false));
   }, []);
 
+  // v35: every sample file IS a Sound (like a workstation's "Piano 1"). ONE entry per file:
+  // its saved default Sound when there is one (name + settings), otherwise the file with its
+  // own settings (SF2 / SFZ envelope included). Only Sounds the user explicitly saved as new
+  // (variants) get entries of their own. Variations made inside a Performance never appear
+  // here: they live in that Performance. Sounds have no layer: the target is chosen on load.
   const items = useMemo<BrowserItem[]>(() => {
     const out: BrowserItem[] = [];
+    const piece = (file: string, preset: number) => `${file.toLowerCase()}#${preset}`;
+    const layerSounds = sounds.filter(s => s.scope === 'layer' && !s.legacy);
+    const defaults = new Map<string, SoundSummary>();
+    for (const s of layerSounds) if (s.defaultForSource && s.sourceFile) defaults.set(piece(s.sourceFile, s.sf2Preset ?? -1), s);
+    const merged = new Set<string>();
+    const forget = async (s: SoundSummary, what: string) => {
+      const r = await runAction(() => api.deleteSound(s.id), what);
+      if (r) reload();
+      return ok(r);
+    };
     for (const item of library ?? []) {
       const format = item.ext.replace('.', '').toUpperCase();
-      const loadInto = (preset: number) => async (ctx: { layer: number }) =>
-        ok(await runAction(() => api.loadSample(item.path, ctx.layer, preset), `L${ctx.layer + 1}: ${stripExt(item.name)}`, true));
+      const sf2 = item.ext.toLowerCase() === '.sf2';
+      const mainPreset = sf2 ? 0 : -1;
+      const saved = defaults.get(piece(item.name, mainPreset));
+      if (saved) merged.add(saved.id);
+      const fileName = stripExt(item.name);
+      const loadInto = (preset: number, label: string) => async (ctx: { layer: number }) =>
+        ok(await runAction(() => api.loadSample(item.path, ctx.layer, preset), `L${ctx.layer + 1}: ${label}`, true));
       out.push({
-        key: `piano:lib:${item.path}`, module: 'piano', origin: 'sample', name: stripExt(item.name),
-        baseCategory: item.group || item.category || 'BIBLIOTECA', engine: format, needsLayer: true,
-        detail: `${format} · ${item.sizeMB.toFixed(0)} MB${item.ready ? '' : ' · sin caché'}`,
-        info: [['Archivo', item.name], ['Formato', format], ['Tamaño', `${item.sizeMB.toFixed(0)} MB`], ['Caché', item.ready ? 'lista' : 'se prepara al cargar']],
+        key: `piano:lib:${item.path}`, module: 'piano', origin: saved ? 'sound' : 'sample', name: saved?.name ?? fileName,
+        baseCategory: saved?.category && saved.category !== 'User' ? saved.category : item.group || item.category || 'BIBLIOTECA',
+        baseTags: saved?.tags ?? [], engine: format, needsLayer: true,
+        detail: `${saved ? `${fileName} · ` : ''}${format} · ${item.sizeMB.toFixed(0)} MB${item.ready ? '' : ' · sin caché'}`,
+        info: [
+          ['Ajustes', saved ? `guardados («${saved.name}»)` : 'del archivo'],
+          ['Archivo', item.name], ['Formato', format], ['Tamaño', `${item.sizeMB.toFixed(0)} MB`],
+          ['Caché', sf2 ? 'no necesaria (lectura directa)' : item.ready ? 'lista' : 'se prepara al cargar'],
+          ...(saved?.updated ? [['Guardado', soundDate(saved.updated)] as [string, string]] : []),
+        ],
+        scopeNote: saved ? undefined : (sf2 || item.ext.toLowerCase() === '.sfz')
+          ? 'Usa la envolvente y el filtro definidos en el archivo (si los tiene). Guarda el sonido desde el editor de la capa para conservar tus ajustes.'
+          : 'Usa los ajustes iniciales. Guarda el sonido desde el editor de la capa para conservar tus ajustes.',
         sourceFavorite: item.favorite,
         toggleSourceFavorite: async () => {
           const favorite = !item.favorite;
           patchLibraryItem(item.path, { favorite });
           await runAction(() => api.tagLibrary(item.name, { favorite }));
         },
-        load: loadInto(item.ext.toLowerCase() === '.sf2' ? 0 : -1),
-        subItems: item.ext.toLowerCase() === '.sf2' ? async (): Promise<SubItem[] | null> => {
+        load: loadInto(mainPreset, saved?.name ?? fileName),
+        subItems: sf2 ? async (): Promise<SubItem[] | null> => {
           try {
             const r = await api.sf2Presets(item.path);
-            return r.presets.length > 1 ? r.presets.map((label, i) => ({ label: `${String(i).padStart(3, '0')} · ${label}`, load: loadInto(i) })) : null;
+            return r.presets.length > 1 ? r.presets.map((label, i) => {
+              const own = defaults.get(piece(item.name, i));
+              return { label: `${String(i).padStart(3, '0')} · ${own ? `${own.name} (${label})` : label}`, load: loadInto(i, own?.name ?? label) };
+            }) : null;
           } catch { return null; }
         } : undefined,
       });
     }
-    for (const s of sounds) {
+    for (const s of layerSounds) {
+      if (merged.has(s.id)) continue;
       const key = `piano:snd:${s.id}`;
+      const of = s.sourceFile ? stripExt(s.sourceFile) : (s.instruments ?? [])[0] ?? '—';
+      // Not merged: a variant, the Sound of another SF2 preset, or a file outside the library folders.
+      const kind = !s.defaultForSource ? 'Variante' : (s.sf2Preset ?? -1) > 0 ? `Preset ${s.sf2Preset}` : 'Sonido';
       out.push({
-        key, module: 'piano', origin: 'sound', name: s.name, baseCategory: s.category || 'SOUNDS', baseTags: s.tags ?? [],
-        engine: 'SOUND', needsLayer: true, detail: (s.instruments ?? []).slice(0, 2).join(', '),
-        info: [['Instrumentos', (s.instruments ?? []).join(', ') || '—'], ...(s.updated ? [['Modificado', new Date(s.updated).toLocaleString()] as [string, string]] : [])],
+        key, module: 'piano', origin: 'sound', name: s.name, baseCategory: s.category && s.category !== 'User' ? s.category : 'VARIANTES', baseTags: s.tags ?? [],
+        engine: 'SOUND', needsLayer: true, detail: `${kind} · ${of}`,
+        info: [['Tipo', !s.defaultForSource ? 'Variante guardada como sonido nuevo' : (s.sf2Preset ?? -1) > 0 ? 'Sonido de un preset SF2' : 'Sonido (sample fuera de la biblioteca)'], ['Sample', s.sourceFile ?? of],
+          ...(s.updated ? [['Guardado', soundDate(s.updated)] as [string, string]] : [])],
         load: async ctx => ok(await runAction(() => api.loadSound(s.id, ctx.layer), `L${ctx.layer + 1}: ${s.name}`, true)),
         duplicate: async to => { const r = await runAction(() => api.duplicateSound(s.id, to), `Duplicado como «${to}»`); if (r) reload(); return ok(r); },
-        remove: async () => { const r = await runAction(() => api.deleteSound(s.id), `«${s.name}» eliminado`); if (r) { await forgetKey(key); reload(); } return ok(r); },
+        remove: async () => { const r = await forget(s, `«${s.name}» eliminado`); if (r) await forgetKey(key); return r; },
       });
     }
     for (const p of perfs) {

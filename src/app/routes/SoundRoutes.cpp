@@ -18,14 +18,19 @@ std::string StageApp::newSoundId(){
 
 json StageApp::soundSummary(const json& sound){
     json out=json::object();
-    for(const char* k:{"id","name","module","category","created","updated","source","tags","scope","savedLayer","defaultForSource"})
+    // v35: a Sound has no layer ("savedLayer" is no longer published); it is identified by
+    // its sample file, so the browser can show ONE entry per file + explicit variants.
+    for(const char* k:{"id","name","module","category","created","updated","source","tags","scope","defaultForSource"})
         if(sound.contains(k))out[k]=sound[k];
     if(sound.value("module",std::string{})=="piano"&&sound.value("patch",json::object()).is_object()){
         const auto& patch=sound["patch"];
         if(sound.value("scope",std::string{})=="layer"&&patch.contains("source")&&patch["source"].is_object()){
             const auto& src=patch["source"];
             out["instruments"]=json::array({src.value("name",std::string{})});
-        }
+            const auto saved=src.value("sourcePath",std::string{});
+            out["sourceFile"]=fs::path(saved).filename().string();
+            out["sf2Preset"]=src.value("sf2Preset",-1);
+        }else out["legacy"]=true;   // pre-v28.2 snapshot of all five layers (not a Sound)
         if(patch.contains("pianoSources")&&patch["pianoSources"].is_array()){
             out["instruments"]=json::array();
             for(const auto& layer:patch["pianoSources"])
@@ -63,6 +68,11 @@ void StageApp::registerSoundRoutes() {
         std::string name=b.value("name",std::string{});
         if(mi<0||!checkPresetName(name)){res.status=400;res.set_content(R"({"ok":false,"error":"Módulo o nombre inválido"})","application/json");return;}
         const bool layerSound=module=="piano"&&b.contains("layer");
+        if(module=="piano"&&!layerSound){
+            // v35: a piano Sound is ONE sample + its settings. All five layers together
+            // are a Performance (/api/piano/performances/store), not a Sound.
+            res.status=400;res.set_content(R"({"ok":false,"error":"Un sonido de piano es una sola capa: indica la capa a guardar. Las cinco capas juntas se guardan como Performance."})","application/json");return;
+        }
         if(layerSound&&(!b["layer"].is_number_integer()||b["layer"].get<int>()<0||
                         b["layer"].get<int>()>=PIANO_LAYER_COUNT)){
             res.status=400;res.set_content(R"({"ok":false,"error":"Capa inválida"})","application/json");return;
@@ -74,14 +84,15 @@ void StageApp::registerSoundRoutes() {
         }
         auto updated=soundLibrary;auto& bank=updated["sounds"];
         std::string id=b.value("id",std::string{});json* target=nullptr;
-        const bool bindToSource=layerSound&&b.value("bindToSource",!b.value("variant",false));
         const auto sourceBank=layerSound?engine.getLayerInstrument(soundLayer):nullptr;
-        if(id.empty()&&bindToSource&&sourceBank){
-            for(auto& item:bank)if(sourceMatchesSound(item,sourceBank->sourcePath,sourceBank->sf2PresetIndex)&&
-                item.value("defaultForSource",false)){
-                id=item.value("id",std::string{});break;
-            }
-        }
+        // v35: a save WITHOUT an id always creates a new Sound; only an explicit id
+        // overwrites (the old path silently overwrote and renamed the file's default
+        // Sound when a new name was typed). The new Sound becomes the file's default
+        // when asked to (bindToSource) or when the file has no default yet.
+        bool hasDefault=false;
+        if(sourceBank)for(const auto& item:bank)
+            if(sourceMatchesSound(item,sourceBank->sourcePath,sourceBank->sf2PresetIndex)&&item.value("defaultForSource",false)){hasDefault=true;break;}
+        const bool bindToSource=layerSound&&(b.contains("bindToSource")?b.value("bindToSource",false):!hasDefault);
         if(!id.empty())for(auto& item:bank)if(item.is_object()&&item.value("id",std::string{})==id){target=&item;break;}
         if(target&&layerSound&&sourceBank&&!sourceMatchesSound(*target,sourceBank->sourcePath,sourceBank->sf2PresetIndex)){
             res.status=409;res.set_content(R"({"ok":false,"error":"El Sound pertenece a otro archivo. Usa Guardar como nuevo para crear una variante."})","application/json");return;
@@ -103,10 +114,9 @@ void StageApp::registerSoundRoutes() {
         (*target)["updated"]=std::chrono::system_clock::now().time_since_epoch().count();
         (*target)["source"]="user";
         (*target)["scope"]=layerSound?"layer":"module";
-        if(layerSound)(*target)["savedLayer"]=soundLayer;
-        else target->erase("savedLayer");
+        target->erase("savedLayer");   // v35: the layer is chosen when the Sound is loaded
         (*target)["patch"]=layerSound?capturePianoLayerSound(soundLayer):modulePatch(mi);
-        if(layerSound&&bindToSource){
+        if(layerSound&&bindToSource&&sourceBank){
             // One default per asset/preset; multiple variants remain independent.
             for(auto& item:bank)if(&item!=target&&sourceMatchesSound(item,sourceBank->sourcePath,sourceBank->sf2PresetIndex))
                 item["defaultForSource"]=false;
@@ -142,12 +152,12 @@ void StageApp::registerSoundRoutes() {
             const auto patch=sound.value("patch",json::object());
             if(mi<0||!patch.is_object()){res.status=422;return;}
             if(mi==0&&sound.value("scope",std::string{})=="layer"){
-                int layer=sound.value("savedLayer",0);
-                if(b.contains("layer")){
-                    if(!b["layer"].is_number_integer()||b["layer"].get<int>()<0||
-                       b["layer"].get<int>()>=PIANO_LAYER_COUNT){res.status=400;return;}
-                    layer=b["layer"].get<int>();
+                // v35: a Sound has no home layer; the caller always says where it goes.
+                if(!b.contains("layer")||!b["layer"].is_number_integer()||b["layer"].get<int>()<0||
+                   b["layer"].get<int>()>=PIANO_LAYER_COUNT){
+                    res.status=400;res.set_content(R"({"ok":false,"error":"Elige la capa destino (L1–L5) para cargar el sonido"})","application/json");return;
                 }
+                const int layer=b["layer"].get<int>();
                 if(!restorePianoLayerSound(layer,patch)){
                     res.status=409;res.set_content(R"({"ok":false,"error":"No se pudo restaurar la capa o falta el sample original; reubica la biblioteca"})","application/json");return;
                 }
@@ -241,7 +251,7 @@ void StageApp::registerSoundRoutes() {
             auto copy=snd;copy["id"]=newSoundId();copy["name"]=name;
             copy["created"]=std::chrono::system_clock::now().time_since_epoch().count();
             copy["updated"]=copy["created"];copy["source"]="user";
-            copy["defaultForSource"]=false;
+            copy["defaultForSource"]=false;copy.erase("savedLayer");
             items.push_back(copy);
             if(!saveJsonAtomic(soundsFilePath,updated)){res.status=500;return;}
             soundLibrary=std::move(updated);

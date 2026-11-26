@@ -3,13 +3,13 @@
 // v32.3 synth modulation matrix: global sources move a copy of the layer config (the
 // knob base is untouched), per-voice sources only reach voice targets, ranges follow
 // "from = knob, to = knob + amount".
-#include "modules/NordSynthModule.h"
+#include "modules/StageSynthModule.h"
 #include <cassert>
 #include <cmath>
 #include <cstdio>
-using namespace NordDSP;
+using namespace SonusDSP;
 
-static double renderEnergy(NordSynthModule& s, int blocks, double* hf = nullptr) {
+static double renderEnergy(StageSynthModule& s, int blocks, double* hf = nullptr) {
     std::vector<float> b(512);
     double e = 0, d = 0; float prev = 0;
     for (int k = 0; k < blocks; ++k) {
@@ -21,7 +21,7 @@ static double renderEnergy(NordSynthModule& s, int blocks, double* hf = nullptr)
     return e;
 }
 
-static void setupSaw(NordSynthModule& s) {
+static void setupSaw(StageSynthModule& s) {
     s.init(44100.f); s.synthEnabled = true; s.synthMasterVol = .8f;
     for (auto& l : s.layers) l.cfg.enabled = false;
     auto& c = s.layers[0].cfg;
@@ -32,7 +32,7 @@ static void setupSaw(NordSynthModule& s) {
 int main() {
     std::setvbuf(stdout, nullptr, _IONBF, 0);
     {   // wheel -> resonance (block target): from the knob (2.0) to knob + 0.5 of its range
-        NordSynthModule s; setupSaw(s);
+        StageSynthModule s; setupSaw(s);
         s.layers[0].cfg.resonanceQ = 2.f;
         s.setModMatrix({{MOD_WHEEL, "L1_res", .5f, false, 0}});
         assert(s.getModMatrix().size() == 1);
@@ -47,7 +47,7 @@ int main() {
         assert(std::abs(s.layers[0].runCfg.resonanceQ - expected) < 1e-3f && s.layers[0].cfg.resonanceQ == 2.f);
     }
     {   // wheel -> cutoff (voice target, global source): brighter with the wheel up
-        NordSynthModule s; setupSaw(s);
+        StageSynthModule s; setupSaw(s);
         s.setModMatrix({{MOD_WHEEL, "L1_cut", .5f, false, 0}});
         double hfDown = 0, hfUp = 0;
         s.layers[0].performanceModWheel = 0.f; s.noteOn(48, 48, 100); renderEnergy(s, 40, &hfDown);
@@ -56,7 +56,7 @@ int main() {
         assert(hfUp > hfDown * 2 && "the wheel must open the filter");
     }
     {   // per-voice sources are rejected on non-voice targets, accepted on voice targets
-        NordSynthModule s; setupSaw(s);
+        StageSynthModule s; setupSaw(s);
         s.setModMatrix({{MOD_VELOCITY, "L1_res", .5f, false, 0}, {MOD_VELOCITY, "L1_cut", .6f, false, 0}, {MOD_LFO1, "L9_cut", .2f, false, 0}});
         assert(s.getModMatrix().size() == 1 && s.getModMatrix()[0].target == "L1_cut");
         double hfSoft = 0, hfHard = 0;
@@ -66,7 +66,7 @@ int main() {
         assert(hfHard > hfSoft * 1.5 && "velocity must open the filter per voice");
     }
     {   // macro -> insert mix (global source on an insert target)
-        NordSynthModule s; setupSaw(s);
+        StageSynthModule s; setupSaw(s);
         s.layers[0].cfg.insertFx[0].enabled = true; s.layers[0].cfg.insertFx[0].mix = .1f;
         s.setModMatrix({{MOD_MACRO1, "L1_fx0_mix", .6f, false, 0}});
         s.macros[0] = 1.f; renderEnergy(s, 1);
@@ -74,7 +74,7 @@ int main() {
         assert(std::abs(s.layers[0].runCfg.insertFx[0].mix - .7f) < 1e-3f && s.layers[0].cfg.insertFx[0].mix == .1f);
     }
     {   // v32.4 per-layer output GAIN after the inserts: +12 dB = x3.98 amplitude (x15.8 energy), glided
-        NordSynthModule a; setupSaw(a); NordSynthModule b; setupSaw(b);
+        StageSynthModule a; setupSaw(a); StageSynthModule b; setupSaw(b);
         b.layers[0].cfg.outGainDb = 12.f;
         a.noteOn(48, 48, 100); b.noteOn(48, 48, 100);
         renderEnergy(a, 20); renderEnergy(b, 20);                       // let the 10 ms gain glide settle
@@ -83,7 +83,7 @@ int main() {
         assert(std::abs(eb / ea - 15.85) < .5);
     }
     {   // v32.4 synth module output GAIN: +6 dB on the whole module = x3.98 energy
-        NordSynthModule a; setupSaw(a); NordSynthModule b; setupSaw(b);
+        StageSynthModule a; setupSaw(a); StageSynthModule b; setupSaw(b);
         b.synthOutGainDb = 6.f;
         a.noteOn(48, 48, 100); b.noteOn(48, 48, 100);
         renderEnergy(a, 20); renderEnergy(b, 20);
@@ -93,7 +93,7 @@ int main() {
     }
     {   // v32.4 layer EQ: HP 1 kHz / 48 dB removes most of a low saw; a +12 dB band adds energy
         auto run = [](void (*setup)(SynthLayerConfig&)) {
-            NordSynthModule s; setupSaw(s);
+            StageSynthModule s; setupSaw(s);
             s.layers[0].cfg.cutoffHz = 12000.f;
             setup(s.layers[0].cfg);
             s.noteOn(36, 36, 100); renderEnergy(s, 20);

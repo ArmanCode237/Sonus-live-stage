@@ -10,7 +10,7 @@
 #include <cmath>
 #include <cstdio>
 #include <vector>
-using namespace NordDSP;
+using namespace SonusDSP;
 
 namespace {
 constexpr float SR = 48000.f;

@@ -585,6 +585,16 @@ struct PianoInstrument {
     uint8_t undampedFromKey = 90;
     ClaviaHeaderInfo headerInfo;
     SynthPresetParams defaultPreset;
+    // v35: the instrument's own amplitude envelope / low-pass filter as authored in an
+    // SF2 (volume-envelope + initialFilter generators) or SFZ (ampeg_* / cutoff opcodes).
+    // One representative value per layer (median over the regions). It initialises the
+    // Sound when the file is loaded without a saved Sound; a saved Sound still wins.
+    struct EmbeddedSound {
+        bool available = false;      // the file defines an amplitude envelope
+        float attackSec = 0.005f, decaySec = 3.5f, sustainLevel = 1.f, releaseSec = 0.35f;
+        bool hasFilter = false;      // the file defines a low-pass below ~18 kHz
+        float cutoffHz = 20000.f, resonanceQ = 0.707f;
+    } embeddedSound;
     std::vector<StrokeSample> strokes;
 };
 

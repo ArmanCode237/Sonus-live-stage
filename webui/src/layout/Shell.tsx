@@ -11,6 +11,7 @@ import { ClockSwitch, MissingSamples, PanicButton, SessionRecovery } from './Liv
 import { useMapAttrs } from '../store/mappings';
 import { MappingLayer } from '../ui/MappingLayer';
 import { BrandLogo } from '../ui/BrandLogo';
+import { KnobDefs } from '../ui/Knob';
 import { AboutModal } from './AboutModal';
 
 // Instruments (independent modules) first, then the tools used to build programs.
@@ -159,6 +160,7 @@ export function Shell() {
   const [about, setAbout] = useState(false);
   return (
     <div className="console">
+      <KnobDefs />
       <header className="console__head">
         <button type="button" className="brand" onClick={() => setAbout(true)} aria-label="Sonus Live Stage — acerca de"
           title="Acerca de Sonus Live Stage">

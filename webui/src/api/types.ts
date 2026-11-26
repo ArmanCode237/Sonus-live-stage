@@ -117,8 +117,12 @@ export interface LibraryItem {
 
 export interface SoundSummary {
   id: string; name: string; module: 'piano' | 'synth' | 'organ'; category?: string;
-  scope?: string; savedLayer?: number; defaultForSource?: boolean; instruments?: string[];
+  scope?: string; defaultForSource?: boolean; instruments?: string[];
   tags?: string[]; updated?: number;
+  /** Piano Sound: file name of its sample and SF2 preset (a Sound has no layer of its own). */
+  sourceFile?: string; sf2Preset?: number;
+  /** Pre-v28.2 snapshot of all five piano layers (not a Sound; kept loadable). */
+  legacy?: boolean;
 }
 
 export interface NamedPreset { name: string; favorite?: boolean; timestamp?: number }

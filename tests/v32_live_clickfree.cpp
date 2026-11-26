@@ -9,13 +9,13 @@
 //    nothing once silent; a re-enabled echo never replays stale audio;
 //  - modules switched OFF fade out, then are skipped;
 //  - the master limiter keeps the output below -0.3 dBFS.
-#include "modules/NordPianoEngine.h"
+#include "modules/StagePianoEngine.h"
 #include <cassert>
 #include <cmath>
 #include <cstdio>
 #include <memory>
 #include <vector>
-using namespace NordDSP;
+using namespace SonusDSP;
 
 static constexpr unsigned SR = 44100, BUF = 256;
 
@@ -34,7 +34,7 @@ static std::shared_ptr<PianoInstrument> sineBank(int id, double hz, float amp = 
 // Continuous capture: the curvature check spans block boundaries.
 struct Capture {
     std::vector<float> x;
-    void render(NordPianoEngine& e, int blocks) {
+    void render(StagePianoEngine& e, int blocks) {
         std::vector<float> b(BUF * 2);
         for (int i = 0; i < blocks; ++i) { e.render(b.data(), BUF); x.insert(x.end(), b.begin(), b.end()); }
     }
@@ -49,8 +49,8 @@ struct Capture {
     double peak(size_t from = 0) const { double m = 0; for (size_t i = from * 2; i < x.size(); ++i) m = std::max(m, double(std::abs(x[i]))); return m; }
 };
 
-static std::unique_ptr<NordPianoEngine> engine(int maxVoices = 128) {
-    auto e = std::make_unique<NordPianoEngine>();
+static std::unique_ptr<StagePianoEngine> engine(int maxVoices = 128) {
+    auto e = std::make_unique<StagePianoEngine>();
     e->setSampleRate(SR); e->setMaxVoices(maxVoices);
     for (int i = 0; i < PIANO_LAYER_COUNT; ++i) { e->setLayerInstrument(i, nullptr); e->setPianoLayerEnabled(i, false); }
     e->multiSynth_.synthEnabled = false;
@@ -59,7 +59,7 @@ static std::unique_ptr<NordPianoEngine> engine(int maxVoices = 128) {
     for (int r = 0; r < STUDIO_RACK_COUNT; ++r) for (int k = 0; k < STUDIO_SLOTS; ++k) e->setStudioSlot(r, k, 0, 0);
     return e;
 }
-static void pureOrgan(NordPianoEngine& e) {
+static void pureOrgan(StagePianoEngine& e) {
     auto& o = e.organModule_;
     o.organEnabled = true; o.organModel = 0; o.vibratoMode = 0; o.rotaryMix = 0; o.percussionEnabled = false;
     o.organDrive = 0; o.chorusEnabled = false;
@@ -89,13 +89,13 @@ int main() {
     }
 
     // Organ controls moved while a chord is held.
-    struct Move { const char* name; void (*apply)(NordOrganModule&); };
+    struct Move { const char* name; void (*apply)(StageOrganModule&); };
     const Move moves[] = {
-        {"drawbars 8' 8->0, 16' 0->8", [](NordOrganModule& o) { o.drawbars[2] = 0; o.drawbars[0] = 1; }},
-        {"organ volume 0.8 -> 0.2", [](NordOrganModule& o) { o.organVolume = .2f; }},
-        {"model B3 -> Combo", [](NordOrganModule& o) { o.organModel = 6; }},
-        {"drive 0 -> 0.6", [](NordOrganModule& o) { o.organDrive = .6f; }},
-        {"organ switched OFF", [](NordOrganModule& o) { o.organEnabled = false; }},
+        {"drawbars 8' 8->0, 16' 0->8", [](StageOrganModule& o) { o.drawbars[2] = 0; o.drawbars[0] = 1; }},
+        {"organ volume 0.8 -> 0.2", [](StageOrganModule& o) { o.organVolume = .2f; }},
+        {"model B3 -> Combo", [](StageOrganModule& o) { o.organModel = 6; }},
+        {"drive 0 -> 0.6", [](StageOrganModule& o) { o.organDrive = .6f; }},
+        {"organ switched OFF", [](StageOrganModule& o) { o.organEnabled = false; }},
     };
     for (const auto& m : moves) {
         auto e = engine(); pureOrgan(*e);

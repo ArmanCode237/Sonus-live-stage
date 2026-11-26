@@ -239,10 +239,7 @@ void StageApp::registerLibraryRoutes() {
                 if(BankLoader::rebindNpnoCache(oldFile,newFile))++reused;
                 else ++needsRebuild;
             }else if(ext==".sf2"){
-                bool any=DecodedSampleCache::rebindRelocated(oldFile,newFile,-1);
-                for(int i=0;i<1024;++i)
-                    if(DecodedSampleCache::rebindRelocated(oldFile,newFile,i))any=true;
-                if(any)++reused;else ++needsRebuild;
+                // v35: SF2 has no decoded cache (read directly from the mapped bank).
             }else if(DecodedSampleCache::supports(newFile)){
                 if(DecodedSampleCache::rebindRelocated(oldFile,newFile))++reused;
                 else ++needsRebuild;

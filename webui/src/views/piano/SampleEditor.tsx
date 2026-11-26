@@ -101,7 +101,7 @@ function Sounds({ layer }: { layer: number }) {
   const [name, setName] = useState('');
   const [error, setError] = useState('');
   const reload = useCallback(() => {
-    api.sounds('piano').then(r => setSounds(r.sounds.filter(s => s.scope === 'layer'))).catch(e => setError((e as Error).message));
+    api.sounds('piano').then(r => setSounds(r.sounds.filter(s => s.scope === 'layer' && !s.legacy))).catch(e => setError((e as Error).message));
   }, []);
   useEffect(reload, [reload]);
   const save = async () => {
@@ -112,11 +112,11 @@ function Sounds({ layer }: { layer: number }) {
   return (
     <div className="sounds">
       <form className="row" onSubmit={e => { e.preventDefault(); void save(); }}>
-        <input className="input" placeholder={`Guardar L${layer + 1} como Sound…`} maxLength={64} value={name} onChange={e => setName(e.target.value)} aria-label="Nombre del Sound" />
+        <input className="input" placeholder={`Guardar L${layer + 1} como sonido nuevo…`} maxLength={64} value={name} onChange={e => setName(e.target.value)} aria-label="Nombre del sonido" />
         <Btn variant="primary" type="submit" disabled={!name.trim()}>GUARDAR</Btn>
       </form>
       {error && <Empty>{error}</Empty>}
-      {sounds && sounds.length === 0 && <Empty>Aún no hay Sounds de capa.</Empty>}
+      {sounds && sounds.length === 0 && <Empty>Aún no hay sonidos guardados.</Empty>}
       <ul className="list">
         {sounds?.map(s => (
           <li key={s.id} className="list__row">
@@ -131,10 +131,13 @@ function Sounds({ layer }: { layer: number }) {
   );
 }
 
-/** ● EDITADO for one piano layer Sound (settings, inserts, sends or Sound mappings not saved). */
-function SoundDirty({ layer }: { layer: number }) {
+/** ● VARIACIÓN: the layer differs from its Sound (settings, inserts, sends or Sound mappings).
+ *  The variation is kept by the Performance / Program; the Sound itself is unchanged. */
+function SoundDirty({ layer, hasSound }: { layer: number; hasSound: boolean }) {
   const dirty = useEngine(s => s?.soundDirty?.[layer] ?? false);
-  return dirty ? <span className="dirty-tag" title="Cambios sin guardar en el sonido de esta capa">● EDITADO</span> : null;
+  return dirty ? <span className="dirty-tag" title={hasSound
+    ? 'Esta capa es una variación de su sonido: se guarda con la performance o el programa. El sonido original no cambia hasta que uses GUARDAR SONIDO.'
+    : 'Ajustes sin guardar como sonido: se guardan con la performance o el programa.'}>● VARIACIÓN</span> : null;
 }
 
 /** Save the layer's Sound: overwrite the current one, or create a new one (optionally the sample's default). */
@@ -142,29 +145,31 @@ function SaveSoundDialog({ layer, current, onClose, onSaved }: {
   layer: number; current: SoundSummary | undefined; onClose: () => void; onSaved: () => void;
 }) {
   const [name, setName] = useState(current?.name ?? '');
+  // Without a Sound yet, the first one becomes the sample's own Sound (what the browser shows).
   const [asDefault, setAsDefault] = useState(!current);
   const overwrite = async () => {
     if (!current) return;
     if (await runAction(() => api.saveSound({ module: 'piano', layer, name: name.trim(), id: current.id }), `Sonido «${name.trim()}» actualizado`)) { onSaved(); onClose(); }
   };
   const saveNew = async () => {
-    const r = await runAction(() => api.saveSound({ module: 'piano', layer, name: name.trim(), variant: true }), `Sonido «${name.trim()}» creado`);
+    const r = await runAction(() => api.saveSound({ module: 'piano', layer, name: name.trim(), bindToSource: asDefault }), `Sonido «${name.trim()}» creado`);
     if (!r) return;
-    if (asDefault) await runAction(() => api.setDefaultSound(r.sound.id), 'Predeterminado para este sample');
     onSaved(); onClose();
   };
   return (
-    <Modal title={`GUARDAR SONIDO · L${layer + 1}`} onClose={onClose}>
+    <Modal title={`GUARDAR SONIDO · DESDE L${layer + 1}`} onClose={onClose}>
       <form className="form" onSubmit={e => { e.preventDefault(); if (name.trim()) void (current ? overwrite() : saveNew()); }}>
         <Field label="Nombre"><input className="input" autoFocus maxLength={64} value={name} onChange={e => setName(e.target.value)} aria-label="Nombre del sonido" /></Field>
-        <p className="hint">Guarda la configuración de la capa (amplitude, tone, voice/glide, mod wheel, sound EQ, inserts, envíos y mapeos de SONIDO).
-          El sonido predeterminado se carga automáticamente cada vez que abras este sample.</p>
-        <label className="mapping-menu__check"><input type="checkbox" checked={asDefault} onChange={e => setAsDefault(e.target.checked)} /> Predeterminado de este sample (al crear uno nuevo)</label>
+        <p className="hint">Un sonido es el sample con sus ajustes (amplitude, tone, voice/glide, mod wheel, sound EQ, inserts, envíos y mapeos de SONIDO).
+          No pertenece a ninguna capa: se puede cargar en cualquiera.</p>
+        {current && <p className="hint">Sobrescribir «{current.name}» no cambia las performances ni los programas que ya lo usan: cada uno conserva su copia.</p>}
+        <label className="mapping-menu__check"><input type="checkbox" checked={asDefault} onChange={e => setAsDefault(e.target.checked)} />
+          {' '}Sonido principal de este sample (el que aparece en el browser y se carga al abrir el sample)</label>
         <Row>
           <span className="grow" />
-          <Btn onClick={onClose}>CANCELAR</Btn>
-          <Btn disabled={!name.trim()} onClick={() => void saveNew()}>GUARDAR COMO NUEVO</Btn>
-          {current && <Btn variant="primary" type="submit" disabled={!name.trim()}>SOBRESCRIBIR «{current.name}»</Btn>}
+          <Btn plain onClick={onClose}>CANCELAR</Btn>
+          <Btn plain variant={current ? 'panel' : 'primary'} disabled={!name.trim()} onClick={() => void saveNew()}>GUARDAR COMO NUEVO</Btn>
+          {current && <Btn plain variant="primary" type="submit" disabled={!name.trim()}>SOBRESCRIBIR «{current.name}»</Btn>}
         </Row>
       </form>
     </Modal>
@@ -189,8 +194,8 @@ export function SampleEditor({ layer, onLayer }: { layer: number; onLayer: (l: n
   const p = `pianoSample${layer}`;
   return (
     <Panel title="SAMPLE EDITOR" className="sample-editor" actions={<>
-      <span className="sound-name" title="Sonido cargado en esta capa">{current ? `SONIDO: ${current.name}` : hasSample ? 'SIN SONIDO GUARDADO' : 'CAPA VACÍA'}</span>
-      <SoundDirty layer={layer} />
+      <span className="sound-name" title="Sonido cargado en esta capa">{current ? `SONIDO: ${current.name}` : hasSample ? 'AJUSTES DEL ARCHIVO' : 'CAPA VACÍA'}</span>
+      <SoundDirty layer={layer} hasSound={Boolean(current)} />
       <Btn small variant="primary" disabled={!hasSample} onClick={() => setSaving(true)} title="Guardar la configuración de esta capa como sonido">GUARDAR SONIDO</Btn>
       <Segmented label="Capa" options={Array.from({ length: PIANO_LAYER_COUNT }, (_, i) => `L${i + 1}`)} value={layer} onChange={onLayer} />
     </>}>

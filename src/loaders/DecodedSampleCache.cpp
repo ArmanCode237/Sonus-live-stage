@@ -211,6 +211,43 @@ bool readInstrument(std::istream& f,PianoInstrument& p){
     normalizeLegacyFormatName(p.headerInfo.formatCategory);
     return p.zoneCount>=0&&p.zoneCount<=int(maxRecords)&&std::isfinite(p.memoryMB);
 }
+// v35 trailer after the PCM blocks: the instrument's embedded ENV / filter (SF2 / SFZ).
+// Appended rather than bumping cacheVersion, so NSMP caches stay valid; an SF2 / SFZ
+// cache written before v35 has no trailer and is decoded once more.
+// Layout: magic[8] · payload[26] · FNV-1a checksum of the payload (uint64). Like the PCM
+// blocks, a damaged trailer rejects the whole cache (the source is decoded again).
+constexpr char embeddedMagic[8]={'N','V','S','E','N','V','0','1'};
+std::string embeddedPayload(const PianoInstrument::EmbeddedSound& e){
+    std::ostringstream s(std::ios::binary);
+    const uint8_t flags=uint8_t((e.available?1:0)|(e.hasFilter?2:0));
+    write(s,flags);write(s,uint8_t(0));
+    write(s,e.attackSec);write(s,e.decaySec);write(s,e.sustainLevel);write(s,e.releaseSec);
+    write(s,e.cutoffHz);write(s,e.resonanceQ);
+    return s.str();
+}
+constexpr size_t embeddedPayloadSize=2+6*sizeof(float);
+void writeEmbedded(std::ostream& f,const PianoInstrument::EmbeddedSound& e){
+    const auto payload=embeddedPayload(e);
+    f.write(embeddedMagic,8);f.write(payload.data(),std::streamsize(payload.size()));
+    write(f,mix(14695981039346656037ULL,payload.data(),payload.size()));
+}
+enum class Trailer { Absent, Valid, Corrupt };
+Trailer readEmbedded(std::istream& f,PianoInstrument::EmbeddedSound& e){
+    char sign[8]{};
+    if(!f.read(sign,8))return Trailer::Absent;                       // pre-v35 cache: nothing after the PCM
+    if(std::memcmp(sign,embeddedMagic,8)!=0)return Trailer::Corrupt;
+    std::string payload(embeddedPayloadSize,'\0');uint64_t expected=0;
+    if(!f.read(&payload[0],std::streamsize(payload.size()))||!read(f,expected))return Trailer::Corrupt;
+    if(mix(14695981039346656037ULL,payload.data(),payload.size())!=expected)return Trailer::Corrupt;
+    if(f.peek()!=std::char_traits<char>::eof())return Trailer::Corrupt;   // trailing garbage
+    std::istringstream s(payload,std::ios::binary);
+    uint8_t flags=0,reserved=0;PianoInstrument::EmbeddedSound v;
+    read(s,flags);read(s,reserved);
+    read(s,v.attackSec);read(s,v.decaySec);read(s,v.sustainLevel);read(s,v.releaseSec);read(s,v.cutoffHz);read(s,v.resonanceQ);
+    for(float x:{v.attackSec,v.decaySec,v.sustainLevel,v.releaseSec,v.cutoffHz,v.resonanceQ})if(!std::isfinite(x))return Trailer::Corrupt;
+    v.available=(flags&1)!=0;v.hasFilter=(flags&2)!=0;
+    e=v;return Trailer::Valid;
+}
 fs::path uniqueTemp(const fs::path& dest){
     const auto stamp=std::chrono::steady_clock::now().time_since_epoch().count();
     const auto thread=std::hash<std::thread::id>{}(std::this_thread::get_id());
@@ -221,7 +258,10 @@ void DecodedSampleCache::setDirectory(const fs::path& directory){std::lock_guard
 fs::path DecodedSampleCache::directory(){std::lock_guard<std::mutex> g(directoryMutex);return chosenDirectory;}
 bool DecodedSampleCache::supports(const std::string& source){
     const auto ext=lower(fs::path(source).extension().string());
-    return ext==".nsmp"||ext==".nsmp3"||ext==".nsmp4"||ext==".sfz"||ext==".sf2";
+    // v35: SF2 is no longer cached. Its PCM16 is stored uncompressed in the bank and the
+    // loader memory-maps it, so decoding the chosen preset directly is faster than reading
+    // a cache copy (which also doubled the disk use of every SoundFont).
+    return ext==".nsmp"||ext==".nsmp3"||ext==".nsmp4"||ext==".sfz";
 }
 fs::path DecodedSampleCache::cachePath(const std::string& source,int sf2Preset){
     const std::string key=canonical(source)+"#preset="+std::to_string(sf2Preset);
@@ -248,6 +288,15 @@ bool DecodedSampleCache::load(const std::string& source,int sf2Preset,PianoInstr
     uint64_t actual=0;
     for(auto& stroke:stage.strokes)if(!readStroke(f,stroke,actual))return false;
     if(actual!=hdr.pcmBytes)return false;
+    switch(readEmbedded(f,stage.embeddedSound)){
+        case Trailer::Valid:break;
+        case Trailer::Corrupt:return false;
+        case Trailer::Absent:
+            // Pre-v35 cache: an SFZ is decoded again to read its envelope; NSMP has none.
+            if(lower(fs::path(source).extension().string())==".sfz")return false;
+            stage.embeddedSound={};
+            break;
+    }
     // Recheck source to avoid racing edits during the cache read.
     uint64_t after=0;if(!fingerprint(source,after)||after!=current)return false;
     stage.sourcePath=canonical(source);
@@ -270,6 +319,7 @@ bool DecodedSampleCache::store(const std::string& source,int sf2Preset,const Pia
     if(!f)return false;
     write(f,hdr);writeInstrument(f,bank);
     for(const auto& s:bank.strokes)writeStroke(f,s);
+    writeEmbedded(f,bank.embeddedSound);
     f.flush();const bool success=f.good();f.close();
     uint64_t after=0;
     if(!success||!fingerprint(source,after)||after!=stamp){fs::remove(temp,ec);return false;}

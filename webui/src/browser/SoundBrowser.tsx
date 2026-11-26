@@ -31,11 +31,13 @@ const SCOPE: Record<BrowserModule, Record<Scope, { facet: string; badge: string;
     layer: { facet: 'SOLO UNA CAPA', badge: 'CAPA', title: 'VOZ PARA UNA CAPA',
       text: 'Solo cambia la capa elegida. Las otras capas, las macros y los efectos no cambian.' },
   },
+  // A piano Sound has no layer of its own: it is a sample + its settings and goes into the layer
+  // chosen here. A Performance is the five layers (each a Sound or a variation of one).
   piano: {
-    module: { facet: 'PERFORMANCE', badge: 'L1–L5', title: 'PERFORMANCE COMPLETA',
-      text: 'Reemplaza las 5 capas del piano con su configuración guardada.' },
-    layer: { facet: 'SOLO UNA CAPA', badge: 'CAPA', title: 'INSTRUMENTO PARA UNA CAPA',
-      text: 'Solo cambia la capa elegida. Las otras capas no cambian.' },
+    module: { facet: 'PERFORMANCES', badge: 'PERFORMANCE', title: 'PERFORMANCE',
+      text: 'Las 5 capas del piano, cada una con su sonido y sus ajustes (zona, nivel, transposición). Reemplaza las 5 capas.' },
+    layer: { facet: 'SONIDOS', badge: 'SONIDO', title: 'SONIDO',
+      text: 'Un sample con sus ajustes (envolvente, filtro, EQ, efectos). Se carga en la capa que elijas; las demás capas no cambian.' },
   },
   organ: {
     module: { facet: 'REGISTRO', badge: 'ÓRGANO', title: 'REGISTRO COMPLETO', text: 'Reemplaza el registro del órgano.' },
@@ -223,8 +225,9 @@ export function SoundBrowser({ module, title, provider, layer = 0, onClose, extr
                   <span className="sb__name">{r.item.name}</span>
                   {prefs.view !== 'cards' && r.item.tags.slice(0, 3).map(t => <span key={t} className="sb__tag">#{t}</span>)}
                   <span className={`sb__origin sb__origin--${r.item.origin}`}>{ORIGIN_LABEL[r.item.origin]}</span>
+                  {/* Piano: every row is a Sound, so only Performances are badged. */}
                   {mixedScopes && (scopeOf(r.item) === 'layer'
-                    ? <span className="sb__scope sb__scope--layer" title={scopeText.layer.text}>→ {scopeText.layer.badge} {layers[target]}</span>
+                    ? module !== 'piano' && <span className="sb__scope sb__scope--layer" title={scopeText.layer.text}>→ {scopeText.layer.badge} {layers[target]}</span>
                     : <span className="sb__scope sb__scope--module" title={scopeText.module.text}>{scopeText.module.badge}</span>)}
                   <span className="sb__detail">{busy === r.item.key ? 'CARGANDO…' : r.item.detail}</span>
                 </div>
@@ -302,7 +305,7 @@ function Details({ item, module, layers, scope, target, setTarget, busy, onLoad,
         <p>{scope.text}</p>
         {item.scopeNote && <p>{item.scopeNote}</p>}
         {item.needsLayer && layers.length > 0 && (
-          <div className="sb__target"><span>CAPA DESTINO</span>
+          <div className="sb__target"><span>{module === 'piano' ? 'CARGAR EN LA CAPA' : 'CAPA DESTINO'}</span>
             <Segmented label="Capa destino" options={layers} value={target} onChange={setTarget} /></div>
         )}
       </div>
