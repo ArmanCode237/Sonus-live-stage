@@ -10,10 +10,13 @@ function Stepper({ id, label, min, max }: { id: string; label: string; min: numb
   return (
     <div className="stepper" role="group" aria-label={label}>
       <span className="stepper__label">{label}</span>
-      <div className="stepper__controls">
-        <button type="button" className="btn btn--sm" aria-label={`${label} −`} disabled={v <= min} onClick={() => set(v - 1)}>◀</button>
-        <output className="stepper__value">{v > 0 ? `+${v}` : v}</output>
-        <button type="button" className="btn btn--sm" aria-label={`${label} +`} disabled={v >= max} onClick={() => set(v + 1)}>▶</button>
+      {/* One hardware rocker: − key · value window · + key (the window shows when it is not 0). */}
+      <div className="stepper__controls stepper__rocker">
+        <button type="button" className="stepper__key stepper__key--down" aria-label={`${label} −`} disabled={v <= min} onClick={() => set(v - 1)}>
+          <span aria-hidden="true">−</span></button>
+        <output className={`stepper__value${v !== 0 ? ' is-shifted' : ''}`}>{v > 0 ? `+${v}` : v}</output>
+        <button type="button" className="stepper__key stepper__key--up" aria-label={`${label} +`} disabled={v >= max} onClick={() => set(v + 1)}>
+          <span aria-hidden="true">+</span></button>
       </div>
     </div>
   );
@@ -42,8 +45,8 @@ export function MasterSection() {
       <div className="master__perf">
         <Stepper id="transpose" label="TRANSPOSE" min={-12} max={12} />
         <Stepper id="octave" label="OCTAVE SHIFT" min={-2} max={2} />
-        <ParamLedChoice id="touch" label="KB TOUCH" options={KEYBOARD_TOUCH} />
-        <ParamToggle id="softRelease" label="SOFT REL" small />
+        <div className="master__touch"><ParamLedChoice id="touch" label="KB TOUCH" options={KEYBOARD_TOUCH} /></div>
+        <div className="master__softrel"><ParamToggle id="softRelease" label="SOFT REL" small /></div>
       </div>
     </Panel>
   );

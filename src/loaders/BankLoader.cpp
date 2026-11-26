@@ -20,6 +20,7 @@
 #include "NsmpLoader.h"
 #include "Sf2Loader.h"
 #include "ReadOnlyFileBytes.h"
+#include "EmbeddedSound.h"
 
 namespace fs = std::filesystem;
 
@@ -1114,26 +1115,29 @@ bool BankLoader::loadWaveFile(const std::string& wavPath, StrokeSample& s) {
 
     // Reject malformed/oversized WAVs before allocation; 512 MiB per source limit.
     if(totalFrames>uint64_t(512)*1024*1024/(sizeof(float)*ch) || totalFrames>UINT32_MAX){drwav_uninit(&wav);return false;}
-    std::vector<float> pSampleData(totalFrames * ch);
-    uint64_t framesRead = drwav_read_pcm_frames_f32(&wav, totalFrames, pSampleData.data());
+    // v35: decode straight to PCM16 in bounded blocks (dr_wav converts 24/32-bit and
+    // float with clipping). No whole-file float buffer: about a third of the memory
+    // traffic, and 16-bit WAVs are copied bit-exact instead of being re-quantised.
+    s.pcmL.resize(size_t(totalFrames));
+    s.pcmR.resize(size_t(totalFrames));
+    constexpr uint64_t block=65536;
+    std::vector<int16_t> interleaved(size_t(block*ch));
+    uint64_t framesRead=0;
+    while(framesRead<totalFrames){
+        const uint64_t want=std::min(block,totalFrames-framesRead);
+        const uint64_t got=drwav_read_pcm_frames_s16(&wav,want,interleaved.data());
+        if(got==0)break;
+        int16_t* l=s.pcmL.data()+framesRead;int16_t* r=s.pcmR.data()+framesRead;
+        if(ch==1){for(uint64_t i=0;i<got;++i){l[i]=interleaved[size_t(i)];r[i]=l[i];}}
+        else for(uint64_t i=0;i<got;++i){l[i]=interleaved[size_t(i*ch)];r[i]=interleaved[size_t(i*ch+1)];}
+        framesRead+=got;
+        if(got<want)break;
+    }
     drwav_uninit(&wav);
     if (framesRead < 4) return false;
-
     s.frames = static_cast<uint32_t>(framesRead);
-    s.pcmL.resize(framesRead);
-    s.pcmR.resize(framesRead);
-
-    if (ch == 1) {
-        for(size_t i=0;i<framesRead;++i){
-            const auto q=static_cast<int16_t>(std::lrint(std::clamp(pSampleData[i],-1.f,1.f)*32767.f));
-            s.pcmL[i]=q;s.pcmR[i]=q;
-        }
-    } else {
-        for (size_t i = 0; i < framesRead; ++i) {
-            s.pcmL[i] = static_cast<int16_t>(std::lrint(std::clamp(pSampleData[i*ch],-1.f,1.f)*32767.f));
-            s.pcmR[i] = static_cast<int16_t>(std::lrint(std::clamp(pSampleData[i*ch+1],-1.f,1.f)*32767.f));
-        }
-    }
+    s.pcmL.resize(size_t(framesRead));
+    s.pcmR.resize(size_t(framesRead));
     // This WAV helper currently serves SFZ regions. Loop metadata is applied
     // by the SFZ importer, so do not modify an explicit one-shot or factory
     // loop by inventing a piano-style splice here.
@@ -1146,7 +1150,8 @@ void BankLoader::loadWavesInParallel(std::vector<StrokeSample>& strokes, const s
     const size_t total = strokes.size();
     if (total == 0) return;
 
-    unsigned int numThreads = std::clamp(std::thread::hardware_concurrency(), 1u, 4u);
+    // v35: up to 8 readers (WAV decoding is I/O + memcpy bound; SSDs serve them in parallel).
+    unsigned int numThreads = std::clamp(std::thread::hardware_concurrency(), 1u, 8u);
     numThreads = std::min<unsigned int>(numThreads, static_cast<unsigned int>(total));
 
     std::atomic<size_t> nextIndex{0};
@@ -1217,6 +1222,9 @@ bool BankLoader::loadFromSfz(const std::string& sfzFilePath, PianoInstrument& ou
     std::vector<std::string> paths;
     std::vector<int64_t> loopStart,loopEnd,offsets;
     std::vector<bool> regionLoop;
+    // v35: the instrument's own amplitude envelope / filter (ampeg_*, cutoff, resonance).
+    std::vector<float> envA,envD,envS,envR,envFc,envQ;
+    EmbeddedAuthored envAuthored;
     auto combine=[&](){Opcodes merged=control;for(const auto& level:{global,master,group,region})
         for(const auto& kv:level)merged[kv.first]=kv.second;return merged;};
     auto submit=[&](){
@@ -1255,6 +1263,19 @@ bool BankLoader::loadFromSfz(const std::string& sfzFilePath, PianoInstrument& ou
         if(ls>=0 && le>ls)looping=true;
         if(o.count("loop_mode")&&(o.at("loop_mode")=="no_loop"||o.at("loop_mode")=="one_shot"))looping=false;
         s.loop.hasLoop=looping;
+        envAuthored.attack|=o.count("ampeg_attack")>0;envAuthored.decay|=o.count("ampeg_decay")>0;
+        envAuthored.sustain|=o.count("ampeg_sustain")>0;envAuthored.release|=o.count("ampeg_release")>0;
+        // SFZ 1 defaults: attack 0, decay 0, sustain 100 %, release 0.001 s (the layer ENV has no hold stage).
+        envA.push_back(float(std::clamp(number(o,"ampeg_attack",0),0.,100.)));
+        envD.push_back(float(std::clamp(number(o,"ampeg_decay",0),0.,100.)));
+        envS.push_back(float(std::clamp(number(o,"ampeg_sustain",100),0.,100.)/100.));
+        envR.push_back(float(std::clamp(number(o,"ampeg_release",0.001),0.,100.)));
+        {   // Only low-pass types map onto the layer filter.
+            const auto type=o.count("fil_type")?o.at("fil_type"):std::string("lpf_2p");
+            const bool lowPass=type.rfind("lpf",0)==0;
+            envFc.push_back(lowPass&&o.count("cutoff")?float(std::clamp(number(o,"cutoff",20000),20.,20000.)):20000.f);
+            envQ.push_back(float(std::clamp(number(o,"resonance",0),0.,40.)));
+        }
         strokes.push_back(std::move(s));paths.push_back(wav.string());
         loopStart.push_back(ls);loopEnd.push_back(le);
         offsets.push_back(std::max<int64_t>(0,int64_t(number(o,"offset",0))));
@@ -1327,6 +1348,7 @@ bool BankLoader::loadFromSfz(const std::string& sfzFilePath, PianoInstrument& ou
     outInstrument.name=sfzPath.stem().string();
     outInstrument.formatType="SFZ (PCM WAV)";
     outInstrument.sourcePath=sfzPath.string();
+    outInstrument.embeddedSound=summariseEmbeddedSound(envAuthored,envA,envD,envS,envR,envFc,envQ,EmbeddedTimeScale::Sfz);
     outInstrument.zoneCount=static_cast<int>(outInstrument.strokes.size());
     size_t bytes=0;for(const auto& st:outInstrument.strokes)bytes+=(st.pcmL.size()+st.pcmR.size())*sizeof(int16_t);
     outInstrument.memoryMB=double(bytes)/(1024.0*1024.0);

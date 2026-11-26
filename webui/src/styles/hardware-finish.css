@@ -1,0 +1,151 @@
+/* LIVE STAGE — HARDWARE FINISH v35
+   1. Brushed aluminium: chassis, header and section panels (CSS + inline SVG noise, no images).
+   2. Knobs with the same materials as the hardware buttons (metal rim, rubber skirt, convex cap).
+   3. PERFORM · MASTER performance row: TRANSPOSE / OCTAVE rockers, KB TOUCH selector, SOFT REL.
+   Only appearance: no parameter, handler or layout-size logic changes. */
+
+/* ---------- 1. brushed aluminium ---------- */
+:root {
+  /* Fractal noise stretched along X (low X frequency, high Y frequency) = horizontal brush grain. */
+  --alu-grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='256'%3E%3Cfilter id='b' x='0' y='0'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.0035 .95' numOctaves='3' seed='7' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23b)'/%3E%3C/svg%3E");
+  /* Fine machining lines (every 2-3 px) on top of the grain. */
+  --alu-lines: repeating-linear-gradient(0deg, #ffffff07 0 1px, transparent 1px 2px, #0000000a 2px 3px);
+  /* Wide anisotropic sheen: brushed metal catches light in soft vertical bands. */
+  --alu-sheen: linear-gradient(90deg, #ffffff00 0%, #ffffff0d 18%, #ffffff00 34%, #ffffff09 58%, #ffffff00 76%, #ffffff0b 92%, #ffffff00 100%);
+  --alu-grain-opacity: .16;
+}
+:root[data-theme="studio"] { --alu-grain-opacity: .12; }
+
+/* Anodised (coloured) chassis and header: the grain sits on top of the enamel colour. */
+.console { position: relative; isolation: isolate; }
+.console::before {
+  content: ""; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  background: var(--alu-lines), var(--alu-sheen), var(--alu-grain) 0 0 / 512px 256px;
+  opacity: var(--alu-grain-opacity); mix-blend-mode: overlay;
+}
+.console__head {
+  background: var(--alu-lines), var(--alu-sheen), var(--head-bg);
+  box-shadow: inset 0 1px 0 #ffffff2e, inset 0 -1px 0 #0000004d, 0 2px 6px #0000004d;
+}
+
+/* Section panels: dark anodised brushed aluminium with a bevelled edge. */
+.panel--section, .panel--chassis, .rack-eq, .rack-slot:not([data-fx]), .rack-slot[data-fx="empty"], .rack-sends {
+  background:
+    var(--alu-lines),
+    var(--alu-sheen),
+    linear-gradient(180deg, #ffffff0f 0%, transparent 9%, transparent 88%, #0000002e 100%),
+    var(--alu-grain) 0 0 / 512px 256px,
+    linear-gradient(160deg, var(--section-hi) 0%, var(--section) 22%, var(--section-lo) 100%);
+  background-blend-mode: normal, normal, normal, soft-light, normal;
+  box-shadow: inset 0 1px 0 #ffffff1c, inset 1px 0 0 #ffffff0a, inset 0 -1px 0 #00000059, var(--panel-shadow);
+}
+/* Editor cards (fieldset.group): the same metal, a shade deeper than the panels, so a card
+   inside a panel still reads as a separate plate and cards on the chassis are no longer red-tinted. */
+.group {
+  background:
+    var(--alu-lines),
+    var(--alu-sheen),
+    var(--alu-grain) 0 0 / 512px 256px,
+    linear-gradient(165deg, var(--section) 0%, var(--section-lo) 60%, color-mix(in srgb, var(--section-lo) 80%, #000) 100%);
+  background-blend-mode: normal, normal, soft-light, normal;
+  border-color: color-mix(in srgb, var(--panel-edge) 70%, var(--line));
+  box-shadow: inset 0 1px 0 #ffffff14, inset 0 -1px 0 #0000004d, 0 2px 6px #0000004d;
+}
+/* Raised strips inside the panels (mixer channels, layer rows) get the same metal, lighter. */
+.view--main .mix__strip {
+  background: var(--alu-lines), linear-gradient(180deg, #ffffff0c, #00000014), var(--alu-grain) 0 0 / 512px 256px, var(--strip);
+  background-blend-mode: normal, normal, soft-light, normal;
+}
+
+/* ---------- 2. knobs: same materials as the hardware buttons ---------- */
+.knob-defs { position: absolute; width: 0; height: 0; overflow: hidden; pointer-events: none; }
+.knob__rim { fill: url(#knob-rim); stroke: #050708; stroke-width: .8; }
+.knob__skirt { fill: url(#knob-skirt); stroke: #000; stroke-width: 1; }
+.knob__grip { stroke: #3c464d; stroke-width: 1.5; opacity: .9; }
+.knob__cap { fill: url(#knob-cap); stroke: #0a0d0f; stroke-width: 1; }
+.knob__sheen { fill: url(#knob-sheen); pointer-events: none; }
+.knob__pointer { stroke: #f4f8fb; stroke-width: 3.2; filter: drop-shadow(0 0 1px #000); }
+.knob__svg { filter: drop-shadow(0 2px 0 #050709) drop-shadow(0 4px 5px #0009); }
+.knob__svg:hover .knob__rim { filter: brightness(1.18); }
+.knob__svg:hover .knob__skirt { stroke: #000; }
+.knob__svg:focus-visible .knob__rim { stroke: #fff; stroke-width: 1.6; }
+/* LED ring: unlit lamps are dark glass, lit lamps glow like the button LEDs. */
+.knob__dot { fill: color-mix(in srgb, var(--led) 18%, #0b0b0c); stroke: #000; stroke-width: .6; }
+.knob__dot.is-lit { fill: var(--led); stroke: color-mix(in srgb, var(--led) 60%, #fff); stroke-width: .4;
+  filter: drop-shadow(0 0 2.5px var(--led)); }
+
+/* ---------- 3. PERFORM · MASTER performance row ---------- */
+/* Four groups with one anatomy: label on top, control centred in a band of equal height. */
+.master .master__perf {
+  display: grid; grid-template-columns: auto auto minmax(0, 1fr) auto; align-items: stretch;
+  column-gap: 12px; padding: 8px 6px 4px; margin-top: 2px;
+  border-top: 1px solid #00000059; box-shadow: inset 0 1px 0 #ffffff0d;
+}
+.master .master__perf > * { display: flex; flex-direction: column; align-items: center; gap: 6px; min-width: 0; }
+.master .stepper__label, .master .led-choice__label, .master .master__softrel .hwbtn__label {
+  font: 800 10px/1 var(--font); letter-spacing: .12em; color: var(--label); text-shadow: 0 1px 1px #000b; white-space: nowrap;
+}
+.master .stepper__controls, .master .master__touch .led-choice, .master .master__softrel .btn { margin-block: auto; }
+
+/* TRANSPOSE / OCTAVE SHIFT: one rocker cap with an OLED value window. */
+.stepper__rocker {
+  display: inline-flex; align-items: stretch; gap: 0; height: 30px; padding: 0;
+  border: 1px solid #050708; border-radius: 6px;
+  background:
+    linear-gradient(90deg, #8e9ba322 0%, transparent 12%, transparent 88%, #00000080 100%),
+    linear-gradient(178deg, #505b61 0%, #242b30 13%, #101416 53%, #060809 90%, #182027 100%);
+  box-shadow: inset 0 1px 0 #f2f7f949, inset 0 -2px 0 #020304, 0 2px 0 #050709, 0 4px 7px #0009, 0 0 0 1px #6d839033;
+}
+.stepper__key {
+  flex: none; width: 30px; display: grid; place-items: center; padding: 0; cursor: pointer;
+  font: 700 17px/1 var(--font); color: #dce4e8; text-shadow: 0 1px 1px #000;
+  background: transparent; border: 0; border-radius: 5px 0 0 5px; transition: background .1s, color .1s, transform .08s;
+}
+.stepper__key--up { border-radius: 0 5px 5px 0; }
+.stepper__key:hover:not(:disabled) { color: #fff; background: #ffffff12; }
+.stepper__key:active:not(:disabled) { background: #00000059; box-shadow: inset 0 2px 3px #000c; }
+.stepper__key:active:not(:disabled) span { display: inline-block; transform: translateY(1px); }
+.stepper__key:disabled { color: #5d676d; cursor: default; }
+.stepper__key:focus-visible { outline: 2px solid var(--focus-ring); outline-offset: -2px; }
+.stepper__rocker .stepper__value {
+  align-self: center; min-width: 40px; height: 20px; padding: 0 6px; box-sizing: border-box;
+  display: grid; place-items: center; font: 700 12px/1 var(--display); color: var(--oled-dim);
+  background: #000; border: 1px solid #000; border-radius: 3px;
+  box-shadow: inset 0 1px 3px #000, 0 0 0 1px #ffffff14;
+}
+.stepper__rocker .stepper__value.is-shifted { color: var(--amber); text-shadow: 0 0 6px color-mix(in srgb, var(--amber) 55%, transparent); }
+
+/* KB TOUCH: label on top, then [cycle key | three stacked LEDs], like a hardware selector. */
+.master .master__touch .led-choice {
+  display: grid; grid-template-columns: auto auto; grid-template-areas: "key list"; align-items: center; column-gap: 9px;
+}
+.master .master__touch .led-choice__label { display: none; }
+.master .master__touch::before {
+  content: "KB TOUCH"; font: 800 10px/1 var(--font); letter-spacing: .12em; color: var(--label); text-shadow: 0 1px 1px #000b;
+}
+.master .master__touch .rubber {
+  grid-area: key; width: 40px; height: 22px; min-height: 0; border-radius: 5px; border: 1px solid #050708;
+  background:
+    linear-gradient(90deg, #8e9ba322 0%, transparent 13%, transparent 86%, #00000080 100%),
+    linear-gradient(178deg, #505b61 0%, #242b30 13%, #101416 53%, #060809 90%, #182027 100%);
+  box-shadow: inset 0 1px 0 #f2f7f949, inset 0 -2px 0 #020304, 0 2px 0 #050709, 0 4px 7px #0009, 0 0 0 1px #6d839033;
+}
+.master .master__touch .rubber:hover { filter: brightness(1.15); }
+.master .master__touch .rubber:active { transform: translateY(1px); box-shadow: inset 0 1px 0 #f2f7f930, 0 1px 0 #050709; }
+.master .master__touch .led-choice__list {
+  grid-area: list; display: flex; flex-direction: column; flex-wrap: nowrap; align-items: flex-start; gap: 1px;
+  padding: 3px 7px; border-radius: 4px; background: #00000040; box-shadow: inset 0 1px 2px #0009, 0 1px 0 #ffffff0d;
+}
+.master .master__touch .led-choice__item { min-height: 12px; padding: 0; font: 800 9.5px/1 var(--font); letter-spacing: .1em; color: var(--muted); }
+.master .master__touch .led-choice__item.is-on { color: #fff; }
+.master .master__touch .led-choice__item .led { width: 6px; height: 6px; }
+
+/* SOFT REL: label above its key, like the other three groups. */
+.master .master__softrel .btn.hwbtn { flex-direction: column-reverse; gap: 6px; margin-block: 0; flex: 1 1 auto; justify-content: space-between; }
+.master .master__softrel .btn.hwbtn .hwbtn__cap { margin-block: auto; }
+
+@container console (max-width: 1440px) {
+  .master .master__perf { column-gap: 8px; }
+  .stepper__key { width: 26px; }
+  .stepper__rocker .stepper__value { min-width: 34px; }
+}

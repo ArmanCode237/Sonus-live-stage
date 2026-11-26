@@ -2,13 +2,13 @@
 #undef NDEBUG
 // v32.2 DX7 layer (msfa): factory cartridges parse, a DX7 layer sounds through the
 // synth module, notes release and free their slot, voices survive the JSON hex form.
-#include "modules/NordSynthModule.h"
+#include "modules/StageSynthModule.h"
 #include <cassert>
 #include <cmath>
 #include <cstdio>
 #include <fstream>
 #include <iterator>
-using namespace NordDSP;
+using namespace SonusDSP;
 
 int main(int argc, char** argv) {
     assert(argc > 1 && "pass the factory cartridge folder");
@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
     Dx7Voice back{};
     assert(dx7FromHex(dx7ToHex(voices[5]), back) && back == voices[5]);
 
-    NordSynthModule synth;
+    StageSynthModule synth;
     synth.init(44100.f);
     synth.synthEnabled = true;
     synth.synthMasterVol = .8f;
@@ -52,7 +52,7 @@ int main(int argc, char** argv) {
 
     // LA32 synthesized partial (type 7): the cutoff shapes the waveform like the chip.
     auto brightness = [&](float cutoffHz) {
-        NordSynthModule la;
+        StageSynthModule la;
         la.init(44100.f); la.synthEnabled = true; la.synthMasterVol = .8f;
         for (auto& l : la.layers) l.cfg.enabled = false;
         auto& c = la.layers[0].cfg;

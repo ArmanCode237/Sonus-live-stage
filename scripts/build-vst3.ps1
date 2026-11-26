@@ -65,7 +65,7 @@ if (-not (Test-Path (Join-Path $root 'ui\app\index.html'))) {
 }
 
 Step 'Configurando (Visual Studio 17 2022, x64, JUCE 8 se descarga la primera vez)'
-cmake -S . -B $build -G 'Visual Studio 17 2022' -A x64 -DSTAGE_BUILD_PLUGIN=ON -DSTAGE_BUILD_AUDIO_PROBE=OFF -DSTAGE_ENABLE_ASIO=OFF -DSTAGE_DEMO=$demoFlag
+cmake -S . -B $build -G 'Visual Studio 17 2022' -A x64 -DSTAGE_BUILD_PLUGIN=ON -DSTAGE_BUILD_AUDIO_PROBE=OFF -DSTAGE_ENABLE_ASIO=OFF "-DSTAGE_DEMO=$demoFlag"   # quoted: PS 5.1 passes an unquoted -X=$var literally
 if ($LASTEXITCODE) { throw 'La configuración de CMake falló' }
 
 Step 'Compilando el plug-in VST3 (Release)'

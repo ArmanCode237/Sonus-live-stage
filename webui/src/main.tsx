@@ -12,6 +12,7 @@ import './styles/perform-polish.css';
 import './styles/stage-buttons.css';
 import './styles/synth-workspace.css';
 import './browser/browser.css';
+import './styles/hardware-finish.css';
 import './styles/viewport-guard.css';
 
 applyTheme();

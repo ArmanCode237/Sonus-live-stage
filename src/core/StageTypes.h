@@ -280,6 +280,14 @@ struct StudioSlotConfig {
                              // p16..23 are opt-in Shimmer v3 parameters.
                              .6458333f,.30f,.40f,.50f,.70f,.50f,.65f,0.f}};
 };
+// v35: Shimmer Atmosphere v5 (dsp/StageAtmosphericShimmer.h). A REVERB slot set to the
+// SHIMMER model must carry this version; shimmer slots stored by older engines are cleared
+// when a program / performance / preset is loaded, so the user configures them again.
+constexpr int SHIMMER_ENGINE_VERSION=5;
+constexpr int STUDIO_SLOT_MAX_VERSION=5;
+inline bool isShimmerSlot(const StudioSlotConfig& s){
+    return s.type==6 && int(s.p[5]*3.999f)==3;
+}
 struct StudioRackConfig {
     bool eqEnabled=true;
     std::array<float,5> eqDb{{0.f,0.f,0.f,0.f,0.f}};
@@ -585,6 +593,16 @@ struct PianoInstrument {
     uint8_t undampedFromKey = 90;
     ClaviaHeaderInfo headerInfo;
     SynthPresetParams defaultPreset;
+    // v35: the instrument's own amplitude envelope / low-pass filter as authored in an
+    // SF2 (volume-envelope + initialFilter generators) or SFZ (ampeg_* / cutoff opcodes).
+    // One representative value per layer (median over the regions). It initialises the
+    // Sound when the file is loaded without a saved Sound; a saved Sound still wins.
+    struct EmbeddedSound {
+        bool available = false;      // the file defines an amplitude envelope
+        float attackSec = 0.005f, decaySec = 3.5f, sustainLevel = 1.f, releaseSec = 0.35f;
+        bool hasFilter = false;      // the file defines a low-pass below ~18 kHz
+        float cutoffHz = 20000.f, resonanceQ = 0.707f;
+    } embeddedSound;
     std::vector<StrokeSample> strokes;
 };
 

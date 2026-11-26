@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
-project(SonusLiveStage VERSION 1.1.4 LANGUAGES C CXX)
+project(SonusLiveStage VERSION 1.2.1 LANGUAGES C CXX)
 if(WIN32)
     enable_language(RC)   # application icon (resources/SonusLiveStage.rc)
 endif()
@@ -370,7 +370,7 @@ if(STAGE_BUILD_SAMPLE_TESTS)
   # BLOOM, stereo coherence, early reflections, stability and silence CPU).
   add_executable(LiveStageShimmerAtmosphereCheck tests/v28_2_9_shimmer_fix.cpp)
   target_include_directories(LiveStageShimmerAtmosphereCheck PRIVATE src src/core src/dsp)
-  add_test(NAME shimmer_atmosphere_v4 COMMAND LiveStageShimmerAtmosphereCheck)
+  add_test(NAME shimmer_atmosphere_v5 COMMAND LiveStageShimmerAtmosphereCheck)
 
   # v26: regression for every Shimmer control and sustained FX feedback.
   add_executable(LiveStageShimmerControlsCheck tests/v26_cold_load_shimmer.cpp)
@@ -431,13 +431,13 @@ if(STAGE_BUILD_SAMPLE_TESTS)
     src/app/AudioCallbacks.cpp
     src/app/MidiInput.cpp
     src/app/AudioBackend.cpp
-    src/app/RtAudioBackend.cpp
+    src/app/RtAudioBackend.cpp src/app/UserDataPaths.cpp
     src/core/WorkstationHost.cpp
     src/control/ControlMappings.cpp
     src/control/ParamValueReader.cpp src/modules/StagePianoEngine.cpp
     src/modules/StageSynthModule.cpp src/modules/StageOrganModule.cpp)
   target_include_directories(LiveStageLiveSafetyCheck PRIVATE src src/core src/dsp src/modules third_party)
-  target_link_libraries(LiveStageLiveSafetyCheck PRIVATE nlohmann_json::nlohmann_json rtaudio)
+  target_link_libraries(LiveStageLiveSafetyCheck PRIVATE nlohmann_json::nlohmann_json rtaudio rtmidi)
   add_test(NAME live_safety_v324 COMMAND LiveStageLiveSafetyCheck)
 endif()
 

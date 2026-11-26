@@ -51,9 +51,9 @@ function Sources() {
         <Segmented label="Tipo de fuente" options={['CARPETA', 'ARCHIVO']} value={type === 'root' ? 0 : 1} onChange={i => setType(i === 0 ? 'root' : 'file')} />
         <input className="input grow" placeholder={type === 'root' ? 'Ruta absoluta de una carpeta, p. ej. D:\\Samples' : 'Ruta absoluta de un .npno, .nsmp, .sf2 o .sfz'}
           value={path} onChange={e => setPath(e.target.value)} aria-label="Ruta de la fuente" />
-        {nativePicker && <Btn type="button" disabled={pickerBusy} onClick={() => void pick(type === 'root' ? 'folder' : 'file', setPath)}
+        {nativePicker && <Btn plain type="button" disabled={pickerBusy} onClick={() => void pick(type === 'root' ? 'folder' : 'file', setPath)}
           title={type === 'root' ? 'Seleccionar carpeta de samples' : 'Seleccionar archivo de samples'}>EXPLORAR…</Btn>}
-        <Btn variant="primary" type="submit" disabled={!path.trim()}>AÑADIR</Btn>
+        <Btn plain variant="primary" type="submit" disabled={!path.trim()}>AÑADIR</Btn>
       </form>
       <ul className="list">
         {sources.map(([kind, p]) => (
@@ -72,23 +72,37 @@ function Sources() {
       </div>
       {progress?.lastError && <p className="hint hint--error">{progress.lastError}</p>}
       <Row>
-        <Btn variant="primary" disabled={running} onClick={() => runAction(() => api.sampleLibraryPrepare(), 'Preparación iniciada').then(() => load())}>PREPARAR BIBLIOTECA</Btn>
-        <Btn disabled={!running} onClick={() => runAction(() => api.sampleLibraryCancel(), 'Cancelado').then(() => load())}>CANCELAR</Btn>
+        <Btn plain variant="primary" disabled={running} onClick={() => runAction(() => api.sampleLibraryPrepare(), 'Preparación iniciada').then(() => load())}>PREPARAR BIBLIOTECA</Btn>
+        <Btn plain disabled={!running} onClick={() => runAction(() => api.sampleLibraryCancel(), 'Cancelado').then(() => load())}>CANCELAR</Btn>
       </Row>
       <form className="row" onSubmit={e => { e.preventDefault(); if (cacheDir?.trim()) void runAction(() => api.sampleLibraryCacheDir(cacheDir.trim()), 'Carpeta de caché actualizada').then(() => { setCacheDir(null); void load(); }); }}>
         <Field label="Caché PCM16">
-          <input className="input" value={cacheDir ?? status?.configuration.cacheDir ?? ''} onChange={e => setCacheDir(e.target.value)} />
+          <div className="path-field">
+            <input className="input" value={cacheDir ?? status?.configuration.cacheDir ?? ''} onChange={e => setCacheDir(e.target.value)} aria-label="Carpeta de la caché PCM16" />
+            {nativePicker && <Btn plain type="button" disabled={pickerBusy} onClick={() => void pick('folder', setCacheDir)} title="Seleccionar la carpeta de la caché">EXPLORAR…</Btn>}
+          </div>
         </Field>
-        {nativePicker && <Btn type="button" disabled={pickerBusy} onClick={() => void pick('folder', setCacheDir)}>EXPLORAR…</Btn>}
-        <Btn type="submit" disabled={cacheDir === null}>GUARDAR</Btn>
+        <Btn plain type="submit" disabled={cacheDir === null}>GUARDAR</Btn>
       </form>
       <details className="details">
         <summary>Reubicar una carpeta movida o renombrada</summary>
         <form className="form" onSubmit={e => { e.preventDefault(); void runAction(() => api.sampleLibraryRelocate(oldRoot.trim(), newRoot.trim()), 'Referencias reparadas'); }}>
-          <Field label="Carpeta anterior"><input className="input" value={oldRoot} onChange={e => setOldRoot(e.target.value)} placeholder="D:\Samples Antiguos" /></Field>
-          <Field label="Carpeta actual"><input className="input" value={newRoot} onChange={e => setNewRoot(e.target.value)} placeholder="D:\Samples Nuevos" /></Field>
-          {nativePicker && <Btn type="button" disabled={pickerBusy} onClick={() => void pick('folder', setNewRoot)}>EXPLORAR CARPETA…</Btn>}
-          <Btn variant="primary" type="submit" disabled={!oldRoot.trim() || !newRoot.trim() || running}>REPARAR REFERENCIAS</Btn>
+          {/* One EXPLORAR per path field. The previous folder may no longer exist: then type its path. */}
+          <Field label="Carpeta anterior">
+            <div className="path-field">
+              <input className="input" value={oldRoot} onChange={e => setOldRoot(e.target.value)} placeholder="D:\Samples Antiguos" aria-label="Carpeta anterior" />
+              {nativePicker && <Btn plain type="button" disabled={pickerBusy} onClick={() => void pick('folder', setOldRoot)}
+                title="Seleccionar la carpeta anterior (si ya no existe, escribe su ruta)">EXPLORAR…</Btn>}
+            </div>
+          </Field>
+          <Field label="Carpeta actual">
+            <div className="path-field">
+              <input className="input" value={newRoot} onChange={e => setNewRoot(e.target.value)} placeholder="D:\Samples Nuevos" aria-label="Carpeta actual" />
+              {nativePicker && <Btn plain type="button" disabled={pickerBusy} onClick={() => void pick('folder', setNewRoot)}
+                title="Seleccionar la carpeta donde están ahora los samples">EXPLORAR…</Btn>}
+            </div>
+          </Field>
+          <Row><Btn plain variant="primary" type="submit" disabled={!oldRoot.trim() || !newRoot.trim() || running}>REPARAR REFERENCIAS</Btn></Row>
         </form>
       </details>
     </Panel>
@@ -103,7 +117,10 @@ function SoundsManager() {
   const [error, setError] = useState('');
   const [name, setName] = useState('');
   const [category, setCategory] = useState('');
+  // Piano Sounds have no layer of their own: they load into the layer chosen here.
+  const [target, setTarget] = useState(0);
   const mod = MODULES[module];
+  const piano = mod === 'piano';
   const reload = useCallback(() => { api.sounds(mod).then(r => setSounds(r.sounds)).catch(e => setError((e as Error).message)); }, [mod]);
   useEffect(() => { setSounds(null); reload(); }, [reload]);
   const save = async () => {
@@ -112,25 +129,37 @@ function SoundsManager() {
   const act = async (fn: () => Promise<unknown>, msg: string) => { if (await runAction(fn, msg)) reload(); };
   return (
     <Panel title="SOUNDS" className="lib-sounds" actions={<Segmented label="Módulo" options={['PIANO', 'SYNTH', 'ORGAN']} value={module} onChange={setModule} />}>
-      <form className="row" onSubmit={e => { e.preventDefault(); if (name.trim()) void save(); }}>
-        <input className="input grow" placeholder={`Guardar ${mod.toUpperCase()} actual como Sound…`} maxLength={64} value={name} onChange={e => setName(e.target.value)} aria-label="Nombre del Sound" />
-        <input className="input" placeholder="Categoría" maxLength={64} value={category} onChange={e => setCategory(e.target.value)} aria-label="Categoría" />
-        <Btn variant="primary" type="submit" disabled={!name.trim()}>GUARDAR</Btn>
-      </form>
+      {piano ? (
+        <div className="row">
+          <p className="hint grow">Un sonido de piano es un sample con sus ajustes: se guarda desde el editor de la capa (GUARDAR SONIDO).
+            Las 5 capas juntas se guardan como Performance. ◆ = sonido principal del sample.</p>
+          <Segmented label="Cargar en la capa" options={['L1', 'L2', 'L3', 'L4', 'L5']} value={target} onChange={setTarget} />
+        </div>
+      ) : (
+        <form className="row" onSubmit={e => { e.preventDefault(); if (name.trim()) void save(); }}>
+          <input className="input grow" placeholder={`Guardar ${mod.toUpperCase()} actual como Sound…`} maxLength={64} value={name} onChange={e => setName(e.target.value)} aria-label="Nombre del Sound" />
+          <input className="input" placeholder="Categoría" maxLength={64} value={category} onChange={e => setCategory(e.target.value)} aria-label="Categoría" />
+          <Btn variant="primary" type="submit" disabled={!name.trim()}>GUARDAR</Btn>
+        </form>
+      )}
       {error && <Empty>{error}</Empty>}
-      {sounds && sounds.length === 0 && <Empty>No hay Sounds de {mod}.</Empty>}
+      {sounds && sounds.length === 0 && <Empty>No hay sonidos de {mod}.</Empty>}
       <ul className="list list--scroll">
-        {sounds?.map(s => (
+        {sounds?.map(s => {
+          const layerSound = piano && s.scope === 'layer' && !s.legacy;
+          return (
           <li key={s.id} className="list__row">
-            <button type="button" className="list__main" onClick={() => act(() => api.loadSound(s.id, s.scope === 'layer' ? s.savedLayer : undefined), `«${s.name}» cargado`)}>
+            <button type="button" className="list__main" title={layerSound ? `Cargar en L${target + 1}` : s.legacy ? 'Instantánea antigua de las 5 capas' : undefined}
+              onClick={() => act(() => api.loadSound(s.id, layerSound ? target : undefined), layerSound ? `«${s.name}» → L${target + 1}` : `«${s.name}» cargado`)}>
               <span>{s.defaultForSource ? '◆ ' : ''}{s.name}</span>
-              <span className="muted">{[s.category, s.scope === 'layer' ? `L${(s.savedLayer ?? 0) + 1}` : '', s.instruments?.[0]].filter(Boolean).join(' · ')}</span>
+              <span className="muted">{[s.legacy ? 'LEGADO · 5 CAPAS' : '', s.category, s.sourceFile ?? s.instruments?.[0]].filter(Boolean).join(' · ')}</span>
             </button>
-            {mod === 'piano' && <Btn small onClick={() => act(() => api.setDefaultSound(s.id), 'Sound por defecto del instrumento')} title="Usar al cargar este instrumento">DEFAULT</Btn>}
+            {layerSound && !s.defaultForSource && <Btn small onClick={() => act(() => api.setDefaultSound(s.id), 'Sonido principal del sample')} title="Hacerlo el sonido principal de su sample (el que muestra el browser)">PRINCIPAL</Btn>}
             <Btn small onClick={() => act(() => api.duplicateSound(s.id, `${s.name} copy`), 'Duplicado')}>DUP</Btn>
             <button type="button" className="icon-btn" aria-label={`Eliminar ${s.name}`} onClick={() => act(() => api.deleteSound(s.id), `«${s.name}» eliminado`)}>×</button>
           </li>
-        ))}
+          );
+        })}
       </ul>
     </Panel>
   );

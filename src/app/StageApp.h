@@ -245,6 +245,21 @@ private:
     /** A Sound's mappings written for another layer, rewritten for `layer`. */
     json retargetSoundMappings(const json& mappings, int layer);
     void clearAllSoundDirty(){ for(auto& d:soundDirty)d.store(false); }
+    // v35: per-layer "edited away from its Sound" flags travel with Performances and
+    // Programs, so a recalled variation never poses as the untouched Sound.
+    json soundEditedJson() const {
+        json a=json::array(); for(const auto& d:soundDirty)a.push_back(d.load()); return a;
+    }
+    void restoreSoundEdited(const json& flags){
+        for(size_t i=0;i<soundDirty.size();++i)
+            soundDirty[i].store(flags.is_array()&&i<flags.size()&&flags[i].is_boolean()&&flags[i].get<bool>());
+    }
+    // v35 one-time data repair (StageApp.cpp): Sounds no longer remember a layer, and
+    // Program / Performance Sound references are re-validated against their samples.
+    void migrateSoundsV35();
+    // v35: removes shimmer slots stored by the retired v1–v4 engines from the user's
+    // Programs, Performances and module presets (backup "<file>.before-shimmer-v5.bak").
+    void retireOldShimmersV35();
 
     // V17 modular presets: only the selected module and its own Studio rack.
     const std::string pianoPresetsPath = stageUserPresetFile("piano");

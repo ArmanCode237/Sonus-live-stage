@@ -133,8 +133,11 @@ export const api = {
 
   // ---- sounds (per-module snapshots referencing sample assets) -------------
   sounds: (module?: string) => get<{ sounds: SoundSummary[]; selected: Json }>(module ? `/api/sounds?module=${q(module)}` : '/api/sounds'),
-  saveSound: (body: { module: string; name: string; category?: string; layer?: number; id?: string; variant?: boolean }) =>
+  /** No `id` → always a new Sound (`bindToSource` makes it the sample's default; by default only
+   *  when the sample has none yet). With `id` → overwrite that Sound. Piano needs `layer`. */
+  saveSound: (body: { module: string; name: string; category?: string; layer?: number; id?: string; bindToSource?: boolean }) =>
     post<{ sound: SoundSummary }>('/api/sounds/save', body),
+  /** Piano Sounds go into the layer given here (they have no layer of their own). */
   loadSound: (id: string, layer?: number) => post<WithParams>('/api/sounds/load', layer === undefined ? { id } : { id, layer }, LOAD_TIMEOUT_MS),
   deleteSound: (id: string) => post('/api/sounds/delete', { id }),
   duplicateSound: (id: string, name: string) => post('/api/sounds/duplicate', { id, name }),

@@ -11,7 +11,7 @@
 .sound-bank__group { grid-area: group; }
 .sound-bank__nav { grid-area: nav; display: flex; gap: 4px; }
 .sound-bank__lcd { grid-area: lcd; }
-.sound-bank__name { font-size: clamp(14px, calc(var(--vh) * 2), 19px); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sound-bank__name { font-size: clamp(14px, calc(var(--dh) * 2), 19px); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .layers { display: flex; flex-direction: column; gap: calc(var(--u) * .55); min-height: 0; overflow: auto; flex: 1 1 auto; }
 .layers > .layer-row { flex: 1 1 0; max-height: calc(var(--ctl-h) * 2.1); }
 .layer-quick { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--gap); padding: 6px 8px 2px; border-top: 1px solid rgba(0,0,0,.35); }
@@ -28,7 +28,7 @@
 
 /* program display & pads */
 .program-lcd { display: grid; gap: 3px; }
-.program-lcd__name { font-size: clamp(20px, calc(var(--vh) * 3.4), 34px); font-weight: 700; letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.program-lcd__name { font-size: clamp(20px, calc(var(--dh) * 3.4), 34px); font-weight: 700; letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .program-lcd__modules { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: var(--fs-xs); color: var(--oled-dim); }
 .program-lcd__modules .is-on { color: var(--oled); }
 .program-lcd__status { font-size: var(--fs-xs); color: var(--oled-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-height: 1.3em; }
@@ -60,13 +60,13 @@
 /* ---------- MAIN modules ---------- */
 .mini-module .panel__body { gap: calc(var(--u) * .9); }
 .mini-lcd { display: grid; gap: 2px; }
-.mini-lcd__name { font-size: clamp(14px, calc(var(--vh) * 1.9), 19px); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mini-lcd__name { font-size: clamp(14px, calc(var(--dh) * 1.9), 19px); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mini-browser__bar { display: flex; align-items: center; gap: 4px; }
 .mini-browser__bar .select { max-width: 42%; }
 .mini-browser__list { flex: 1 1 0; min-height: calc(var(--ctl-h) * 2.6); }
 .mini-controls { display: flex; align-items: flex-end; gap: var(--gap); flex-wrap: wrap; }
 .mini-layers { display: flex; gap: 4px; margin-left: auto; align-self: center; }
-.mini-drawbars { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 3px; height: clamp(84px, calc(var(--vh) * 13), 150px); padding: 4px; background: #070708; border-radius: 4px; box-shadow: inset 0 2px 4px #000; }
+.mini-drawbars { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 3px; height: clamp(84px, calc(var(--dh) * 13), 150px); padding: 4px; background: #070708; border-radius: 4px; box-shadow: inset 0 2px 4px #000; }
 .mini-drawbars .fader__value { display: none; }
 .mini-drawbars .fader__label { font-size: calc(var(--fs-xs) * .85); }
 .mini-drawbars .fader--drawbar .fader__track { width: 16px; min-height: 30px; }
@@ -78,7 +78,7 @@
 .piano-left > .layer-mixer { flex: 0 0 auto; }
 .piano-right > .sample-editor { flex: 1 1 auto; }
 .piano-right > .piano-perf { flex: 0 0 26%; }
-.layer-mixer__strips { display: flex; align-items: stretch; gap: calc(var(--u) * 1.2); height: clamp(150px, calc(var(--vh) * 26), 260px); padding: 4px 6px; }
+.layer-mixer__strips { display: flex; align-items: stretch; gap: calc(var(--u) * 1.2); height: clamp(150px, calc(var(--dh) * 26), 260px); padding: 4px 6px; }
 .mixer-strip { display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 0; }
 .mixer-strip .fader { flex: 1 1 auto; }
 .mixer-strip .fader__label { color: #fff; }
@@ -98,7 +98,7 @@
 .view--synth { grid-template-columns: minmax(0, 1fr); }
 .patch-lcd { display: grid; gap: 3px; }
 .patch-lcd__top { display: flex; justify-content: space-between; font-size: var(--fs-xs); color: var(--lcd-dim); letter-spacing: .08em; }
-.patch-lcd__name { font-size: clamp(14px, calc(var(--vh) * 2.1), 21px); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.patch-lcd__name { font-size: clamp(14px, calc(var(--dh) * 2.1), 21px); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .synth-global .panel__body { padding-block: calc(var(--u) * .8); }
 .layer-select { display: flex; gap: 4px; }
 .layer-select__item { display: flex; align-items: center; gap: 5px; padding: 2px 4px 2px 6px; background: var(--inset); border: 1px solid var(--line); border-radius: 5px; }
@@ -171,6 +171,11 @@
   grid-template-areas: "sources sounds" "sources perf";
 }
 .lib-sources { grid-area: sources; }
+/* A path input with its own EXPLORAR button on the same line (one button per path field). */
+.path-field { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.path-field > .input { flex: 1 1 auto; min-width: 0; }
+.path-field > .btn { flex: none; }
+.lib-sources .row > .field { flex: 1 1 auto; min-width: 0; }
 .lib-sounds { grid-area: sounds; }
 .lib-perf { grid-area: perf; }
 .view--settings { display: flex; flex-direction: column; gap: 8px; min-height: 0; height: 100%; }

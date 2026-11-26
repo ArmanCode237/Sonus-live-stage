@@ -1,4 +1,6 @@
 #include "Sf2Loader.h"
+#include "ReadOnlyFileBytes.h"
+#include "EmbeddedSound.h"
 #include <algorithm>
 #include <atomic>
 #include <array>
@@ -22,12 +24,16 @@ std::string name(const uint8_t* p,size_t n){size_t i=0;while(i<n&&p[i])++i;retur
 bool tag(const uint8_t* p,const char* t){return std::memcmp(p,t,4)==0;}
 struct Chunk{size_t offset=0,length=0;};
 struct Data {
- Bytes bytes;std::map<std::string,Chunk> chunks;
+ // v35: the bank is memory-mapped (read-only) instead of copied into RAM. Only the
+ // pages of the chosen preset's samples are read from disk, so one preset of a big
+ // multi-preset bank loads in a fraction of the time and without a full-file copy.
+ struct View{const uint8_t* p=nullptr;size_t n=0;const uint8_t* data()const{return p;}size_t size()const{return n;}};
+ std::unique_ptr<ReadOnlyFileBytes> file;View bytes;std::map<std::string,Chunk> chunks;
  bool read(const std::string& path,std::string& error){
-  std::ifstream in(path,std::ios::binary|std::ios::ate);
-  if(!in){error="No se pudo abrir SF2";return false;}
-  auto len=in.tellg();if(len<12||len>std::streamoff(768)*1024*1024){error="SF2 inválido o demasiado grande (>768 MiB)";return false;}
-  bytes.resize(size_t(len));in.seekg(0);if(!in.read(reinterpret_cast<char*>(bytes.data()),len)){error="Lectura SF2 incompleta";return false;}
+  file=std::make_unique<ReadOnlyFileBytes>(path);
+  if(!file->good()){error="No se pudo abrir SF2";return false;}
+  if(file->size()<12||file->size()>size_t(2048)*1024*1024){error="SF2 inválido o demasiado grande (>2 GiB)";return false;}
+  bytes={file->data(),file->size()};
   if(!tag(bytes.data(),"RIFF")||!tag(bytes.data()+8,"sfbk")){error="SF2 requiere RIFF/sfbk";return false;}
   const size_t limit=std::min(bytes.size(),size_t(u32(bytes.data()+4))+8);
   for(size_t pos=12;pos+8<=limit;){
@@ -162,7 +168,12 @@ bool Sf2Loader::load(const std::string& file,PianoInstrument& out,std::string& e
  Zone presetGlobal;bool globalFound=false;
  const size_t pcmFrames=d.chunks.at("smpl").length/2;
  const uint8_t* pcm=d.bytes.data()+d.chunks.at("smpl").offset;
- std::vector<StrokeSample> strokes;size_t usedBytes=0;constexpr size_t MAX_PCM=512ULL*1024*1024;
+ // v35: 1 GiB decoded (was 512 MiB: long stereo pad banks such as a 516 MB shimmer
+ // pad failed to load). The sample-RAM budget still releases unused banks.
+ std::vector<StrokeSample> strokes;size_t usedBytes=0;constexpr size_t MAX_PCM=1024ULL*1024*1024;
+ // Per-zone amplitude envelope / filter (SF2 2.04 §8.1.3). Instrument zones override
+ // the instrument global zone; preset zones add a relative offset.
+ std::vector<float> envA,envD,envS,envR,envFc,envQ;EmbeddedAuthored envAuthored;
  for(const auto& local:pzones){
   if(!local.generators.count(41)){if(!globalFound){presetGlobal=local;globalFound=true;}continue;}
   Zone preset=combine(presetGlobal,local);
@@ -204,6 +215,24 @@ bool Sf2Loader::load(const std::string& file,PianoInstrument& out,std::string& e
     }
    }
    if(stereo && (h.type&7)==2)continue; // The matching LEFT zone will create one stereo voice.
+   {
+    const auto has=[](const Zone& zn,int op){return zn.generators.count(op)>0;};
+    const auto gen=[&](int op,int fallback){
+     const int inst=has(ilocal,op)?ilocal.get(op):has(instGlobal,op)?instGlobal.get(op):fallback;
+     const int pre=has(local,op)?local.get(op):has(presetGlobal,op)?presetGlobal.get(op):0;
+     return inst+pre;
+    };
+    const auto authored=[&](int op){return has(ilocal,op)||has(instGlobal,op)||has(local,op)||has(presetGlobal,op);};
+    envAuthored.attack|=authored(34);envAuthored.decay|=authored(36);
+    envAuthored.sustain|=authored(37);envAuthored.release|=authored(38);
+    const auto seconds=[](int timecents){return float(std::pow(2.0,std::clamp(timecents,-12000,8000)/1200.0));};
+    envA.push_back(seconds(gen(34,-12000)));
+    envD.push_back(seconds(gen(36,-12000)));
+    envS.push_back(float(std::pow(10.0,-std::clamp(gen(37,0),0,1440)/200.0)));   // centibels of attenuation
+    envR.push_back(seconds(gen(38,-12000)));
+    envFc.push_back(float(8.176*std::pow(2.0,std::clamp(gen(8,13500),1500,13500)/1200.0)));  // absolute cents
+    envQ.push_back(float(std::clamp(gen(9,0),0,960))/10.f);                                  // dB of resonance
+   }
    for(size_t f=0;f<length;f++){
     const int16_t x=i16(pcm+(start+int64_t(f))*2);
     const int16_t y=stereo?i16(pcm+(int64_t(other.start)+int64_t(f))*2):x;
@@ -232,6 +261,7 @@ bool Sf2Loader::load(const std::string& file,PianoInstrument& out,std::string& e
  if(strokes.empty()){error="SF2 válido, pero el preset no contiene regiones PCM16 reproducibles";return false;}
  out.strokes=std::move(strokes);out.name=instrumentOnly?name(d.ptr("inst",22,size_t(presetIndex)),20):name(ph,20);out.sourcePath=file;out.sf2PresetIndex=presetIndex;out.formatType="SF2 (PCM16)";
  out.zoneCount=int(out.strokes.size());out.memoryMB=usedBytes/(1024.0*1024.0);
+ out.embeddedSound=summariseEmbeddedSound(envAuthored,envA,envD,envS,envR,envFc,envQ);
  // A fallback global ID is fine, but ensure it differs from concurrently loaded banks.
  static std::atomic<uint64_t> nextId{1000000};out.id=nextId.fetch_add(1);
  error="SoundFont cargado: "+out.name+" ("+std::to_string(out.zoneCount)+" regiones)";

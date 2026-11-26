@@ -47,12 +47,15 @@ function SynthModule() {
   };
   return (
     <Panel title="SYNTH" power={{ id: 'synthEnabled', label: 'Synth' }} className="panel--module mini-module synth-mini"
-      actions={<><Btn small active={favorites.has(presetId)} onClick={() => void toggleFavorite(presetId)} title="Marcar el preset actual como favorito">★</Btn><EditLink to="/synth" /></>}>
+      actions={<><Btn small active={!shownUser && favorites.has(presetId)} disabled={Boolean(shownUser)}
+        onClick={() => void toggleFavorite(presetId)}
+        title={shownUser ? 'Favoritos: solo para presets de fábrica (usa el BROWSER para el resto)' : 'Marcar el preset actual como favorito'}>★</Btn><EditLink to="/synth" /></>}>
       <Lcd className="mini-lcd">
-        <div className="lcd__bar"><span>PATCH {String(presetId).padStart(3, '0')} / {SYNTH_FACTORY.length}</span>
-          <span><DirtyTag module={1} /> {shownUser ? `${shownUser.kind === 'USER' ? 'USUARIO' : shownUser.kind} · ` : isEdited(presetId, overrides) ? '✎ USUARIO · ' : ''}{current?.category}</span></div>
+        {/* A user / D-50 patch is not a factory number: show its origin instead of a stale "PATCH 001". */}
+        <div className="lcd__bar"><span>{shownUser ? (shownUser.kind === 'USER' ? 'USUARIO' : shownUser.kind) : `PATCH ${String(presetId).padStart(3, '0')} / ${SYNTH_FACTORY.length}`}</span>
+          <span><DirtyTag module={1} /> {shownUser ? '' : `${isEdited(presetId, overrides) ? '✎ EDITADO · ' : ''}${current?.category ?? ''}`}</span></div>
         <div className="mini-lcd__name"><PixelText text={shownUser?.name ?? displayName(current, overrides)} /></div>
-        <div className="lcd__foot"><span>CAPAS <b>{layersOn}/{SYNTH_LAYER_COUNT}</b></span><span>{favorites.has(presetId) ? '★ FAVORITO' : ''}</span></div>
+        <div className="lcd__foot"><span>CAPAS <b>{layersOn}/{SYNTH_LAYER_COUNT}</b></span><span>{!shownUser && favorites.has(presetId) ? '★ FAVORITO' : ''}</span></div>
       </Lcd>
       <div className="mini-browser__bar">
         <Btn small onClick={() => step(-1)} aria-label="Patch anterior">◀</Btn>
@@ -79,14 +82,15 @@ function RotaryButton() {
   const fast = (value ?? 0) >= 0.5;
   const mapAttrs = useMapAttrs('organRotaryFast');
   return (
+    // Same anatomy as the knobs beside it: control · label · value box (rows line up).
     <div className="rotary-control">
-      <span className="rotary-control__title">ROTARY</span>
       <Btn small active={fast} onClick={() => set(fast ? 0 : 1)} className="rotary-btn"
         aria-label="ROTARY · SLOW / FAST" aria-pressed={fast}
         title={`Rotary speaker: ${fast ? 'FAST' : 'SLOW'} (LED encendido = FAST). Clic derecho para mapear MIDI / OSC.`}
         {...mapAttrs}>
-        {fast ? 'FAST' : 'SLOW'}
+        ROTARY
       </Btn>
+      <output className={`knob__value rotary-control__value${fast ? ' is-fast' : ''}`}>{fast ? 'FAST' : 'SLOW'}</output>
     </div>
   );
 }
@@ -103,7 +107,11 @@ function OrganModule() {
         <div className="mini-lcd__name"><PixelText text={current?.name ?? 'Registro actual'} /></div>
       </Lcd>
       <div className="mini-browser__bar">
-        <Btn small variant="browse" onClick={() => setBrowsing(true)}>BROWSER</Btn>
+        {/* Empty value row: BROWSER keeps the control · label · value rows of its neighbours. */}
+        <div className="rotary-control">
+          <Btn small variant="browse" onClick={() => setBrowsing(true)}>BROWSER</Btn>
+          <output className="knob__value rotary-control__spacer" aria-hidden="true">&nbsp;</output>
+        </div>
         <RotaryButton />
         <ParamKnob id="organVolume" label="LEVEL" size="sm" />
         <ParamKnob id="organDrive" label="DRIVE" size="sm" />

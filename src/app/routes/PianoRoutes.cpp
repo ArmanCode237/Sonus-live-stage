@@ -107,9 +107,19 @@ bool StageApp::sourceMatchesSound(const json& sound, const fs::path& path, int s
     const auto& src=patch["source"];
     const auto old=src.value("sourcePath",std::string{});
     if(old.empty())return false;
-    return resolveSavedSamplePath(fs::path(old)).lexically_normal()==
-        resolveSavedSamplePath(path).lexically_normal() &&
-        src.value("sf2Preset",-1)==sf2Preset;
+    if(src.value("sf2Preset",-1)!=sf2Preset)return false;
+    const auto saved=resolveSavedSamplePath(fs::path(old)).lexically_normal();
+    const auto wanted=resolveSavedSamplePath(path).lexically_normal();
+    if(saved==wanted)return true;
+    // v35: a Sound belongs to the FILE, not to one folder. The same sample reached from
+    // another library root (copied or moved library, old folder still present) is the
+    // same Sound: same file name (case-insensitive) and same size.
+    const auto lowerName=[](const fs::path& p){auto s=p.filename().generic_string();
+        std::transform(s.begin(),s.end(),s.begin(),[](unsigned char c){return char(std::tolower(c));});return s;};
+    if(lowerName(saved)!=lowerName(wanted))return false;
+    std::error_code a,b;
+    const auto sa=fs::file_size(saved,a),sb=fs::file_size(wanted,b);
+    return !a&&!b&&sa==sb;
 }
 
 const json* StageApp::findDefaultSoundForSource(const fs::path& source,int preset){
@@ -158,7 +168,9 @@ json StageApp::modulePatch(int module){
         json sounds=json::array();
         for(int l=0;l<PIANO_LAYER_COUNT;++l)sounds.push_back(engine.getMappings().exportScope(MapScope::Sound,l));
         patch["soundMappings"]=sounds;
-        clearAllSoundDirty();
+        // v35: a layer edited away from its Sound stays a VARIATION of that Sound inside
+        // the Performance (it is not a new Sound and the Sound itself is unchanged).
+        patch["soundEdited"]=soundEditedJson();
     }
     if(module>=0&&module<=2)moduleDirty[size_t(module)].store(false);
     if(module==0)patch["pianoSources"]=serializePianoLayerSources(engine);
@@ -181,7 +193,6 @@ bool StageApp::restoreModulePatch(int module,const json& patch){
         const json sounds=patch.value("soundMappings",json::array());
         for(int l=0;l<PIANO_LAYER_COUNT;++l)
             engine.getMappings().replaceScope(MapScope::Sound,l,sounds.is_array() && l<int(sounds.size())?sounds[size_t(l)]:json::array());
-        clearAllSoundDirty();
     }
     if(module==0){
         // Decode only non-sample parameters here. Cached PCM is reused for
@@ -235,6 +246,7 @@ bool StageApp::restoreModulePatch(int module,const json& patch){
         // Only this module's rack is touched; the other modules remain intact.
         engine.setStudioRack(module,StudioRackConfig{});
     }
+    if(module==0)restoreSoundEdited(patch.value("soundEdited",json()));   // legacy patches: none edited
     if(module>=0&&module<=2)moduleDirty[size_t(module)].store(false);
     syncMappingValues();
     paramRevCounter.fetch_add(1);
@@ -292,7 +304,18 @@ void StageApp::registerPianoRoutes() {
                 selectedSoundRefs["piano"]=nullptr;
                 // A raw file load is a NEW sound: do not carry unsaved envelope,
                 // glide, CC1 or send adjustments from the previous Sound.
-                const SynthPresetParams defaultSound{};
+                SynthPresetParams defaultSound{};
+                // v35: every file IS a Sound. An SF2 / SFZ that authors its own envelope
+                // or low-pass (e.g. a pad with a slow attack and long release) starts with
+                // it; anything the file does not define keeps the engine defaults. A Sound
+                // saved for this file (below) still replaces all of it.
+                const auto& embedded=newInst->embeddedSound;
+                {
+                    auto& c=defaultSound.pianoLayerSample[pianoLayer];
+                    if(embedded.available){c.attackSec=embedded.attackSec;c.decaySec=embedded.decaySec;
+                        c.sustainLevel=embedded.sustainLevel;c.releaseSec=embedded.releaseSec;}
+                    if(embedded.hasFilter){c.cutoffHz=embedded.cutoffHz;c.resonanceQ=embedded.resonanceQ;}
+                }
                 const auto& d=defaultSound.pianoLayerSample[pianoLayer];
                 const float defaults[10]={d.attackSec,d.decaySec,d.sustainLevel,d.releaseSec,
                     d.loopHold,d.pan,d.fineTuneCents,d.cutoffHz,d.resonanceQ,d.gainDb};
@@ -320,12 +343,16 @@ void StageApp::registerPianoRoutes() {
                 // Selecting the same sample in ANY piano layer restores its
                 // stored Sound (ENV, mono/legato, CC1 modules and sends).
                 // Older Sounds without defaultForSource remain discoverable.
+                bool restoredSaved=false;
                 if(const json* saved=findDefaultSoundForSource(
                      fs::path(newInst->sourcePath),newInst->sf2PresetIndex)){
                     if(restorePianoLayerSound(pianoLayer,(*saved)["patch"])){
                         selectedSoundRefs["pianoLayers"][pianoLayer]=saved->value("id",std::string{});
+                        restoredSaved=true;
                     }
                 }
+                if(!restoredSaved&&(embedded.available||embedded.hasFilter))
+                    statusMsg+=" · envolvente del archivo";
             }
         }
         paramRevCounter.fetch_add(1);

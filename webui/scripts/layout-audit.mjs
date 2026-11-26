@@ -49,9 +49,11 @@ function inspect() {
       const s = getComputedStyle(a);
       if (s.overflowX === 'visible' && s.overflowY === 'visible') continue;
       const ar = a.getBoundingClientRect();
-      const left = ar.left + a.clientLeft, top = ar.top + a.clientTop;
-      const outX = r.left < left - TOL || r.right > left + a.clientWidth + TOL;
-      const outY = r.top < top - TOL || r.bottom > top + a.clientHeight + TOL;
+      // With CSS zoom, getBoundingClientRect is in zoomed px but clientWidth/Height are not.
+      const sx = a.offsetWidth ? ar.width / a.offsetWidth : 1, sy = a.offsetHeight ? ar.height / a.offsetHeight : 1;
+      const left = ar.left + a.clientLeft * sx, top = ar.top + a.clientTop * sy;
+      const outX = r.left < left - TOL || r.right > left + a.clientWidth * sx + TOL;
+      const outY = r.top < top - TOL || r.bottom > top + a.clientHeight * sy + TOL;
       const scrollX = /(auto|scroll)/.test(s.overflowX) && a.scrollWidth > a.clientWidth;
       const scrollY = /(auto|scroll)/.test(s.overflowY) && a.scrollHeight > a.clientHeight;
       // A scrollable ancestor makes the control reachable; it is checked from there on.

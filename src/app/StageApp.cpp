@@ -109,6 +109,8 @@ StageApp::StageApp(int argc, char* argv[], StageAppOptions options) : options_(s
             userPrograms = json::parse(pf);
         } catch (...) {}
     }
+    migrateSoundsV35();   // before slot 1 restores its Sound references
+    retireOldShimmersV35();
 
     bootStep("Banco de programas leido: iniciando restauracion del slot 1");
     bool loadedFromProgram1 = false;
@@ -122,6 +124,7 @@ StageApp::StageApp(int argc, char* argv[], StageAppOptions options) : options_(s
         if (prog0.contains("params")) {
             engine.applyPreset(deserializeParams(prog0["params"], engine.getCurrentParams()));
         }
+        restoreSoundEdited(prog0.value("soundEdited", json()));
         bootStep("Parametros del slot 1 aplicados");
         // A program may intentionally contain only synth / organ, with no piano.
         if (prog0.value("sourcePath", std::string{}).empty()) loadedFromProgram1 = true;
@@ -498,6 +501,180 @@ void StageApp::ensurePianoSoundRefs(){
         selectedSoundRefs["pianoLayers"]=json::array({nullptr,nullptr,nullptr,nullptr,nullptr});
     while(selectedSoundRefs["pianoLayers"].size()<PIANO_LAYER_COUNT)
         selectedSoundRefs["pianoLayers"].push_back(nullptr);
+}
+
+// ------------------------------------------------- v35 Sound model repair
+// A Sound is a sample + its settings and has no layer; Programs and Performances hold a
+// copy of each layer plus a reference to the Sound it came from. Runs at start-up:
+//  1. drop "savedLayer" from every Sound;
+//  2. re-validate each Program / Performance layer reference: a reference to a missing
+//     Sound, to a pre-v28.2 five-layer snapshot, or to a Sound of another sample is
+//     replaced by the default Sound of the layer's sample (or cleared);
+//  3. records which layers differ from their Sound (VARIACIÓN) where that was not stored.
+// Only references and flags change; every layer's own audio settings are left intact.
+// Each rewritten file is first copied to "<file>.before-v35.bak" (once).
+namespace {
+bool sameConfigValue(const json& a,const json& b){
+    if(a.is_number()&&b.is_number())return std::fabs(a.get<double>()-b.get<double>())<=1e-4*std::max(1.0,std::fabs(b.get<double>()));
+    if(a.is_object()&&b.is_object()){
+        for(auto it=b.begin();it!=b.end();++it)if(!a.contains(it.key())||!sameConfigValue(a[it.key()],it.value()))return false;
+        return true;
+    }
+    if(a.is_array()&&b.is_array()){
+        if(a.size()!=b.size())return false;
+        for(size_t i=0;i<a.size();++i)if(!sameConfigValue(a[i],b[i]))return false;
+        return true;
+    }
+    return a==b;
+}
+void backupOnce(const fs::path& file){
+    std::error_code ec;
+    const fs::path backup=file.string()+".before-v35.bak";
+    if(fs::is_regular_file(file,ec)&&!fs::exists(backup,ec))fs::copy_file(file,backup,ec);
+}
+}
+
+void StageApp::migrateSoundsV35(){
+    if(!soundLibrary.is_object()||!soundLibrary.contains("sounds")||!soundLibrary["sounds"].is_array())return;
+    auto& sounds=soundLibrary["sounds"];
+    bool soundsChanged=false;
+    for(auto& s:sounds)if(s.is_object()&&s.contains("savedLayer")){s.erase("savedLayer");soundsChanged=true;}
+    if(soundsChanged){
+        backupOnce(soundsFilePath);
+        if(!saveJsonAtomic(soundsFilePath,soundLibrary))std::cerr<<"[SOUNDS] v35: no se pudo actualizar sounds_v2.json\n";
+    }
+    auto findSound=[&](const json& id)->const json*{
+        if(!id.is_string())return nullptr;
+        for(const auto& s:sounds)if(s.is_object()&&s.value("id",std::string{})==id.get<std::string>())return &s;
+        return nullptr;
+    };
+    // layerRefs: 5 ids (or null); sources: 5 {sourcePath, sf2Preset}; configs: 5 sampleConfig.
+    auto repair=[&](json& layerRefs,const json& sources,const json& configs,json& edited,bool computeEdited)->bool{
+        bool changed=false;
+        if(!layerRefs.is_array())layerRefs=json::array();
+        while(layerRefs.size()<PIANO_LAYER_COUNT){layerRefs.push_back(nullptr);changed=true;}
+        json flags=json::array();
+        for(int l=0;l<PIANO_LAYER_COUNT;++l){
+            const json src=sources.is_array()&&l<int(sources.size())&&sources[l].is_object()?sources[l]:json::object();
+            const auto path=src.value("sourcePath",std::string{});
+            const int preset=src.value("sf2Preset",-1);
+            const json* sound=findSound(layerRefs[l]);
+            const bool valid=sound&&!path.empty()&&sound->value("scope",std::string{})=="layer"&&
+                sourceMatchesSound(*sound,fs::path(path),preset);
+            if(!valid){
+                const json* repaired=path.empty()?nullptr:findDefaultSoundForSource(fs::path(path),preset);
+                const json next=repaired?json(repaired->value("id",std::string{})):json(nullptr);
+                if(layerRefs[l]!=next){layerRefs[l]=next;changed=true;}
+                sound=repaired;
+            }
+            bool isEdited=false;
+            if(sound&&configs.is_array()&&l<int(configs.size())){
+                const auto& own=configs[l];
+                const auto& ref=(*sound)["patch"].value("sampleConfig",json::object());
+                isEdited=!sameConfigValue(own,ref);
+            }
+            flags.push_back(isEdited);
+        }
+        if(computeEdited){edited=flags;changed=true;}
+        return changed;
+    };
+
+    bool programsChanged=false;
+    if(userPrograms.is_array())for(auto& prog:userPrograms){
+        if(!prog.is_object())continue;
+        if(!prog.contains("soundRefs")||!prog["soundRefs"].is_object())continue;
+        auto& refs=prog["soundRefs"];
+        bool changed=false;
+        // Legacy module-level piano reference: the five layers are already in the program;
+        // resolve each layer to its own Sound instead.
+        if(refs.contains("piano")&&!refs["piano"].is_null()){refs["piano"]=nullptr;changed=true;}
+        json configs=prog.contains("params")&&prog["params"].is_object()?prog["params"].value("pianoSampleConfig",json::array()):json::array();
+        const bool hasFlags=prog.contains("soundEdited")&&prog["soundEdited"].is_array();
+        json flags=hasFlags?prog["soundEdited"]:json::array();
+        if(!refs.contains("pianoLayers"))refs["pianoLayers"]=json::array();
+        changed|=repair(refs["pianoLayers"],prog.value("pianoLayers",json::array()),configs,flags,!hasFlags);
+        if(!hasFlags)prog["soundEdited"]=flags;
+        programsChanged|=changed;
+    }
+    if(programsChanged){
+        backupOnce(programsFilePath);
+        if(!saveJsonAtomic(programsFilePath,userPrograms))std::cerr<<"[SOUNDS] v35: no se pudo actualizar programs.json\n";
+    }
+
+    json perfs=readPianoPerformances();
+    bool perfsChanged=false;
+    for(auto& perf:perfs){
+        if(!perf.is_object()||!perf.contains("patch")||!perf["patch"].is_object())continue;
+        auto& patch=perf["patch"];
+        const bool hasFlags=patch.contains("soundEdited")&&patch["soundEdited"].is_array();
+        json flags=hasFlags?patch["soundEdited"]:json::array();
+        if(!perf.contains("soundRefs"))perf["soundRefs"]=json::array();
+        bool changed=repair(perf["soundRefs"],patch.value("pianoSources",json::array()),
+                            patch.value("pianoSampleConfig",json::array()),flags,!hasFlags);
+        if(!hasFlags)patch["soundEdited"]=flags;
+        perfsChanged|=changed;
+    }
+    if(perfsChanged){
+        backupOnce(pianoPerformancesPath);
+        if(!saveJsonAtomic(pianoPerformancesPath,perfs))std::cerr<<"[SOUNDS] v35: no se pudo actualizar piano_performances.json\n";
+    }
+    if(soundsChanged||programsChanged||perfsChanged)
+        std::cout<<"[SOUNDS] v35: sonidos sin capa fija; referencias de programas y performances verificadas.\n";
+}
+
+// ------------------------------------------------- v35 Shimmer Atmosphere v5
+// The v1–v4 shimmer engines are retired. Their settings do not translate to v5, so any
+// stored shimmer slot (REVERB slot, model SHIMMER, version < 5) becomes an EMPTY slot and
+// the user configures the new shimmer again. Loading already does this in memory
+// (ParamSerialization); this pass also removes them from the files once.
+namespace {
+bool stripOldShimmerSlots(json& node){
+    bool changed=false;
+    if(node.is_object()){
+        if(node.contains("slots")&&node["slots"].is_array()){
+            for(auto& slot:node["slots"]){
+                if(!slot.is_object()||slot.value("type",0)!=6)continue;
+                const auto& p=slot.value("params",json::array());
+                const bool shimmer=p.is_array()&&p.size()>5&&p[5].is_number()&&int(p[5].get<float>()*3.999f)==3;
+                if(!shimmer||slot.value("version",1)>=SHIMMER_ENGINE_VERSION)continue;
+                const StudioSlotConfig empty{};
+                slot={{"type",0},{"version",1},{"enabled",false},
+                      {"params",std::vector<float>(empty.p.begin(),empty.p.end())}};
+                changed=true;
+            }
+        }
+        for(auto it=node.begin();it!=node.end();++it)changed|=stripOldShimmerSlots(it.value());
+    }else if(node.is_array()){
+        for(auto& item:node)changed|=stripOldShimmerSlots(item);
+    }
+    return changed;
+}
+}
+
+void StageApp::retireOldShimmersV35(){
+    std::vector<fs::path> files={fs::path(programsFilePath),fs::path(pianoPerformancesPath)};
+    for(const char* module:{"piano","synth","organ"})files.emplace_back(stageUserPresetFile(module));
+    std::error_code ec;
+    const auto presetDir=stageUserDataDir()/"presets";
+    if(fs::is_directory(presetDir,ec))
+        for(fs::recursive_directory_iterator it(presetDir,fs::directory_options::skip_permission_denied,ec),end;it!=end;it.increment(ec)){
+            if(ec)break;
+            if(it->is_regular_file(ec)&&it->path().extension()==".json")files.push_back(it->path());
+        }
+    std::sort(files.begin(),files.end());files.erase(std::unique(files.begin(),files.end()),files.end());
+    int cleaned=0;
+    for(const auto& file:files){
+        if(!fs::is_regular_file(file,ec))continue;
+        json data;
+        try{std::ifstream in(file);data=json::parse(in);}catch(...){continue;}
+        if(!stripOldShimmerSlots(data))continue;
+        const fs::path backup=file.string()+".before-shimmer-v5.bak";
+        if(!fs::exists(backup,ec))fs::copy_file(file,backup,ec);
+        if(saveJsonAtomic(file,data))++cleaned;
+        else std::cerr<<"[FX] No se pudo actualizar "<<file.filename().string()<<"\n";
+    }
+    if(userPrograms.is_array()&&stripOldShimmerSlots(userPrograms)){}   // keep the in-memory bank in sync
+    if(cleaned)std::cout<<"[FX] Shimmer v5: se quitaron los shimmer antiguos de "<<cleaned<<" archivo(s); configúralos de nuevo.\n";
 }
 
 // v31 mappings ----------------------------------------------------------------

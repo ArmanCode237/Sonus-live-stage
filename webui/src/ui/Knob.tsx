@@ -18,6 +18,32 @@ const arcPath = (a: number, b: number, r: number) => {
   return `M${arcPoint(lo, r)}A${r} ${r} 0 ${(hi - lo) * 270 > 180 ? 1 : 0} 1 ${arcPoint(hi, r)}`;
 };
 
+/** Shared knob finish (metal rim, rubber skirt, convex cap), defined once per document and
+ *  referenced from CSS as url(#knob-…): the same materials as the hardware buttons. */
+export function KnobDefs() {
+  return (
+    <svg className="knob-defs" width="0" height="0" aria-hidden="true" focusable="false">
+      <defs>
+        <linearGradient id="knob-rim" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#c9d2d7" /><stop offset=".18" stopColor="#7d8a92" />
+          <stop offset=".55" stopColor="#2c3439" /><stop offset=".85" stopColor="#14191c" /><stop offset="1" stopColor="#5f6d75" />
+        </linearGradient>
+        <radialGradient id="knob-skirt" cx=".5" cy=".42" r=".6">
+          <stop offset="0" stopColor="#2a3035" /><stop offset=".7" stopColor="#111518" /><stop offset="1" stopColor="#050708" />
+        </radialGradient>
+        <linearGradient id="knob-cap" x1=".2" y1="0" x2=".8" y2="1">
+          <stop offset="0" stopColor="#5a656b" /><stop offset=".16" stopColor="#2a3238" />
+          <stop offset=".55" stopColor="#12171a" /><stop offset=".9" stopColor="#07090a" /><stop offset="1" stopColor="#1b232a" />
+        </linearGradient>
+        <radialGradient id="knob-sheen" cx=".36" cy=".26" r=".55">
+          <stop offset="0" stopColor="#ffffff" stopOpacity=".34" /><stop offset=".45" stopColor="#ffffff" stopOpacity=".07" />
+          <stop offset="1" stopColor="#ffffff" stopOpacity="0" />
+        </radialGradient>
+      </defs>
+    </svg>
+  );
+}
+
 // LED dot ring: 15 dots from -135° to +135°, like a hardware encoder ring.
 const DOTS = Array.from({ length: 15 }, (_, i) => {
   const t = i / 14;
@@ -112,9 +138,11 @@ export const KnobView = memo(function KnobView({ label, value, spec, onChange, s
           const d = arcPath(m.bipolar ? norm - m.amount : norm, norm + m.amount, 38.6 - i * 0.0);
           return d ? <path key={i} className="knob__mod" d={d} style={{ stroke: m.color }} /> : null;
         })}
+        <circle className="knob__rim" cx="40" cy="40" r="29.4" />
         <circle className="knob__skirt" cx="40" cy="40" r="27.5" />
         <path className="knob__grip" d={GRIP} />
         <circle className="knob__cap" cx="40" cy="40" r="21" />
+        <circle className="knob__sheen" cx="40" cy="40" r="20.4" />
         <line className="knob__pointer" x1="40" y1="38" x2="40" y2="19" transform={`rotate(${-135 + norm * 270} 40 40)`} />
       </svg>
       <span className="knob__label" id={labelId}>{label}</span>

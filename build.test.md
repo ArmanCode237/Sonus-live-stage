@@ -81,5 +81,3 @@ JUCE ya está configurado para generar el AU además del VST3.
 Los scripts, CMake y el flujo de GitHub Actions los puedo preparar desde aquí. La compilación, la firma y la prueba final tienen que hacerse en un Mac o en esa nube.
 
 Lo dejé documentado en docs/COMPILAR.md.
-
-¿Quieres que siga con la interfaz completa dentro del VST3, o que prepare la base para macOS?
