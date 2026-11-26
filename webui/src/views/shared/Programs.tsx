@@ -27,7 +27,6 @@ export function ProgramDisplay() {
   const slot = useEngine(s => s?.activeProgramSlot ?? 0);
   const name = useEngine(s => s?.programName ?? '');
   const voices = useEngine(s => s?.activeVoices ?? 0);
-  const status = useEngine(s => s?.statusMessage ?? '');
   const pianoOn = useEngine(s => Boolean(s?.params?.pianoEnabled));
   const synthOn = useEngine(s => Boolean(s?.params?.synthEnabled));
   const organOn = useEngine(s => Boolean(s?.params?.organEnabled));
@@ -47,7 +46,7 @@ export function ProgramDisplay() {
   ].filter(Boolean) as { kind: 'piano' | 'synth' | 'organ'; type: string; text: string }[];
   return (
     <Lcd className="program-lcd">
-      <div className="lcd__bar"><span>PROGRAM {String(slot + 1).padStart(2, '0')}</span><span className="program-lcd__status" title={status}>{status || 'LIVE STAGE'}</span></div>
+      <div className="lcd__bar"><span>PROGRAM {String(slot + 1).padStart(2, '0')}</span><span className="program-lcd__status">LIVE STAGE</span></div>
       <div className="program-lcd__name"><PixelText text={name || '—'} /></div>
       <div className="lcd__sep" />
       <div className="program-lcd__engines">

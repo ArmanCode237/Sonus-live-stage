@@ -34,4 +34,13 @@ describe('parameter specs', () => {
     expect(formatValue(makeSpec('pianoVolume', 0, 1.5), 1.2)).toBe('120 %');
     expect(formatValue(makeSpec('eqGain0', -15, 15), 3)).toBe('+3 dB');
   });
+  it('does not show modulation amounts and multipliers as frequencies', () => {
+    const bright = makeSpec('synthMacroCutoff', 0.1, 2);
+    expect(bright.unit).toBe('x');
+    expect(bright.defaultValue).toBe(1);
+    expect(formatValue(bright, 1)).toBe('×1.00');
+    expect(formatValue(makeSpec('L1_velCut', 0, 1), 0.2)).toBe('20 %');
+    expect(formatValue(makeSpec('L1_lfoPitch', -1200, 1200), 22)).toBe('+22 ct');
+    expect(inferUnit('L1_cut')).toBe('Hz');
+  });
 });

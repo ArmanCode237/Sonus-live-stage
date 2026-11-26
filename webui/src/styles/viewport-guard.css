@@ -5,6 +5,11 @@
  * La consola ocupa toda la ventana mientras su proporción esté entre 5:4 y 16:9 (pantallas
  * 16:10, 16:9, MacBook con notch, 4:3 ancho); fuera de ese rango se centra con bandas. */
 :root { --app-w: 100vw; --app-h: 100vh; --vw: 1vw; --vh: 1vh; }
+/* Unidades de DISEÑO para tamaños de controles y textos: 1 % del lienzo de referencia
+ * 1280×800 (store/uiZoom.ts). Son px fijos, así que escalan con el zoom (AUTO + TAMAÑO).
+ * --vw / --vh solo para marcos que deben caber en la ventana (diálogos, menús flotantes):
+ * usados en tamaños, el zoom los compensa y el elemento no cambiaba al hacer zoom. */
+:root { --dw: 12.8px; --dh: 8px; }
 html, body, #root { width: 100%; height: 100%; margin: 0; }
 #root { display: grid; place-items: center; overflow: hidden; background: var(--bg); }
 #root > .console {

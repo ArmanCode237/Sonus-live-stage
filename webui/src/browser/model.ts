@@ -36,6 +36,8 @@ export interface BrowserItem {
   toggleSourceFavorite?: () => Promise<void>;
   /** The item needs a target layer (DX7 / MT-32 voices, piano instruments). */
   needsLayer?: boolean;
+  /** Extra explanation of what loading replaces (D-50: how its tones map onto the layers). */
+  scopeNote?: string;
   load: (ctx: LoadContext) => Promise<boolean>;
   subItems?: () => Promise<SubItem[] | null>;
   rename?: (to: string) => Promise<boolean>;
@@ -54,8 +56,13 @@ export interface ResolvedItem extends BrowserItem {
   lastUsed: number;
 }
 
+/** What a load replaces: the whole module (patch, performance) or one layer (voice, instrument). */
+export type Scope = 'module' | 'layer';
+export const scopeOf = (item: Pick<BrowserItem, 'needsLayer'>): Scope => (item.needsLayer ? 'layer' : 'module');
+
 export interface Filters {
   query: string;
+  scope: Scope | null;
   origin: Origin | 'all';
   favorites: boolean;
   recents: boolean;
@@ -63,7 +70,7 @@ export interface Filters {
   tags: string[];
   engine: string | null;
 }
-export const EMPTY_FILTERS: Filters = { query: '', origin: 'all', favorites: false, recents: false, category: null, tags: [], engine: null };
+export const EMPTY_FILTERS: Filters = { query: '', scope: null, origin: 'all', favorites: false, recents: false, category: null, tags: [], engine: null };
 
 export type SortKey = 'number' | 'name' | 'category' | 'recent' | 'used' | 'origin';
 export const SORT_LABEL: Record<SortKey, string> = {
@@ -93,6 +100,7 @@ export function applyFilters(items: ResolvedItem[], f: Filters, skip?: keyof Fil
   }
   return items.filter(i =>
     (skip === 'origin' || f.origin === 'all' || i.origin === f.origin) &&
+    (skip === 'scope' || !f.scope || scopeOf(i) === f.scope) &&
     (skip === 'favorites' || !f.favorites || i.favorite) &&
     (!recentKeys || recentKeys.has(i.key)) &&
     (skip === 'category' || !f.category || i.category === f.category) &&

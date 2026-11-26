@@ -7,7 +7,7 @@
 .patch-bar { display: flex; align-items: center; gap: 8px; min-width: 0; padding: 3px 10px; border: 1px solid var(--line); border-radius: 10px;
   background: linear-gradient(180deg, color-mix(in srgb, var(--surface-1) 85%, #fff 3%), var(--surface-1)); }
 .patch-bar__lcd { flex: 0 1 340px; min-width: 200px; padding: 5px 10px; }
-.patch-bar__lcd .patch-lcd__name { font-size: clamp(14px, calc(var(--vh) * 2), 19px); }
+.patch-bar__lcd .patch-lcd__name { font-size: clamp(14px, calc(var(--dh) * 2), 19px); }
 .patch-bar__knobs { margin-left: auto; flex-wrap: nowrap; gap: 4px 10px; padding-left: 10px; border-left: 1px solid var(--line); }
 .patch-bar__knobs .knob__label { white-space: nowrap; }
 

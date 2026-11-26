@@ -89,7 +89,9 @@ export function useSynthSources(): Provider {
         const n = `${Math.floor((p.n - 1) / 8) + 1}${((p.n - 1) % 8) + 1}`;
         out.push({
           key: `synth:d50:${bank.id}:${p.n}`, module: 'synth', origin: 'd50', name: p.name, number: n, baseCategory: 'D-50', engine: 'LA32',
-          detail: `${bank.name} · ${p.mode}`, info: [['Banco', bank.name], ['Modo', p.mode], ['Upper', p.upper], ...(p.mode !== 'WHOLE' ? [['Lower', p.lower] as [string, string]] : [])],
+          detail: `${bank.name} · ${p.mode}`,
+          scopeNote: `Patch D-50 (${p.mode}) convertido a LA32: sus tones ocupan las capas A–D${p.mode === 'WHOLE' ? '' : ' (Upper y Lower)'}; las capas que no usa se apagan.`,
+          info: [['Banco', bank.name], ['Modo', p.mode], ['Upper', p.upper], ...(p.mode !== 'WHOLE' ? [['Lower', p.lower] as [string, string]] : [])],
           load: async () => ok(await runAction(() => api.d50Load(bank.id, p.n), `D-50 · ${p.name}`, true)),
         });
       }

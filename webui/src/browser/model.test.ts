@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { SYNTH_FACTORY } from '../data/synthFactory';
 import { SYNTH_FACTORY_ENGINES } from '../data/synthFactoryEngines';
-import { applyFilters, EMPTY_FILTERS, facetCounts, groupRows, matchesQuery, normalise, sortItems, type ResolvedItem } from './model';
+import { applyFilters, EMPTY_FILTERS, facetCounts, groupRows, matchesQuery, normalise, scopeOf, sortItems, type ResolvedItem } from './model';
 
 const item = (over: Partial<ResolvedItem>): ResolvedItem => ({
   key: over.name ?? 'x', module: 'synth', origin: 'factory', name: 'X', baseCategory: 'PAD', category: 'PAD',
@@ -39,6 +39,15 @@ describe('browser model', () => {
     expect(applyFilters(items, { ...f, origin: 'user' }, 'origin').map(i => i.key)).toEqual(['a', 'c']);
     expect(applyFilters(items, { ...EMPTY_FILTERS, favorites: true }).map(i => i.key)).toEqual(['b']);
     expect(applyFilters(items, { ...EMPTY_FILTERS, recents: true }).map(i => i.key).sort()).toEqual(['b', 'c']);
+  });
+
+  it('filters by scope: whole patch vs one-layer voice', () => {
+    const mixed = [...items.slice(0, 3), { ...items[3], needsLayer: true }];
+    expect(scopeOf(mixed[3])).toBe('layer');
+    expect(scopeOf(mixed[0])).toBe('module');
+    expect(applyFilters(mixed, { ...EMPTY_FILTERS, scope: 'layer' }).map(i => i.key)).toEqual(['d']);
+    expect(applyFilters(mixed, { ...EMPTY_FILTERS, scope: 'module' }).map(i => i.key)).toEqual(['a', 'b', 'c']);
+    expect(applyFilters(mixed, { ...EMPTY_FILTERS, scope: 'layer' }, 'scope')).toHaveLength(4);
   });
 
   it('sorts by number (origin first), name, use and recency', () => {

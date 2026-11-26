@@ -18,6 +18,9 @@ export interface ParamSpec {
 
 const UNIT_RULES: [RegExp, Unit][] = [
   [/_eq(Hp|Lp)Slope$/, 'int'],                       // v32.4 synth layer EQ slopes (12 / 24 / 48)
+  [/MacroCutoff$/, 'x'],                              // global brightness: cutoff multiplier 0.1–2.0, not a frequency
+  [/_velCut$/, '%'],                                  // velocity → cutoff amount 0–1, not a frequency
+  [/^L\d_lfoPitch$/, 'ct'],                           // per-layer LFO → pitch depth, ±1200 cents
   [/(Enabled|On|^en$|_en$|_on$|Mono|Legato|Invert|Sync$|_sync$|PingPong|TempoSync|softRelease|Fast$|VoiceMaster|_seqOn$)/, 'bool'],
   [/(Bpm|bpm)$/, 'bpm'],
   [/(Pan|pan|_pan|lfoPan)$/, 'pan'],
@@ -43,7 +46,8 @@ export function makeSpec(id: string, min: number, max: number): ParamSpec {
   const positive = min > 0;
   const log = positive && max / min >= 40 && (unit === 'Hz' ? !LINEAR_HZ.test(id) : unit === 's' || unit === 'ms');
   const step = unit === 'int' || unit === 'bool' || unit === 'st' && /semi|Semi|Trans|transpose|keyTrans/.test(id) || unit === 'oct' && /oct$|octave$/.test(id) ? 1 : undefined;
-  const defaultValue = unit === 'pan' || (min < 0 && max > 0) ? 0 : min;
+  // Multipliers rest at ×1 (neutral) when their range includes it.
+  const defaultValue = unit === 'pan' || (min < 0 && max > 0) ? 0 : unit === 'x' && /MacroCutoff$/.test(id) && min < 1 && max > 1 ? 1 : min;
   return { id, min, max, unit, log, step, defaultValue };
 }
 
@@ -76,7 +80,7 @@ export function formatValue(spec: ParamSpec, value: number | undefined): string 
     case 'pan': return Math.abs(value) < 0.02 ? 'C' : value < 0 ? `L${Math.round(-value * 100)}` : `R${Math.round(value * 100)}`;
     case 'int': return String(Math.round(value));
     case 'bpm': return `${Math.round(value)} BPM`;
-    case 'x': return trim(value, 2);
+    case 'x': return /MacroCutoff$/.test(spec.id) ? `×${value.toFixed(2)}` : trim(value, 2);
     case 'raw': return trim(value, 3);
     default: {
       // Percent of the parameter range (levels 0..1.5 show 150 %).
